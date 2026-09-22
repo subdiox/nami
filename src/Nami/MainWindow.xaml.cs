@@ -138,17 +138,24 @@ public sealed partial class MainWindow : Window
 
     private void SyncMaximizeGlyph()
     {
-        bool max = _presenter.State == OverlappedPresenterState.Maximized;
-        MaximizeIcon.Glyph = max ? "\uE923" : "\uE922";
-        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(MaximizeButton, L.T(max ? "Restore" : "Maximize"));
+        bool restore = IsFullScreen || _presenter.State == OverlappedPresenterState.Maximized;
+        MaximizeIcon.Glyph = restore ? "\uE923" : "\uE922";
+        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(MaximizeButton,
+            L.T(IsFullScreen ? "Exit full screen (F11)" : restore ? "Restore" : "Maximize"));
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => _presenter.Minimize();
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsFullScreen) Vm.SetFullscreen(false);   // the full-screen presenter cannot minimize
+        _presenter.Minimize();
+    }
+
     private void MaximizeButton_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
     public void ToggleMaximize()
     {
+        if (IsFullScreen) { Vm.SetFullscreen(false); return; }
         if (_presenter.State == OverlappedPresenterState.Maximized) _presenter.Restore();
         else if (_presenter.IsMaximizable) _presenter.Maximize();
     }
@@ -216,13 +223,13 @@ public sealed partial class MainWindow : Window
         {
             if (_compact) ToggleCompactMode();
             AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-            CaptionButtons.Visibility = Visibility.Collapsed;
         }
         else
         {
             AppWindow.SetPresenter(_presenter);
-            CaptionButtons.Visibility = Visibility.Visible;
         }
+        // Caption buttons stay in full screen too (they fade with the HUD); the middle one exits full screen.
+        SyncMaximizeGlyph();
         UpdateNonClientRegions();
     }
 

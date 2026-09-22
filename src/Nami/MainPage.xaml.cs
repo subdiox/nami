@@ -137,6 +137,7 @@ public sealed partial class MainPage : Page
         }
 
         Osc.PipRequested += () => Window?.ToggleCompactMode();
+        Osc.MenuOpenChanged += SetMenuOpen;
         Osc.MusicModeRequested += () => Window?.SetMusicMode(true);
         ApplyOscLayout(Vm.Services.Settings.OscLayout);
 
@@ -289,9 +290,18 @@ public sealed partial class MainPage : Page
         Window?.SetTitleOverlayVisible(false);
     }
 
+    private bool _menuOpen;
+
+    /// <summary>While a menu / flyout is open the HUD must stay (menus belong to it).</summary>
+    public void SetMenuOpen(bool open)
+    {
+        _menuOpen = open;
+        if (open) ShowOverlay(); else RestartHideTimer();
+    }
+
     private void TryHideOverlay()
     {
-        if (_pointerOverControls || Vm.Paused || Vm.Idle || Vm.MusicMode) return;
+        if (_menuOpen || _pointerOverControls || Vm.Paused || Vm.Idle || Vm.MusicMode) return;
         if (!_overlayVisible) return;
         _overlayVisible = false;
         Fade(Osc, 0);
@@ -499,7 +509,8 @@ public sealed partial class MainPage : Page
         menu.Items.Add(Item(L.T("Media info…"), () => _ = ShowDialogAsync(new InspectorDialog(Vm))));
         menu.Items.Add(Item(L.T("Key bindings…"), () => _ = ShowDialogAsync(new KeyBindingsDialog(Vm))));
         menu.Items.Add(Item(L.T("Preferences…"), () => Window?.ShowPreferencesAsync()));
-        menu.Closed += (_, _) => FocusVideo();
+        menu.Opened += (_, _) => SetMenuOpen(true);
+        menu.Closed += (_, _) => { SetMenuOpen(false); FocusVideo(); };
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
     }

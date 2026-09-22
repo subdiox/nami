@@ -17,6 +17,15 @@ public sealed partial class Osc : UserControl
     private bool _showRemaining;
 
     public event Action? PipRequested;
+    /// <summary>Raised when one of the controller's menus opens / closes (the HUD stays while open).</summary>
+    public event Action<bool>? MenuOpenChanged;
+
+    private void ShowMenu(MenuFlyout menu, FrameworkElement at)
+    {
+        menu.Opened += (_, _) => MenuOpenChanged?.Invoke(true);
+        menu.Closed += (_, _) => MenuOpenChanged?.Invoke(false);
+        menu.ShowAt(at);
+    }
     public event Action? MusicModeRequested;
 
     private Services.OscLayout _layout = Services.OscLayout.Floating;
@@ -46,7 +55,7 @@ public sealed partial class Osc : UserControl
             item.Click += (_, _) => Vm.SetSpeed(speed);
             menu.Items.Add(item);
         }
-        menu.ShowAt(SpeedButton);
+        ShowMenu(menu, SpeedButton);
     }
 
     private static MenuFlyoutItem Item(string text, Action action, string? accelerator = null)
@@ -81,7 +90,7 @@ public sealed partial class Osc : UserControl
         menu.Items.Add(Item(L("Key bindings…"), () => page?.ShowKeyBindings(), "Ctrl+Shift+K"));
         menu.Items.Add(Item(L("Preferences…"), () => { if (Vm.Window is { } w) _ = w.ShowPreferencesAsync(); }, "Ctrl+,"));
         menu.Closed += (_, _) => page?.FocusVideo();
-        menu.ShowAt(MoreButton);
+        ShowMenu(menu, MoreButton);
     }
 
     /// <summary>Floating (rounded panel, two rows) or a full-width bar (one row).</summary>

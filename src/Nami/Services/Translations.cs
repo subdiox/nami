@@ -307,6 +307,7 @@ internal static class Translations
         ["Full screen (F11)"] = "全画面 (F11)",
         ["Play / Pause (Space)"] = "再生 / 一時停止 (Space)",
         ["More options"] = "その他のオプション",
+        ["Exit full screen (F11)"] = "全画面を終了 (F11)",
         ["Japanese"] = "日本語",
     };
 }
