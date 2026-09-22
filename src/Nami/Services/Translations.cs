@@ -300,6 +300,13 @@ internal static class Translations
         ["Maximize"] = "最大化",
         ["Restore"] = "元のサイズに戻す",
         ["Set as default player…"] = "既定のプレイヤーに設定…",
+        ["Video, audio & subtitles"] = "映像・音声・字幕",
+        ["Video, audio & subtitles (Ctrl+Shift+S)"] = "映像・音声・字幕 (Ctrl+Shift+S)",
+        ["Playlist (Ctrl+Shift+P)"] = "プレイリスト (Ctrl+Shift+P)",
+        ["Mini player (Ctrl+Shift+M)"] = "ミニプレイヤー (Ctrl+Shift+M)",
+        ["Full screen (F11)"] = "全画面 (F11)",
+        ["Play / Pause (Space)"] = "再生 / 一時停止 (Space)",
+        ["More options"] = "その他のオプション",
         ["Japanese"] = "日本語",
     };
 }

@@ -74,7 +74,8 @@
                         <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='Controller (OSC) layout'}" MinWidth="260" />
                         <TextBlock Text="{l:Tr Text='Controller toolbar buttons'}" FontSize="12" Margin="0,8,0,0" />
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <CheckBox x:Name="TbSettings" Content="{l:Tr Text='Quick settings'}" MinWidth="0" />
+                            <CheckBox x:Name="TbSpeed" Content="{l:Tr Text='Playback speed'}" MinWidth="0" />
+                            <CheckBox x:Name="TbSettings" Content="{l:Tr Text='Video, audio &amp; subtitles'}" MinWidth="0" />
                             <CheckBox x:Name="TbPlaylist" Content="{l:Tr Text='Playlist'}" MinWidth="0" />
                             <CheckBox x:Name="TbMusic" Content="{l:Tr Text='Music mode'}" MinWidth="0" />
                             <CheckBox x:Name="TbMini" Content="{l:Tr Text='Mini player'}" MinWidth="0" />

@@ -55,11 +55,12 @@ public sealed partial class Preferences : Window
         ThumbnailSwitch.IsOn = s.SeekThumbnails;
         AutoMusicSwitch.IsOn = s.AutoMusicMode;
         OscLayoutCombo.SelectedIndex = (int)s.OscLayout;
-        TbSettings.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.Settings);
-        TbPlaylist.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.Playlist);
-        TbMusic.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.MusicMode);
-        TbMini.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.MiniPlayer);
-        TbFullscreen.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.Fullscreen);
+        TbSpeed.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.Speed);
+        TbSettings.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.Settings);
+        TbPlaylist.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.Playlist);
+        TbMusic.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.MusicMode);
+        TbMini.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.MiniPlayer);
+        TbFullscreen.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.Fullscreen);
         MpvConfBox.Text = ReadOrEmpty(MpvConfPath);
         InputConfBox.Text = ReadOrEmpty(InputConfPath);
         UpdateAssocStatus();
@@ -289,7 +290,8 @@ public sealed partial class Preferences : Window
             catch (Mpv.MpvException) { }
         }
         s.OscLayout = (OscLayout)Math.Max(0, OscLayoutCombo.SelectedIndex);
-        s.OscToolbar = (TbSettings.IsChecked == true ? OscToolbarItems.Settings : 0)
+        s.OscButtons = (TbSpeed.IsChecked == true ? OscToolbarItems.Speed : 0)
+            | (TbSettings.IsChecked == true ? OscToolbarItems.Settings : 0)
             | (TbPlaylist.IsChecked == true ? OscToolbarItems.Playlist : 0)
             | (TbMusic.IsChecked == true ? OscToolbarItems.MusicMode : 0)
             | (TbMini.IsChecked == true ? OscToolbarItems.MiniPlayer : 0)

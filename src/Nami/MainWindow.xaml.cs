@@ -178,7 +178,6 @@ public sealed partial class MainWindow : Window
                 break;
             case nameof(PlayerViewModel.OnTop):
                 _presenter.IsAlwaysOnTop = Vm.OnTop || _compact;
-                PinButton.Visibility = Vm.OnTop ? Visibility.Visible : Visibility.Collapsed;
                 break;
             case nameof(PlayerViewModel.VideoSize):
             {
@@ -405,9 +404,4 @@ public sealed partial class MainWindow : Window
         return Task.CompletedTask;
     }
 
-    private void PreferencesButton_Click(object sender, RoutedEventArgs e) => _services.Windows.ShowPreferences(Vm);
-
-    private void PinButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleOnTop();
-    private void SettingsButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Settings);
-    private void PlaylistButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Playlist);
 }

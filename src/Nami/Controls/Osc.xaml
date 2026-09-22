@@ -21,7 +21,7 @@
         </Border>
 
         <!-- Floating layout (IINA default): two rows in a rounded panel -->
-        <Border x:Name="FloatingRoot" Width="480" Padding="14,8,14,8" CornerRadius="12"
+        <Border x:Name="FloatingRoot" Width="520" Padding="14,8,14,8" CornerRadius="8"
                 Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
@@ -45,32 +45,39 @@
                     </StackPanel>
 
                     <StackPanel x:Name="CenterPanel" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" VerticalAlignment="Center">
-                        <Button x:Name="LeftArrowButton" Style="{StaticResource OscButton}" Click="LeftArrowButton_Click" ToolTipService.ToolTip="Slower" AutomationProperties.Name="Slower">
-                            <TextBlock Text="&#x23EA;" FontFamily="Segoe UI Symbol" FontSize="18" />
+                        <Button x:Name="PrevButton" Style="{StaticResource OscButton}" Click="PrevButton_Click" ToolTipService.ToolTip="Previous" AutomationProperties.Name="Previous">
+                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE892;" />
                         </Button>
-                        <Button x:Name="PlayButton" Style="{StaticResource OscButton}" Width="40" Height="40" Click="PlayButton_Click" ToolTipService.ToolTip="Play / Pause" AutomationProperties.Name="Play / Pause">
+                        <Button x:Name="PlayButton" Style="{StaticResource OscButton}" Width="40" Height="40" Click="PlayButton_Click" ToolTipService.ToolTip="Play / Pause (Space)" AutomationProperties.Name="Play / Pause (Space)">
                             <FontIcon x:Name="PlayIcon" Style="{StaticResource OscIcon}" FontSize="26" Glyph="&#xE768;" />
                         </Button>
-                        <Button x:Name="RightArrowButton" Style="{StaticResource OscButton}" Click="RightArrowButton_Click" ToolTipService.ToolTip="Faster" AutomationProperties.Name="Faster">
-                            <TextBlock Text="&#x23E9;" FontFamily="Segoe UI Symbol" FontSize="18" />
+                        <Button x:Name="NextButton" Style="{StaticResource OscButton}" Click="NextButton_Click" ToolTipService.ToolTip="Next" AutomationProperties.Name="Next">
+                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE893;" />
                         </Button>
                     </StackPanel>
 
+                    <!-- Right cluster, in Windows Media Player order: speed, subtitles/audio, queue, mini player, full screen, more -->
                     <StackPanel x:Name="ToolbarPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" VerticalAlignment="Center">
-                        <Button x:Name="SettingsButton" Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="Quick settings" AutomationProperties.Name="Quick settings">
-                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE9E9;" />
+                        <Button x:Name="SpeedButton" Style="{StaticResource OscButton}" Width="44" Click="SpeedButton_Click" ToolTipService.ToolTip="Playback speed" AutomationProperties.Name="Playback speed">
+                            <TextBlock x:Name="SpeedText" Text="1×" FontSize="12" FontFamily="Segoe UI Variable Text" Foreground="{StaticResource OverlayTextBrush}" />
                         </Button>
-                        <Button x:Name="PlaylistButton" Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="Playlist" AutomationProperties.Name="Playlist">
-                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
+                        <Button x:Name="SettingsButton" Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="Video, audio &amp; subtitles (Ctrl+Shift+S)" AutomationProperties.Name="Video, audio &amp; subtitles (Ctrl+Shift+S)">
+                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE7F0;" />
+                        </Button>
+                        <Button x:Name="PlaylistButton" Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="Playlist (Ctrl+Shift+P)" AutomationProperties.Name="Playlist (Ctrl+Shift+P)">
+                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE90B;" />
                         </Button>
                         <Button x:Name="MusicModeButton" Style="{StaticResource OscButton}" Click="MusicModeButton_Click" ToolTipService.ToolTip="Music mode" AutomationProperties.Name="Music mode">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8D6;" />
                         </Button>
-                        <Button x:Name="PipButton" Style="{StaticResource OscButton}" Click="PipButton_Click" ToolTipService.ToolTip="Mini player" AutomationProperties.Name="Mini player">
+                        <Button x:Name="PipButton" Style="{StaticResource OscButton}" Click="PipButton_Click" ToolTipService.ToolTip="Mini player (Ctrl+Shift+M)" AutomationProperties.Name="Mini player (Ctrl+Shift+M)">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xEE49;" />
                         </Button>
-                        <Button x:Name="FullscreenButton" Style="{StaticResource OscButton}" Click="FullscreenButton_Click" ToolTipService.ToolTip="Full screen" AutomationProperties.Name="Full screen">
+                        <Button x:Name="FullscreenButton" Style="{StaticResource OscButton}" Click="FullscreenButton_Click" ToolTipService.ToolTip="Full screen (F11)" AutomationProperties.Name="Full screen (F11)">
                             <FontIcon x:Name="FullscreenIcon" Style="{StaticResource OscIcon}" Glyph="&#xE740;" />
+                        </Button>
+                        <Button x:Name="MoreButton" Style="{StaticResource OscButton}" Click="MoreButton_Click" ToolTipService.ToolTip="More options" AutomationProperties.Name="More options">
+                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE712;" />
                         </Button>
                     </StackPanel>
                 </Grid>

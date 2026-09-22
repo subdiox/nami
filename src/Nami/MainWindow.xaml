@@ -17,10 +17,9 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Rectangle Grid.ColumnSpan="3" IsHitTestVisible="False">
+            <Rectangle Grid.ColumnSpan="2" IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <GradientStop Color="#80000000" Offset="0" />
@@ -29,29 +28,16 @@
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- Drag region (also carries the centered title) -->
+            <!-- Drag region. Windows 11 style: app icon + title at the left, nothing else but the caption buttons. -->
             <Border x:Name="DragRegion" Grid.Column="0" Background="Transparent" />
-            <TextBlock x:Name="TitleText" Grid.ColumnSpan="3" Text="Nami" FontSize="13" Foreground="#F2FFFFFF" HorizontalAlignment="Center"
-                       VerticalAlignment="Top" Height="32" Padding="0,8,0,0" TextTrimming="CharacterEllipsis" Margin="160,0" IsHitTestVisible="False" />
-
-            <!-- Same 32px row as the system caption buttons, so the icons line up with minimize / maximize / close. -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top" Height="32" Margin="0,0,4,0">
-                <Button x:Name="PinButton" Style="{StaticResource OscButton}" Visibility="Collapsed" Click="PinButton_Click" ToolTipService.ToolTip="Turn off always on top" AutomationProperties.Name="Turn off always on top">
-                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE718;" />
-                </Button>
-                <Button Style="{StaticResource OscButton}" Click="PreferencesButton_Click" ToolTipService.ToolTip="Preferences" AutomationProperties.Name="Preferences">
-                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE713;" />
-                </Button>
-                <Button Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="Quick settings" AutomationProperties.Name="Quick settings">
-                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE9E9;" />
-                </Button>
-                <Button Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="Playlist" AutomationProperties.Name="Playlist">
-                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
-                </Button>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top" Height="32" Margin="12,0,0,0" IsHitTestVisible="False">
+                <Image Source="Assets/AppIcon.png" Width="16" Height="16" VerticalAlignment="Center" />
+                <TextBlock x:Name="TitleText" Text="Nami" FontSize="12" Foreground="#F2FFFFFF" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" MaxWidth="600" />
             </StackPanel>
 
             <!-- Caption buttons drawn by us (the system title bar is off) so they fade together with the HUD. -->
-            <StackPanel x:Name="CaptionButtons" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Height="32">
+            <StackPanel x:Name="CaptionButtons" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Height="32">
                 <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" Click="MinimizeButton_Click" ToolTipService.ToolTip="Minimize" AutomationProperties.Name="Minimize">
                     <FontIcon Style="{StaticResource CaptionIcon}" Glyph="&#xE921;" />
                 </Button>

@@ -145,6 +145,9 @@ public sealed partial class MainPage : Page
         PreviewKeyDown += OnPreviewKeyDown;
     }
 
+    public void ShowMediaInfo() => _ = ShowDialogAsync(new InspectorDialog(Vm));
+    public void ShowKeyBindings() => _ = ShowDialogAsync(new KeyBindingsDialog(Vm));
+
     private async Task ShowDialogAsync(ContentDialog dialog)
     {
         dialog.XamlRoot = XamlRoot;
@@ -201,7 +204,7 @@ public sealed partial class MainPage : Page
     public void ApplyOscLayout(Services.OscLayout layout)
     {
         Osc.Layout = layout;
-        Osc.ApplyToolbar(Vm.Services.Settings.OscToolbar);
+        Osc.ApplyToolbar(Vm.Services.Settings.OscButtons);
         switch (layout)
         {
             case Services.OscLayout.Floating:
@@ -482,7 +485,7 @@ public sealed partial class MainPage : Page
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
         }));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item(L.T("Quick settings"), () => Vm.ToggleSidebar(SidebarKind.Settings)));
+        menu.Items.Add(Item(L.T("Video, audio & subtitles"), () => Vm.ToggleSidebar(SidebarKind.Settings)));
         menu.Items.Add(Item(L.T("Playlist"), () => Vm.ToggleSidebar(SidebarKind.Playlist)));
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(Toggle(L.T("Full screen"), Vm.Fullscreen, Vm.ToggleFullscreen));

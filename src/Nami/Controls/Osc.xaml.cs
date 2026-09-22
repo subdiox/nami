@@ -21,14 +21,67 @@ public sealed partial class Osc : UserControl
 
     private Services.OscLayout _layout = Services.OscLayout.Floating;
 
-    /// <summary>Show only the toolbar buttons the user picked.</summary>
+    /// <summary>Show only the toolbar buttons the user picked ("more" is always there).</summary>
     public void ApplyToolbar(Services.OscToolbarItems items)
     {
+        SpeedButton.Visibility = items.HasFlag(Services.OscToolbarItems.Speed) ? Visibility.Visible : Visibility.Collapsed;
         SettingsButton.Visibility = items.HasFlag(Services.OscToolbarItems.Settings) ? Visibility.Visible : Visibility.Collapsed;
         PlaylistButton.Visibility = items.HasFlag(Services.OscToolbarItems.Playlist) ? Visibility.Visible : Visibility.Collapsed;
         MusicModeButton.Visibility = items.HasFlag(Services.OscToolbarItems.MusicMode) ? Visibility.Visible : Visibility.Collapsed;
         PipButton.Visibility = items.HasFlag(Services.OscToolbarItems.MiniPlayer) ? Visibility.Visible : Visibility.Collapsed;
         FullscreenButton.Visibility = items.HasFlag(Services.OscToolbarItems.Fullscreen) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static readonly double[] Speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+    private void SyncSpeed() => SpeedText.Text = Vm.Speed == Math.Round(Vm.Speed) ? $"{Vm.Speed:0}×" : $"{Vm.Speed:0.##}×";
+
+    private void SpeedButton_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = new MenuFlyout { Placement = FlyoutPlacementMode.Top };
+        foreach (var s in Speeds)
+        {
+            var item = new ToggleMenuFlyoutItem { Text = s == 1 ? Services.L.T("Normal") : $"{s:0.##}×", IsChecked = Math.Abs(Vm.Speed - s) < 0.001 };
+            double speed = s;
+            item.Click += (_, _) => Vm.SetSpeed(speed);
+            menu.Items.Add(item);
+        }
+        menu.ShowAt(SpeedButton);
+    }
+
+    private static MenuFlyoutItem Item(string text, Action action, string? accelerator = null)
+    {
+        var item = new MenuFlyoutItem { Text = text };
+        if (accelerator is not null) item.KeyboardAcceleratorTextOverride = accelerator;
+        item.Click += (_, _) => action();
+        return item;
+    }
+
+    private static ToggleMenuFlyoutItem Toggle(string text, bool isChecked, Action action)
+    {
+        var item = new ToggleMenuFlyoutItem { Text = text, IsChecked = isChecked };
+        item.Click += (_, _) => action();
+        return item;
+    }
+
+    /// <summary>Secondary commands, where Windows apps keep them: a "…" menu on the command bar.</summary>
+    private void MoreButton_Click(object sender, RoutedEventArgs e)
+    {
+        var L = Services.L.T;
+        var page = Vm.Window?.Page;
+        var menu = new MenuFlyout { Placement = FlyoutPlacementMode.Top };
+        menu.Items.Add(Item(L("Open file…"), () => page?.OpenFiles(), "Ctrl+O"));
+        menu.Items.Add(Item(L("Open URL…"), () => { if (page is not null) _ = page.OpenUrlAsync(); }, "Ctrl+U"));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(Toggle(L("Always on top"), Vm.OnTop, Vm.ToggleOnTop));
+        menu.Items.Add(Item(L("Music mode"), () => MusicModeRequested?.Invoke()));
+        menu.Items.Add(Item(L("Screenshot"), Vm.Screenshot, "S"));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(Item(L("Media info…"), () => page?.ShowMediaInfo(), "Ctrl+I"));
+        menu.Items.Add(Item(L("Key bindings…"), () => page?.ShowKeyBindings(), "Ctrl+Shift+K"));
+        menu.Items.Add(Item(L("Preferences…"), () => { if (Vm.Window is { } w) _ = w.ShowPreferencesAsync(); }, "Ctrl+,"));
+        menu.Closed += (_, _) => page?.FocusVideo();
+        menu.ShowAt(MoreButton);
     }
 
     /// <summary>Floating (rounded panel, two rows) or a full-width bar (one row).</summary>
@@ -129,6 +182,9 @@ public sealed partial class Osc : UserControl
             case nameof(PlayerViewModel.AbLoopB):
                 SyncLoopMarkers();
                 break;
+            case nameof(PlayerViewModel.Speed):
+                SyncSpeed();
+                break;
             case nameof(PlayerViewModel.Fullscreen):
                 FullscreenIcon.Glyph = Vm.Fullscreen ? "" : "";
                 break;
@@ -151,6 +207,7 @@ public sealed partial class Osc : UserControl
 
     private void SyncAll()
     {
+        SyncSpeed();
         SyncPlayIcon();
         SyncTime();
         SyncVolume();
@@ -192,8 +249,8 @@ public sealed partial class Osc : UserControl
     // ---- handlers ------------------------------------------------------------------
 
     private void PlayButton_Click(object sender, RoutedEventArgs e) => Vm.TogglePause();
-    private void LeftArrowButton_Click(object sender, RoutedEventArgs e) => Vm.SpeedStep(faster: false);
-    private void RightArrowButton_Click(object sender, RoutedEventArgs e) => Vm.SpeedStep(faster: true);
+    private void PrevButton_Click(object sender, RoutedEventArgs e) => Vm.PlaylistPrev();
+    private void NextButton_Click(object sender, RoutedEventArgs e) => Vm.PlaylistNext();
     private void MuteButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleMute();
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Settings);
     private void PlaylistButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Playlist);
