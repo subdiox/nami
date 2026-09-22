@@ -115,6 +115,33 @@ public sealed partial class MainPage : Page
         DragOver += OnDragOver;
         Drop += OnDrop;
         PreviewKeyDown += OnPreviewKeyDown;
+
+        // Keyboard shortcuts only work while focus is somewhere inside this page. Flyouts and dialogs
+        // sometimes hand focus back to nothing when they close; catch that and take it ourselves.
+        FocusManager.LosingFocus += OnGlobalLosingFocus;
+        Unloaded += (_, _) => FocusManager.LosingFocus -= OnGlobalLosingFocus;
+    }
+
+    private void OnGlobalLosingFocus(object? sender, LosingFocusEventArgs e)
+    {
+        if (e.NewFocusedElement is not null || !IsLoaded || XamlRoot is null) return;
+        if (e.OldFocusedElement is UIElement old && old.XamlRoot != XamlRoot) return;   // another window
+        e.TrySetNewFocusedElement(this);
+    }
+
+    private async Task ShowDialogAsync(ContentDialog dialog)
+    {
+        dialog.XamlRoot = XamlRoot;
+        await dialog.ShowAsync();
+        FocusVideo();
+    }
+
+    /// <summary>Give keyboard focus back to the player (after dialogs, flyouts, window activation).</summary>
+    public void FocusVideo()
+    {
+        var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        if (focused is null || (!IsInside(focused, Sidebar) && focused is not TextBox and not NumberBox and not AutoSuggestBox))
+            Focus(FocusState.Programmatic);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -438,9 +465,10 @@ public sealed partial class MainPage : Page
         menu.Items.Add(Item(double.IsNaN(Vm.AbLoopA) ? L.T("A-B loop: set point A") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B loop: set point B") : L.T("Clear A-B loop"), Vm.CycleAbLoop));
         menu.Items.Add(Item(L.T("Frame step"), Vm.FrameStep));
         menu.Items.Add(Item(L.T("Frame back step"), Vm.FrameBackStep));
-        menu.Items.Add(Item(L.T("Media info…"), () => _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()));
-        menu.Items.Add(Item(L.T("Key bindings…"), () => _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()));
+        menu.Items.Add(Item(L.T("Media info…"), () => _ = ShowDialogAsync(new InspectorDialog(Vm))));
+        menu.Items.Add(Item(L.T("Key bindings…"), () => _ = ShowDialogAsync(new KeyBindingsDialog(Vm))));
         menu.Items.Add(Item(L.T("Preferences…"), () => Window?.ShowPreferencesAsync()));
+        menu.Closed += (_, _) => FocusVideo();
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
     }
@@ -449,6 +477,7 @@ public sealed partial class MainPage : Page
     {
         var dlg = new OpenUrlDialog { XamlRoot = XamlRoot };
         var result = await dlg.ShowAsync();
+        FocusVideo();
         if (string.IsNullOrEmpty(dlg.Url)) return;
         if (result == ContentDialogResult.Primary) Vm.Open(dlg.Url);
         else if (result == ContentDialogResult.Secondary) Vm.Open(dlg.Url, append: true);
@@ -487,8 +516,8 @@ public sealed partial class MainPage : Page
             case VirtualKey.O when ctrl: OpenFiles(); break;
             case VirtualKey.N when ctrl: Vm.Services.Windows.New(); break;
             case VirtualKey.U when ctrl: _ = OpenUrlAsync(); break;
-            case VirtualKey.I when ctrl: _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync(); break;
-            case VirtualKey.K when ctrl && shift: _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync(); break;
+            case VirtualKey.I when ctrl: _ = ShowDialogAsync(new InspectorDialog(Vm)); break;
+            case VirtualKey.K when ctrl && shift: _ = ShowDialogAsync(new KeyBindingsDialog(Vm)); break;
             case VirtualKey.P when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Playlist); break;
             case VirtualKey.S when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Settings); break;
             case VirtualKey.M when ctrl && shift: Window?.ToggleCompactMode(); break;
