@@ -20,6 +20,7 @@
             <ToggleSwitch x:Name="ResizeSwitch" Header="{l:Tr Text='Resize the window to the video when a file is opened'}" />
             <ToggleSwitch x:Name="RememberVolumeSwitch" Header="{l:Tr Text='Remember volume'}" />
             <ToggleSwitch x:Name="NewWindowSwitch" Header="{l:Tr Text='Open files from Explorer in a new window'}" />
+            <ComboBox x:Name="SingleClickCombo" Header="{l:Tr Text='Single click on the video'}" HorizontalAlignment="Stretch" />
             <ToggleSwitch x:Name="ResumeSwitch" Header="{l:Tr Text='Resume from the last playback position'}" />
             <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="{l:Tr Text='Automatically add files from the same folder to the playlist'}" />
             <ToggleSwitch x:Name="HistorySwitch" Header="{l:Tr Text='Keep playback history'}" />

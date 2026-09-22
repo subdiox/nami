@@ -35,6 +35,8 @@ public sealed partial class Preferences : ContentDialog
         ResizeSwitch.IsOn = s.ResizeWindowToVideo;
         RememberVolumeSwitch.IsOn = s.RememberVolume;
         NewWindowSwitch.IsOn = s.OpenInNewWindow;
+        SingleClickCombo.ItemsSource = new List<string> { L.T("Do nothing"), L.T("Pause / resume"), L.T("Show / hide the controller") };
+        SingleClickCombo.SelectedIndex = (int)s.SingleClick;
         ResumeSwitch.IsOn = s.ResumePlayback;
         AutoLoadFolderSwitch.IsOn = s.AutoLoadFolder;
         HistorySwitch.IsOn = s.KeepHistory;
@@ -232,6 +234,7 @@ public sealed partial class Preferences : ContentDialog
         if (LanguageCombo.SelectedIndex >= 0) s.Language = L.Available[LanguageCombo.SelectedIndex].code;
         s.RememberVolume = RememberVolumeSwitch.IsOn;
         s.OpenInNewWindow = NewWindowSwitch.IsOn;
+        s.SingleClick = (SingleClickAction)Math.Max(0, SingleClickCombo.SelectedIndex);
         s.ResumePlayback = ResumeSwitch.IsOn;
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
         s.KeepHistory = HistorySwitch.IsOn;

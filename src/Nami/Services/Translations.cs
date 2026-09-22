@@ -287,6 +287,10 @@ internal static class Translations
         ["Small"] = "小",
         ["Normal"] = "標準",
         ["Large"] = "大",
+        ["Single click on the video"] = "動画をシングルクリックしたとき",
+        ["Do nothing"] = "何もしない",
+        ["Pause / resume"] = "再生 / 一時停止",
+        ["Show / hide the controller"] = "コントローラーを表示 / 非表示",
         ["Japanese"] = "日本語",
     };
 }

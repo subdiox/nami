@@ -18,7 +18,6 @@
 AppId={{7D1C4E0A-3B2F-4C9E-9E2B-6A1F0C2D5B77}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
@@ -35,7 +34,15 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 OutputDir=Output
-OutputBaseFilename={#AppName}-Setup-{#AppVersion}
+#if AppVersion == "0.0.0"
+  #define OutputName AppName + "-Setup-dev"
+  #define DisplayVersion "0.0.0 (dev)"
+#else
+  #define OutputName AppName + "-Setup-" + AppVersion
+  #define DisplayVersion AppVersion
+#endif
+OutputBaseFilename={#OutputName}
+AppVerName={#AppName} {#DisplayVersion}
 SetupIconFile=..\src\Nami\Assets\AppIcon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes

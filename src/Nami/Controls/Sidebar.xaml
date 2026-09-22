@@ -85,6 +85,11 @@
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Video track'}" />
                         <ListView x:Name="VideoTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="VideoTrackList_ItemClick" />
 
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='HDR output'}" />
+                        <ComboBox x:Name="HdrCombo" HorizontalAlignment="Stretch" SelectionChanged="HdrCombo_SelectionChanged" />
+                        <TextBlock x:Name="HdrInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock x:Name="DecoderInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,2,0,0" />
+
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Aspect ratio'}" />
                         <RadioButtons x:Name="AspectButtons" MaxColumns="6" SelectionChanged="AspectButtons_SelectionChanged" />
 
@@ -128,10 +133,6 @@
                         <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Gamma'}" /> <Slider x:Name="GammaSlider" Minimum="-100" Maximum="100" Tag="gamma" ValueChanged="EqSlider_ValueChanged" />
                         <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Hue'}" /> <Slider x:Name="HueSlider" Minimum="-100" Maximum="100" Tag="hue" ValueChanged="EqSlider_ValueChanged" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='HDR output'}" />
-                        <ComboBox x:Name="HdrCombo" HorizontalAlignment="Stretch" SelectionChanged="HdrCombo_SelectionChanged" />
-                        <TextBlock x:Name="HdrInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
-                        <TextBlock x:Name="DecoderInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,2,0,0" />
                     </StackPanel>
 
                     <!-- ===================== Audio ===================== -->
@@ -148,7 +149,13 @@
                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="130" StepFrequency="1" IsThumbToolTipEnabled="False" ValueChanged="VolumeSlider_ValueChanged" />
 
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Output device'}" />
-                        <ComboBox x:Name="AudioDeviceCombo" HorizontalAlignment="Stretch" DisplayMemberPath="Display" SelectionChanged="AudioDeviceCombo_SelectionChanged" />
+                        <ComboBox x:Name="AudioDeviceCombo" HorizontalAlignment="Stretch" SelectionChanged="AudioDeviceCombo_SelectionChanged">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="player:AudioDeviceInfo">
+                                    <TextBlock Text="{x:Bind Display}" TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
 
                         <Grid Margin="0,16,0,6">
                             <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Equalizer'}" Margin="0" />

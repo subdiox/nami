@@ -10,6 +10,8 @@ public enum OscLayout
     Top,
 }
 
+public enum SingleClickAction { None, PauseResume, ToggleOsc }
+
 public enum OsdPosition { TopLeft, TopRight, BottomLeft, BottomRight }
 public enum OsdScale { Small, Normal, Large }
 
@@ -51,6 +53,7 @@ public sealed class AppSettings
     public bool EqEnabled { get; set; }
     public string Language { get; set; } = "auto";
     public bool OpenInNewWindow { get; set; }
+    public SingleClickAction SingleClick { get; set; } = SingleClickAction.None;
     public OsdSettings Osd { get; set; } = new();
     public SubtitleStyle Subtitles { get; set; } = new();
 

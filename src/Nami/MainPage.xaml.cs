@@ -53,7 +53,14 @@ public sealed partial class MainPage : Page
         _clickTimer = DispatcherQueue.CreateTimer();
         _clickTimer.Interval = WindowInterop.DoubleClickTime;
         _clickTimer.IsRepeating = false;
-        _clickTimer.Tick += (_, _) => Vm.TogglePause();
+        _clickTimer.Tick += (_, _) =>
+        {
+            switch (Vm.Services.Settings.SingleClick)
+            {
+                case SingleClickAction.PauseResume: Vm.TogglePause(); break;
+                case SingleClickAction.ToggleOsc: if (_overlayVisible) HideOverlayNow(); else ShowOverlay(); break;
+            }
+        };
 
         Loaded += OnLoaded;
         Unloaded += (_, _) => Vm.PropertyChanged -= OnVmChanged;
@@ -173,6 +180,15 @@ public sealed partial class MainPage : Page
         _hideTimer.Start();
     }
 
+    private void HideOverlayNow()
+    {
+        if (!_overlayVisible) return;
+        _overlayVisible = false;
+        Fade(Osc, 0);
+        Fade(BottomShade, 0);
+        Window?.SetTitleOverlayVisible(false);
+    }
+
     private void TryHideOverlay()
     {
         if (_pointerOverControls || Vm.Paused || Vm.Idle || Vm.MusicMode) return;
@@ -278,7 +294,8 @@ public sealed partial class MainPage : Page
         if (_dragging || e.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Pen) return;
         if (Vm.Sidebar != SidebarKind.None && e.PointerDeviceType != Microsoft.UI.Input.PointerDeviceType.Mouse)
             return;
-        // Single click toggles pause, but only after the double-click window has passed.
+        // Single-click action (configurable; IINA does nothing by default), deferred past the double-click window.
+        if (Vm.Services.Settings.SingleClick == SingleClickAction.None) return;
         _clickTimer.Stop();
         _clickTimer.Start();
     }
