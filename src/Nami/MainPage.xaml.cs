@@ -383,16 +383,9 @@ public sealed partial class MainPage : Page
         {
             if (Math.Abs(p.X - _pressPoint.X) <= DragThreshold && Math.Abs(p.Y - _pressPoint.Y) <= DragThreshold) return;
             _clickTimer.Stop();
-            if (!w.IsCompact)
-            {
-                // Normal window: hand the drag to the system's move loop, exactly like dragging the
-                // title bar (Aero Snap at the screen edges, restore-from-maximized, Snap groups).
-                _leftDown = false;
-                w.BeginSystemMove();
-                return;
-            }
-            // Mini player: plain move, no snapping (a picture-in-picture window should not be snapped to half a screen).
             _dragging = true;
+            // Like a title-bar drag: a maximized window drops back to its normal size under the cursor.
+            if (w.IsMaximized) w.RestoreForDrag(WindowInterop.CursorPosition);
             _dragWindowOrigin = w.AppWindow.Position;
             _dragCursorOrigin = WindowInterop.CursorPosition;
             Root.CapturePointer(e.Pointer);
@@ -435,6 +428,8 @@ public sealed partial class MainPage : Page
         if (!_dragging) return;
         _dragging = false;
         if (pointer is not null) Root.ReleasePointerCapture(pointer);
+        // Dropped at a screen edge → snap, as a title-bar drag would.
+        Window?.SnapAfterDrag(WindowInterop.CursorPosition);
     }
 
     private void OnVideoTapped(object sender, TappedRoutedEventArgs e)

@@ -315,15 +315,50 @@ public sealed partial class MainWindow : Window
 
     public bool IsCompact => _compact;
 
-    /// <summary>
-    /// Start the system window-move loop from a client-area drag (what WPF's Window.DragMove does):
-    /// SC_MOVE with HTCAPTION makes Windows treat the drag as a caption drag, including Aero Snap.
-    /// </summary>
-    public void BeginSystemMove()
+    // ---- drag-to-move helpers (the page moves the window itself; these add the title-bar niceties) ----
+
+    /// <summary>Restore a maximized window so the grab point keeps its relative position (Windows does the same).</summary>
+    public void RestoreForDrag(System.Drawing.Point cursor)
     {
-        Windows.Win32.PInvoke.ReleaseCapture();
-        Windows.Win32.PInvoke.SendMessage((Windows.Win32.Foundation.HWND)Hwnd, Windows.Win32.PInvoke.WM_SYSCOMMAND,
-            new Windows.Win32.Foundation.WPARAM(Windows.Win32.PInvoke.SC_MOVE | Windows.Win32.PInvoke.HTCAPTION), default);
+        var maxPos = AppWindow.Position;
+        var maxSize = AppWindow.Size;
+        double fx = Math.Clamp((cursor.X - maxPos.X) / (double)Math.Max(1, maxSize.Width), 0, 1);
+        double fy = Math.Clamp((cursor.Y - maxPos.Y) / (double)Math.Max(1, maxSize.Height), 0, 1);
+        _presenter.Restore();
+        var size = AppWindow.Size;
+        AppWindow.Move(new PointInt32(cursor.X - (int)(fx * size.Width), cursor.Y - (int)(fy * size.Height)));
+    }
+
+    /// <summary>Aero Snap for our own drag: release at the top edge maximizes, at a side edge fills that half.</summary>
+    public void SnapAfterDrag(System.Drawing.Point cursor)
+    {
+        if (_compact || IsFullScreen || Vm.MusicMode) return;
+        var area = DisplayArea.GetFromPoint(new PointInt32(cursor.X, cursor.Y), DisplayAreaFallback.Nearest).WorkArea;
+        const int edge = 2;
+        bool left = cursor.X <= area.X + edge;
+        bool right = cursor.X >= area.X + area.Width - 1 - edge;
+        bool top = cursor.Y <= area.Y + edge;
+        if (top && !left && !right) { _presenter.Maximize(); return; }
+        if (!left && !right) return;
+
+        // Fill the half of the work area; extend by the frame's invisible borders so the visible edge is flush.
+        var (l, t, r, b) = InvisibleBorders();
+        int half = area.Width / 2;
+        var rect = left
+            ? new RectInt32(area.X - l, area.Y - t, half + l + r, area.Height + t + b)
+            : new RectInt32(area.X + area.Width - half - l, area.Y - t, half + l + r, area.Height + t + b);
+        AppWindow.MoveAndResize(rect);
+    }
+
+    /// <summary>Invisible resize-border insets (window rect minus the DWM visible frame).</summary>
+    private unsafe (int l, int t, int r, int b) InvisibleBorders()
+    {
+        Windows.Win32.Foundation.RECT win, frame;
+        var hwnd = (Windows.Win32.Foundation.HWND)Hwnd;
+        if (!Windows.Win32.PInvoke.GetWindowRect(hwnd, &win)) return (0, 0, 0, 0);
+        if (Windows.Win32.PInvoke.DwmGetWindowAttribute(hwnd, Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, &frame, (uint)sizeof(Windows.Win32.Foundation.RECT)).Failed)
+            return (0, 0, 0, 0);
+        return (frame.left - win.left, frame.top - win.top, win.right - frame.right, win.bottom - frame.bottom);
     }
 
     private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)Hwnd) / 96.0;
