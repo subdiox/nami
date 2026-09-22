@@ -41,7 +41,7 @@ public sealed class OsdController : IDisposable
         vm.PlaybackRestart += OnPlaybackRestart;
         vm.SeekStarted += () => _seekPending = true;
         vm.ClientMessage += OnClientMessage;
-        vm.ScreenshotSaved += path => Show(new OsdMessage(OsdMessage.IconScreenshot, L.T("Screenshot saved"), Path.GetFileName(path)));
+        vm.ScreenshotSaved += _ => Show(new OsdMessage(OsdMessage.IconScreenshot, L.T("Screenshot saved")));
         vm.OsdRequested += Show;
     }
 
@@ -71,14 +71,11 @@ public sealed class OsdController : IDisposable
         _chapter = _vm.Chapter; _abA = _vm.AbLoopA; _abB = _vm.AbLoopB; _zoom = _vm.VideoZoom;
         _armedAt = DateTime.UtcNow.AddMilliseconds(800);
         _seekPending = false;
-
-        if (_vm.FilePath != _lastFile)
-        {
-            _lastFile = _vm.FilePath;
-            string title = string.IsNullOrEmpty(_vm.MediaTitle) ? Path.GetFileName(_vm.FilePath ?? "") : _vm.MediaTitle;
-            Show(new OsdMessage(OsdMessage.IconFile, L.T("Now playing"), title, Seconds: 2));
-        }
+        _lastFile = _vm.FilePath;
     }
+
+    /// <summary>IINA-style one-liner: "Label: value".</summary>
+    private static string Line(string label, string value) => $"{label}: {value}";
 
     private void OnPlaybackRestart()
     {
@@ -87,8 +84,8 @@ public sealed class OsdController : IDisposable
         if (_suppressNextSeek) { _suppressNextSeek = false; return; }
         if (!Armed) return;
         double d = _vm.Duration;
-        Show(new OsdMessage(OsdMessage.IconForward, L.T("Seek"),
-            d > 0 ? $"{Fmt.Time(_vm.TimePos)} / {Fmt.Time(d)}" : Fmt.Time(_vm.TimePos),
+        Show(new OsdMessage(OsdMessage.IconForward,
+            d > 0 ? $"{Fmt.Time(_vm.TimePos)} / {Fmt.Time(d)}" : Fmt.Time(_vm.TimePos), null,
             d > 0 ? _vm.TimePos / d : null));
     }
 
@@ -145,13 +142,13 @@ public sealed class OsdController : IDisposable
                 break;
 
             case nameof(PlayerViewModel.Sid):
-                if (_vm.Sid != _sid) { _sid = _vm.Sid; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.T("Subtitle"), TrackName(_vm.SubTracks, _sid))); }
+                if (_vm.Sid != _sid) { _sid = _vm.Sid; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, Line(L.T("Subtitle"), TrackName(_vm.SubTracks, _sid)))); }
                 break;
             case nameof(PlayerViewModel.Aid):
-                if (_vm.Aid != _aid) { _aid = _vm.Aid; if (Armed) Show(new OsdMessage(OsdMessage.IconAudio, L.T("Audio track"), TrackName(_vm.AudioTracks, _aid))); }
+                if (_vm.Aid != _aid) { _aid = _vm.Aid; if (Armed) Show(new OsdMessage(OsdMessage.IconAudio, Line(L.T("Audio"), TrackName(_vm.AudioTracks, _aid)))); }
                 break;
             case nameof(PlayerViewModel.Vid):
-                if (_vm.Vid != _vid) { _vid = _vm.Vid; if (Armed) Show(new OsdMessage(OsdMessage.IconVideo, L.T("Video track"), TrackName(_vm.VideoTracks, _vid))); }
+                if (_vm.Vid != _vid) { _vid = _vm.Vid; if (Armed) Show(new OsdMessage(OsdMessage.IconVideo, Line(L.T("Video"), TrackName(_vm.VideoTracks, _vid)))); }
                 break;
 
             case nameof(PlayerViewModel.SubDelay):
@@ -171,13 +168,13 @@ public sealed class OsdController : IDisposable
                 if (_vm.Rotate != _rotate) { _rotate = _vm.Rotate; if (Armed) Show(new OsdMessage(OsdMessage.IconRotate, L.F("Rotate {0}°", _rotate))); }
                 break;
             case nameof(PlayerViewModel.Aspect):
-                if (_vm.Aspect != _aspect) { _aspect = _vm.Aspect; if (Armed) Show(new OsdMessage(OsdMessage.IconAspect, L.T("Aspect ratio"), _aspect is "no" or "-1" or "-1.000000" ? L.T("Auto") : _aspect)); }
+                if (_vm.Aspect != _aspect) { _aspect = _vm.Aspect; if (Armed) Show(new OsdMessage(OsdMessage.IconAspect, Line(L.T("Aspect ratio"), _aspect is "no" or "-1" or "-1.000000" ? L.T("Auto") : _aspect))); }
                 break;
             case nameof(PlayerViewModel.Crop):
-                if (_vm.Crop != _crop) { _crop = _vm.Crop; if (Armed) Show(new OsdMessage(OsdMessage.IconCrop, L.T("Crop"), _crop.Length == 0 ? L.T("None") : _crop)); }
+                if (_vm.Crop != _crop) { _crop = _vm.Crop; if (Armed) Show(new OsdMessage(OsdMessage.IconCrop, Line(L.T("Crop"), _crop.Length == 0 ? L.T("None") : _crop))); }
                 break;
             case nameof(PlayerViewModel.Deinterlace):
-                if (_vm.Deinterlace != _deinterlace) { _deinterlace = _vm.Deinterlace; if (Armed) Show(new OsdMessage(OsdMessage.IconVideo, L.T("Deinterlace"), L.T(_deinterlace ? "On" : "Off"))); }
+                if (_vm.Deinterlace != _deinterlace) { _deinterlace = _vm.Deinterlace; if (Armed) Show(new OsdMessage(OsdMessage.IconVideo, Line(L.T("Deinterlace"), L.T(_deinterlace ? "On" : "Off")))); }
                 break;
             case nameof(PlayerViewModel.VideoZoom):
                 if (Math.Abs(_vm.VideoZoom - _zoom) > 0.001) { _zoom = _vm.VideoZoom; if (Armed) Show(new OsdMessage(OsdMessage.IconZoom, L.F("Zoom {0}%", (int)Math.Round(Math.Pow(2, _zoom) * 100)))); }
@@ -190,15 +187,15 @@ public sealed class OsdController : IDisposable
             case nameof(PlayerViewModel.Hue): Eq(ref _hue, _vm.Hue, "Hue", OsdMessage.IconColor); break;
 
             case nameof(PlayerViewModel.Shuffle):
-                if (_vm.Shuffle != _shuffle) { _shuffle = _vm.Shuffle; if (Armed) Show(new OsdMessage(OsdMessage.IconShuffle, L.T("Shuffle"), L.T(_shuffle ? "On" : "Off"))); }
+                if (_vm.Shuffle != _shuffle) { _shuffle = _vm.Shuffle; if (Armed) Show(new OsdMessage(OsdMessage.IconShuffle, Line(L.T("Shuffle"), L.T(_shuffle ? "On" : "Off")))); }
                 break;
             case nameof(PlayerViewModel.LoopFile):
             case nameof(PlayerViewModel.LoopPlaylist):
                 if (_vm.LoopFile != _loopFile || _vm.LoopPlaylist != _loopPlaylist)
                 {
                     _loopFile = _vm.LoopFile; _loopPlaylist = _vm.LoopPlaylist;
-                    if (Armed) Show(new OsdMessage(_loopFile ? OsdMessage.IconLoopOne : OsdMessage.IconLoop, L.T("Repeat"),
-                        L.T(_loopFile ? "This file" : _loopPlaylist ? "Playlist" : "Off")));
+                    if (Armed) Show(new OsdMessage(_loopFile ? OsdMessage.IconLoopOne : OsdMessage.IconLoop,
+                        Line(L.T("Repeat"), L.T(_loopFile ? "This file" : _loopPlaylist ? "Playlist" : "Off"))));
                 }
                 break;
 
@@ -208,9 +205,9 @@ public sealed class OsdController : IDisposable
                 {
                     _abA = _vm.AbLoopA; _abB = _vm.AbLoopB;
                     if (!Armed) break;
-                    if (double.IsNaN(_abA) && double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, L.T("A-B loop"), L.T("Cleared")));
-                    else if (double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, L.T("A-B loop"), L.F("A: {0}", Fmt.Time(_abA))));
-                    else Show(new OsdMessage(OsdMessage.IconLoop, L.T("A-B loop"), $"{Fmt.Time(_abA)} – {Fmt.Time(_abB)}"));
+                    if (double.IsNaN(_abA) && double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), L.T("Cleared"))));
+                    else if (double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), L.F("A: {0}", Fmt.Time(_abA)))));
+                    else Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), $"{Fmt.Time(_abA)} – {Fmt.Time(_abB)}")));
                 }
                 break;
 
@@ -219,7 +216,7 @@ public sealed class OsdController : IDisposable
                 {
                     _chapter = _vm.Chapter;
                     if (Armed && _chapter >= 0 && _chapter < _vm.Chapters.Count)
-                        Show(new OsdMessage(OsdMessage.IconChapter, L.F("Chapter {0}", _chapter + 1), _vm.Chapters[(int)_chapter].Display));
+                        Show(new OsdMessage(OsdMessage.IconChapter, Line(L.T("Chapter"), _vm.Chapters[(int)_chapter].Display)));
                 }
                 break;
         }

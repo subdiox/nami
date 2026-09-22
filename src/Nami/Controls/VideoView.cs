@@ -56,6 +56,10 @@ public sealed partial class VideoView : SwapChainPanel
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
+        _commit = DispatcherQueue.CreateTimer();
+        _commit.Interval = TimeSpan.FromMilliseconds(40);
+        _commit.IsRepeating = false;
+
         _sync = DispatcherQueue.CreateTimer();
         _sync.Interval = TimeSpan.FromMilliseconds(8);
         _sync.IsRepeating = true;
@@ -70,9 +74,6 @@ public sealed partial class VideoView : SwapChainPanel
             }
         };
 
-        _commit = DispatcherQueue.CreateTimer();
-        _commit.Interval = TimeSpan.FromMilliseconds(40);
-        _commit.IsRepeating = false;
         _commit.Tick += (_, _) =>
         {
             double dpi = Dpi;
@@ -174,7 +175,7 @@ public sealed partial class VideoView : SwapChainPanel
         if (existing is > 0) OnSwapChainChanged((nint)existing.Value);
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
-        Vm?.Attach(player);
+        Vm.Attach(player);
         Vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PlayerViewModel.VideoSize)) { _fillOutput = false; ApplyKeepAspect(); } };
         ApplyKeepAspect();
         PlayerCreated?.Invoke(player);
