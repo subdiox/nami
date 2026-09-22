@@ -244,7 +244,7 @@ public sealed partial class MainWindow : Window
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (IsFullScreen) Vm.SetFullscreen(false);   // leave full screen first, then minimize normally
+        if (IsFullScreen) Vm.SetFullscreen(false);   // the full-screen presenter cannot minimize
         _presenter.Minimize();
     }
 
@@ -304,44 +304,20 @@ public sealed partial class MainWindow : Window
 
     // ---- fullscreen / compact -----------------------------------------------------------
 
-    private bool _fullscreen;
-    private RectInt32? _fsRestoreBounds;
-    private bool _fsWasMaximized;
-
-    public bool IsFullScreen => _fullscreen;
+    public bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
     public bool IsMaximized => _presenter.State == OverlappedPresenterState.Maximized;
 
-    /// <summary>
-    /// Full screen is a borderless window one pixel taller than the display, not the FullScreen
-    /// presenter. A window that covers the display exactly gets promoted by DWM to independent
-    /// flip / a hardware overlay plane; every time another overlay appears (the NVIDIA overlay,
-    /// notifications) DWM drops back to composition and the HUD flickers. Overshooting by a pixel
-    /// keeps the window on the normal composed path, where windowed playback already behaves.
-    /// </summary>
     private void ApplyFullscreen(bool on)
     {
         if (on == IsFullScreen) return;
         if (on)
         {
             if (_compact) ToggleCompactMode();
-            _fsWasMaximized = _presenter.State == OverlappedPresenterState.Maximized;
-            if (_fsWasMaximized) _presenter.Restore();
-            _fsRestoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
-            _fullscreen = true;
-            _presenter.SetBorderAndTitleBar(false, false);
-            _presenter.IsResizable = false;
-            _presenter.IsMaximizable = false;
-            var bounds = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).OuterBounds;
-            AppWindow.MoveAndResize(new RectInt32(bounds.X, bounds.Y, bounds.Width, bounds.Height + 1));
+            AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
         }
         else
         {
-            _fullscreen = false;
-            _presenter.SetBorderAndTitleBar(true, false);
-            _presenter.IsResizable = true;
-            _presenter.IsMaximizable = true;
-            if (_fsRestoreBounds is { } r) AppWindow.MoveAndResize(r);
-            if (_fsWasMaximized) _presenter.Maximize();
+            AppWindow.SetPresenter(_presenter);
         }
         // Caption buttons stay in full screen too (they fade with the HUD); the middle one exits full screen.
         SyncMaximizeGlyph();
