@@ -164,10 +164,10 @@ public sealed partial class MainWindow : Window
                 if (_aspectLock is not null) _aspectLock.Aspect = vs.Aspect;
                 if (vs.IsValid && _compact)
                 {
-                    // Mini player: keep the width, follow the new aspect (window == client, no borders).
-                    var size = AppWindow.Size;
-                    int h = (int)Math.Round(size.Width / vs.Aspect);
-                    if (Math.Abs(h - size.Height) > 1) AppWindow.Resize(new SizeInt32(size.Width, h));
+                    // Mini player: keep the width, follow the new aspect.
+                    var (cw, ch) = ClientPixelSize();
+                    int h = (int)Math.Round(cw / vs.Aspect);
+                    if (Math.Abs(h - ch) > 1) ResizeClientExact(cw, h);
                     break;
                 }
                 if (vs.IsValid && !_fitOnNextVideoSize && !IsFullScreen && !_compact && !Vm.MusicMode
@@ -253,7 +253,9 @@ public sealed partial class MainWindow : Window
         if (_compact)
         {
             _restoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
-            _presenter.SetBorderAndTitleBar(false, false);
+            // Keep the thin resize border: a fully borderless window (false, false) leaves a blank
+            // caption strip at the top once the content no longer extends into the title bar.
+            _presenter.SetBorderAndTitleBar(true, false);
             _presenter.IsAlwaysOnTop = true;
             _presenter.IsResizable = true;
             _presenter.IsMaximizable = false;
@@ -267,8 +269,10 @@ public sealed partial class MainWindow : Window
             int h = (int)Math.Round(w / aspect);
             int margin = (int)Math.Round(MiniMarginDip * Scale);
             var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
-            // Borderless: the window rectangle is the client rectangle, so this is exactly the video size.
-            AppWindow.MoveAndResize(new RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
+            // Size the client area (the video) exactly, then park the window bottom-right.
+            ResizeClientExact(w, h);
+            var ws = AppWindow.Size;
+            AppWindow.Move(new PointInt32(area.X + area.Width - ws.Width - margin, area.Y + area.Height - ws.Height - margin));
         }
         else
         {
