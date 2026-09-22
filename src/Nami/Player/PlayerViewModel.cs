@@ -149,13 +149,27 @@ public sealed partial class PlayerViewModel : ObservableObject
         OnPropertyChanged(nameof(IsAttached));
     }
 
+    /// <summary>
+    /// mpv's media-title is the file's "title" tag when there is one. Downloaders often stamp a
+    /// placeholder there ("na", "N/A", "unknown"…); fall back to the file name in that case.
+    /// </summary>
+    private static string CleanTitle(string? title, string? path)
+    {
+        string t = (title ?? "").Trim();
+        bool junk = t.Length == 0 || t is "na" or "NA" or "n/a" or "N/A" or "none" or "None" or "null" or "unknown" or "Unknown" or "untitled" or "Untitled" or "-";
+        if (!junk) return t;
+        if (string.IsNullOrEmpty(path)) return t;
+        if (path.Contains("://")) return path;
+        try { return Path.GetFileNameWithoutExtension(path); } catch { return t; }
+    }
+
     private void OnFileLoaded()
     {
         string? path = _player?.GetString("path");
         if (!string.IsNullOrEmpty(path))
         {
             if (Services.Settings.KeepHistory)
-                History.Touch(path, _player?.GetString("media-title") ?? "", _player?.GetDouble("duration") ?? 0);
+                History.Touch(path, CleanTitle(_player?.GetString("media-title"), path), _player?.GetDouble("duration") ?? 0);
             AutoLoadFolder(path);
         }
         FileLoaded?.Invoke();
@@ -244,8 +258,8 @@ public sealed partial class PlayerViewModel : ObservableObject
                 Muted = value is true;
                 break;
             case "speed": Speed = value as double? ?? 1; break;
-            case "media-title": MediaTitle = value as string ?? ""; break;
-            case "path": FilePath = value as string; break;
+            case "media-title": MediaTitle = CleanTitle(value as string, FilePath ?? _player?.GetString("path")); break;
+            case "path": FilePath = value as string; MediaTitle = CleanTitle(_player?.GetString("media-title"), FilePath); break;
             case "fullscreen": Fullscreen = value is true; break;
             case "ontop": OnTop = value is true; break;
             case "video-out-params":
