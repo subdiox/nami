@@ -32,9 +32,10 @@
             <!-- Drag region (also carries the centered title) -->
             <Border x:Name="DragRegion" Grid.Column="0" Background="Transparent" />
             <TextBlock x:Name="TitleText" Grid.ColumnSpan="3" Text="Nami" FontSize="13" Foreground="#F2FFFFFF" HorizontalAlignment="Center"
-                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="160,0" IsHitTestVisible="False" />
+                       VerticalAlignment="Top" Height="32" Padding="0,8,0,0" TextTrimming="CharacterEllipsis" Margin="160,0" IsHitTestVisible="False" />
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0">
+            <!-- Same 32px row as the system caption buttons, so the icons line up with minimize / maximize / close. -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top" Height="32" Margin="0,0,4,0">
                 <Button x:Name="PinButton" Style="{StaticResource OscButton}" Visibility="Collapsed" Click="PinButton_Click" ToolTipService.ToolTip="Turn off always on top" AutomationProperties.Name="Turn off always on top">
                     <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE718;" />
                 </Button>

@@ -34,7 +34,6 @@ public enum HdrMode
 public sealed class AppSettings
 {
     public double Volume { get; set; } = 100;
-    public bool Muted { get; set; }
     public HdrMode HdrMode { get; set; } = HdrMode.Auto;
     public bool RememberVolume { get; set; } = true;
     public bool ResizeWindowToVideo { get; set; } = true;

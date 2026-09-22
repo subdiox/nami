@@ -143,7 +143,6 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (s.RememberVolume && !cliVolume)
         {
             Try(() => player.SetProperty("volume", s.Volume));
-            Try(() => player.SetProperty("mute", s.Muted));
         }
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
@@ -243,7 +242,6 @@ public sealed partial class PlayerViewModel : ObservableObject
                 break;
             case "mute":
                 Muted = value is true;
-                PersistVolume();
                 break;
             case "speed": Speed = value as double? ?? 1; break;
             case "media-title": MediaTitle = value as string ?? ""; break;
@@ -323,9 +321,8 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         var s = Services.Settings;
         if (!s.RememberVolume) return;
-        if (Math.Abs(s.Volume - Volume) < 0.01 && s.Muted == Muted) return;
+        if (Math.Abs(s.Volume - Volume) < 0.01) return;
         s.Volume = Volume;
-        s.Muted = Muted;
         s.Save();
     }
 
