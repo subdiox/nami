@@ -66,6 +66,12 @@
                         <ToggleSwitch x:Name="HistorySwitch" Header="{l:Tr Text='Keep playback history'}" />
                         <ToggleSwitch x:Name="ThumbnailSwitch" Header="{l:Tr Text='Show thumbnails on the seek bar (generated in the background)'}" />
                         <ToggleSwitch x:Name="AutoMusicSwitch" Header="{l:Tr Text='Switch to music mode automatically for audio files'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Updates'}" />
+                        <ToggleSwitch x:Name="UpdateSwitch" Header="{l:Tr Text='Check for updates automatically (once a day)'}" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button x:Name="UpdateCheckButton" Content="{l:Tr Text='Check now'}" Click="UpdateCheck_Click" />
+                            <TextBlock x:Name="UpdateStatus" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" />
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- Interface -->

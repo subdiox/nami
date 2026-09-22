@@ -62,6 +62,8 @@ public sealed partial class Preferences : Window
         HistorySwitch.IsOn = s.KeepHistory;
         ThumbnailSwitch.IsOn = s.SeekThumbnails;
         AutoMusicSwitch.IsOn = s.AutoMusicMode;
+        UpdateSwitch.IsOn = s.CheckForUpdates;
+        UpdateStatus.Text = L.F("Version {0}", UpdateChecker.IsDevBuild ? "dev" : UpdateChecker.CurrentText);
         OscLayoutCombo.SelectedIndex = (int)s.OscLayout;
         TbSpeed.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.Speed);
         TbSettings.IsChecked = s.OscButtons.HasFlag(OscToolbarItems.Settings);
@@ -111,6 +113,18 @@ public sealed partial class Preferences : Window
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private async void UpdateCheck_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateCheckButton.IsEnabled = false;
+        UpdateStatus.Text = L.T("Checking…");
+        try
+        {
+            string? result = _vm.Window is { } w ? await w.Page.CheckForUpdatesAsync(manual: true) : null;
+            UpdateStatus.Text = result ?? "";
+        }
+        finally { UpdateCheckButton.IsEnabled = true; }
+    }
 
     private void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
     {
@@ -320,6 +334,7 @@ public sealed partial class Preferences : Window
         s.KeepHistory = HistorySwitch.IsOn;
         s.SeekThumbnails = ThumbnailSwitch.IsOn;
         s.AutoMusicMode = AutoMusicSwitch.IsOn;
+        s.CheckForUpdates = UpdateSwitch.IsOn;
         s.ScreenshotDirectory = _screenshotDir;
         s.ScreenshotFormat = ScreenshotFormatCombo.SelectedItem as string ?? "png";
         foreach (var shp in _vm.Services.Windows.Players)

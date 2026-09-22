@@ -46,6 +46,16 @@
 
         <controls:MiniOverlay x:Name="Mini" Visibility="Collapsed" />
 
+        <!-- Update notice (IINA: "a new version is available"), top right under the title bar -->
+        <InfoBar x:Name="UpdateBar" IsOpen="False" Severity="Informational" IsClosable="True" RequestedTheme="Dark"
+                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16,48,16,0" MaxWidth="460"
+                 Background="{StaticResource PanelBrush}" Closed="UpdateBar_Closed">
+            <InfoBar.ActionButton>
+                <Button x:Name="UpdateDownload" Click="UpdateDownload_Click" />
+            </InfoBar.ActionButton>
+            <HyperlinkButton x:Name="UpdateSkip" Click="UpdateSkip_Click" Padding="0" Margin="0,0,0,8" />
+        </InfoBar>
+
         <controls:Sidebar x:Name="Sidebar" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="Collapsed">
             <controls:Sidebar.RenderTransform>
                 <TranslateTransform x:Name="SidebarTransform" X="360" />

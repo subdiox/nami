@@ -73,6 +73,12 @@ public sealed partial class Osc : UserControl
         return item;
     }
 
+    private static async Task CheckUpdatesFromMenuAsync(MainPage page)
+    {
+        string? result = await page.CheckForUpdatesAsync(manual: true);
+        if (result is not null) page.Vm.ShowOsd(Player.OsdMessage.IconInfo, result);
+    }
+
     /// <summary>Secondary commands, where Windows apps keep them: a "…" menu on the command bar.</summary>
     private void MoreButton_Click(object sender, RoutedEventArgs e)
     {
@@ -88,6 +94,7 @@ public sealed partial class Osc : UserControl
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(Item(L("Media info…"), () => page?.ShowMediaInfo(), "Ctrl+I"));
         menu.Items.Add(Item(L("Key bindings…"), () => page?.ShowKeyBindings(), "Ctrl+Shift+K"));
+        menu.Items.Add(Item(L("Check for updates…"), () => { if (page is not null) _ = CheckUpdatesFromMenuAsync(page); }));
         menu.Items.Add(Item(L("Preferences…"), () => { if (Vm.Window is { } w) _ = w.ShowPreferencesAsync(); }, "Ctrl+,"));
         menu.Closed += (_, _) => page?.FocusVideo();
         ShowMenu(menu, MoreButton);

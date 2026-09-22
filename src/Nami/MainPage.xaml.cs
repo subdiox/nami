@@ -433,11 +433,73 @@ public sealed partial class MainPage : Page
         if (pointer is not null) Root.ReleasePointerCapture(pointer);
     }
 
+    // ---- updates ------------------------------------------------------------------------
+
+    private UpdateInfo? _pendingUpdate;
+
+    /// <summary>
+    /// Look up the newest release. Automatic checks run at most once a day, respect the setting
+    /// and the skipped version, and stay silent on failure; manual checks always report back.
+    /// </summary>
+    public async Task<string?> CheckForUpdatesAsync(bool manual)
+    {
+        var s = Vm.Services.Settings;
+        if (!manual)
+        {
+            if (!s.CheckForUpdates || (UpdateChecker.IsDevBuild && !UpdateChecker.TestMode)) return null;
+            if ((DateTime.UtcNow - s.LastUpdateCheckUtc) < TimeSpan.FromHours(20)) return null;
+        }
+        UpdateInfo? info;
+        try { info = await UpdateChecker.FetchLatestAsync(CancellationToken.None); }
+        catch (Exception ex)
+        {
+            App.Log("update check: " + ex.Message);
+            return manual ? L.F("Could not check for updates: {0}", ex.Message) : null;
+        }
+        s.LastUpdateCheckUtc = DateTime.UtcNow;
+        s.Save();
+        if (info is null || !UpdateChecker.IsNewer(info))
+            return manual ? L.F("You have the latest version ({0}).", UpdateChecker.CurrentText) : null;
+        if (!manual && s.SkippedUpdateVersion == info.Version.ToString(3)) return null;
+        ShowUpdate(info);
+        return L.F("Nami {0} is available.", info.Version.ToString(3));
+    }
+
+    private void ShowUpdate(UpdateInfo info)
+    {
+        _pendingUpdate = info;
+        UpdateBar.Title = L.F("Nami {0} is available", info.Version.ToString(3));
+        UpdateBar.Message = L.F("You are using {0}. Installed with winget? Run: winget upgrade {1}", UpdateChecker.CurrentText, UpdateChecker.WingetId);
+        UpdateDownload.Content = L.T("Download");
+        UpdateSkip.Content = L.T("Skip this version");
+        UpdateBar.IsOpen = true;
+        Window?.RequestRegionUpdate();
+    }
+
+    private async void UpdateDownload_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate is { } u) await Launcher.LaunchUriAsync(new Uri(u.Url));
+        UpdateBar.IsOpen = false;
+    }
+
+    private void UpdateSkip_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate is { } u)
+        {
+            Vm.Services.Settings.SkippedUpdateVersion = u.Version.ToString(3);
+            Vm.Services.Settings.Save();
+        }
+        UpdateBar.IsOpen = false;
+    }
+
+    private void UpdateBar_Closed(InfoBar sender, InfoBarClosedEventArgs args) => Window?.RequestRegionUpdate();
+
     /// <summary>HUD elements that must stay clickable (excluded from the caption region while visible).</summary>
     public IEnumerable<FrameworkElement> InteractiveOverlays()
     {
         foreach (var el in new FrameworkElement[] { Osc, Sidebar, Music, Mini })
             if (el.Visibility == Visibility.Visible && el.IsHitTestVisible && el.ActualWidth > 0) yield return el;
+        if (UpdateBar.IsOpen && UpdateBar.ActualWidth > 0) yield return UpdateBar;
         if (Osd.IsInteractive && Osd.ActualWidth > 0) yield return Osd;
     }
 

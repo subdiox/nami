@@ -103,6 +103,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     public event Action<string>? ScreenshotSaved;
     /// <summary>Explicit OSD requests from app code (the OSD controller renders them).</summary>
     public event Action<OsdMessage>? OsdRequested;
+    public void ShowOsd(string icon, string text) => OsdRequested?.Invoke(new OsdMessage(icon, text, Seconds: 3));
     public OsdController? Osd { get; set; }
     public event Action<string>? Error;
     public event Action? Shutdown;

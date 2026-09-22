@@ -69,6 +69,8 @@ public partial class App : Application
         window.Vm.FileLoaded += () => Log($"T+{Program.Uptime} ms file loaded: {window.Vm.FilePath}");
         window.Vm.PlaybackRestart += () => Log($"T+{Program.Uptime} ms first frame / playback started");
         HandleArguments(Environment.GetCommandLineArgs().Skip(1), window);
+        // Daily update check (silent unless a newer release exists); dev builds skip it.
+        window.DispatcherQueue.TryEnqueue(async () => { await Task.Delay(3000); await window.Page.CheckForUpdatesAsync(manual: false); });
     }
 
     /// <summary>Another instance was started (e.g. from Explorer) and redirected to us.</summary>

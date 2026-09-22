@@ -69,6 +69,11 @@ public sealed class AppSettings
     public bool OpenInNewWindow { get; set; }
     public SingleClickAction SingleClick { get; set; } = SingleClickAction.None;
     public OsdSettings Osd { get; set; } = new();
+    /// <summary>Look for a newer GitHub release once a day at startup.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+    /// <summary>A version the user chose to skip ("" = none).</summary>
+    public string SkippedUpdateVersion { get; set; } = "";
+    public DateTime LastUpdateCheckUtc { get; set; }
     public SubtitleStyle Subtitles { get; set; } = new();
 
     // NAMI_DATA_DIR overrides the settings / history / log folder (development instances).
