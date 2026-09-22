@@ -84,7 +84,8 @@ public sealed partial class MainWindow : Window
         Activated += (_, e) =>
         {
             App.Log($"window: {e.WindowActivationState}");
-            if (e.WindowActivationState == WindowActivationState.Deactivated) Main.SetCursorHidden(false);
+            Main.WindowActive = e.WindowActivationState != WindowActivationState.Deactivated;
+            if (!Main.WindowActive) Main.SetCursorHidden(false);
             else Main.FocusVideo();
         };
         AppWindow.Changed += OnAppWindowChanged;

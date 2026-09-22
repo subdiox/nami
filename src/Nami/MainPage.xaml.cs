@@ -156,16 +156,22 @@ public sealed partial class MainPage : Page
         FocusVideo();
     }
 
+    /// <summary>False while another window (preferences, another player) is the active one.</summary>
+    public bool WindowActive { get; set; } = true;
+
     /// <summary>Give keyboard focus back to the player (after dialogs, flyouts, window activation).</summary>
     public void FocusVideo()
     {
         if (!IsLoaded || XamlRoot is null) return;   // Activated fires before the page is loaded
+        // Never while another window is active: Focus() would activate this window and steal the
+        // keyboard from e.g. a text box in the preferences window.
+        if (!WindowActive) return;
         // Deferred: let XAML finish its own focus restoration (window activation, popup close) first,
         // then take focus only if it ended up nowhere. Interfering mid-transition can leave the XAML
         // focus and the Win32 keyboard focus disagreeing, which kills every key.
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!IsLoaded || XamlRoot is null) return;
+            if (!IsLoaded || XamlRoot is null || !WindowActive) return;
             var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
             if (focused is null || (!IsInside(focused, Sidebar) && focused is not TextBox and not NumberBox and not AutoSuggestBox))
                 Focus(FocusState.Programmatic);
