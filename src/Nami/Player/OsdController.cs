@@ -51,8 +51,6 @@ public sealed class OsdController : IDisposable
         _vm.PlaybackRestart -= OnPlaybackRestart;
     }
 
-    /// <summary>Slider scrubbing should not produce a seek OSD; the slider shows the time itself.</summary>
-
     private bool Armed => DateTime.UtcNow >= _armedAt && !_vm.Idle;
 
     private void Show(OsdMessage m) => _show(m);

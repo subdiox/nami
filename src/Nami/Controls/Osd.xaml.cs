@@ -53,8 +53,19 @@ public sealed partial class Osd : UserControl
         }
         else Bar.Visibility = Visibility.Collapsed;
 
-        Visibility = Visibility.Visible;
-        Fade(1, 90);
+        // Updating a visible message must not restart the fade-in: stopping the storyboard resets
+        // Opacity to its base value (0) for a frame, which reads as flicker while scrubbing.
+        if (Visibility == Visibility.Visible && Opacity >= 0.99)
+        {
+            _fade?.Stop();
+            _fade = null;
+            Opacity = 1;
+        }
+        else
+        {
+            Visibility = Visibility.Visible;
+            Fade(1, 90);
+        }
         _hideTimer.Stop();
         _hideTimer.Interval = TimeSpan.FromSeconds(Math.Max(0.3, m.Seconds ?? _settings.DurationSeconds));
         _hideTimer.Start();
