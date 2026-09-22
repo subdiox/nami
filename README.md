@@ -91,3 +91,7 @@ scope, and a fork of winget-pkgs). Once merged: `winget install subdiox.Nami`.
 
 mpv reads its configuration from `%LOCALAPPDATA%\Nami\mpv\` (`mpv.conf`, `input.conf`, `scripts\`, `yt-dlp.exe`).
 Logs are written next to it (`mpv.log`, `..\nami.log`).
+
+## License
+
+Nami is released under the [GNU General Public License v3.0](LICENSE). It bundles [libmpv](https://mpv.io/) (GPL) and uses the Windows App SDK (MIT).
