@@ -15,7 +15,6 @@ public sealed class OsdController : IDisposable
     private readonly Action<OsdMessage> _show;
     private DateTime _armedAt = DateTime.MaxValue;
     private bool _seekPending;
-    private bool _suppressNextSeek;
     private string? _lastFile;
 
     // previous values, to tell real changes from re-notifications
@@ -53,7 +52,6 @@ public sealed class OsdController : IDisposable
     }
 
     /// <summary>Slider scrubbing should not produce a seek OSD; the slider shows the time itself.</summary>
-    public void SuppressNextSeek() => _suppressNextSeek = true;
 
     private bool Armed => DateTime.UtcNow >= _armedAt && !_vm.Idle;
 
@@ -81,7 +79,6 @@ public sealed class OsdController : IDisposable
     {
         if (!_seekPending) return;
         _seekPending = false;
-        if (_suppressNextSeek) { _suppressNextSeek = false; return; }
         if (!Armed) return;
         double d = _vm.Duration;
         Show(new OsdMessage(OsdMessage.IconForward,

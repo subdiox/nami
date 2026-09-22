@@ -511,7 +511,8 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void SeekRelative(double seconds) => Run(p => p.Seek(seconds, relative: true));
     public void SeekAbsolute(double seconds, bool exact = false) => Run(p => p.Seek(seconds, relative: false, exact: exact));
     /// <summary>Seek from the slider: no seek OSD, the slider shows the time itself.</summary>
-    public void SeekFromSlider(double seconds, bool exact) { Osd?.SuppressNextSeek(); SeekAbsolute(seconds, exact); }
+    /// <summary>Seek from the seek bar / wheel; shows the time OSD like any other seek (IINA does too).</summary>
+    public void SeekFromSlider(double seconds, bool exact) => SeekAbsolute(seconds, exact);
     public void FrameStep() => Run(p => p.Command("frame-step"));
     public void FrameBackStep() => Run(p => p.Command("frame-back-step"));
     public void SetVolume(double v) => Run(p => p.SetProperty("volume", Math.Clamp(v, 0, 130)));
