@@ -72,6 +72,7 @@ public sealed partial class MainWindow : Window
         };
 
         Main.VideoView.PlayerCreated += _ => ApplyHdr();
+        Main.Loaded += (_, _) => Services.L.Localize(TitleOverlay);
         Interop.AspectRatioLock.Install(Hwnd);
         Closed += (_, _) => Interop.AspectRatioLock.Uninstall();
     }

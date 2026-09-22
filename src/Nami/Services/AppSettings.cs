@@ -39,6 +39,7 @@ public sealed class AppSettings
     public string ScreenshotFormat { get; set; } = "png";
     public double[] EqGains { get; set; } = new double[10];
     public bool EqEnabled { get; set; }
+    public string Language { get; set; } = "auto";
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =

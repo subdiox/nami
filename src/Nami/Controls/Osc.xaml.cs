@@ -78,6 +78,7 @@ public sealed partial class Osc : UserControl
         {
             Vm.PropertyChanged += OnVmChanged;
             SyncAll();
+            Services.L.Localize(this);
         };
         Unloaded += (_, _) => Vm.PropertyChanged -= OnVmChanged;
 

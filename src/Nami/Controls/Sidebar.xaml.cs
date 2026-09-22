@@ -33,6 +33,10 @@ public sealed partial class Sidebar : UserControl
         PlaylistList.ItemsSource = Vm.Playlist;
         ChapterList.ItemsSource = Vm.Chapters;
         HistoryList.ItemsSource = Vm.History.Entries;
+        AspectButtons.ItemsSource = new List<string> {L.T("自動"), "4:3", "16:9", "16:10", "21:9", "1:1"};
+        CropButtons.ItemsSource = new List<string> {L.T("なし"), "16:9", "4:3", "1:1", "2.35:1"};
+        RotateButtons.ItemsSource = new List<string> {"0°", "90°", "180°", "270°"};
+        HdrCombo.ItemsSource = new List<string> {L.T("自動（ディスプレイに従う）"), L.T("SDR にトーンマップ"), L.T("HDR パススルー")};
         AudioDeviceCombo.ItemsSource = Vm.AudioDevices;
         BuildEq();
 
@@ -43,6 +47,7 @@ public sealed partial class Sidebar : UserControl
             Vm.Chapters.CollectionChanged += OnListsChanged;
             Vm.History.Entries.CollectionChanged += OnListsChanged;
             SyncAll();
+            L.Localize(this);
         };
         Unloaded += (_, _) =>
         {
@@ -95,9 +100,9 @@ public sealed partial class Sidebar : UserControl
     {
         PlaylistEmptyText.Visibility = Vm.Playlist.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ChaptersEmptyText.Visibility = Vm.Chapters.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        PlaylistCountText.Text = Vm.Playlist.Count == 0 ? "" : $"{Vm.Playlist.Count} 項目";
+        PlaylistCountText.Text = Vm.Playlist.Count == 0 ? "" : L.F("{0} 項目", Vm.Playlist.Count);
         HistoryEmptyText.Visibility = Vm.History.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        HistoryCountText.Text = Vm.History.Entries.Count == 0 ? "" : $"{Vm.History.Entries.Count} 件";
+        HistoryCountText.Text = Vm.History.Entries.Count == 0 ? "" : L.F("{0} 件", Vm.History.Entries.Count);
     }
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
@@ -197,13 +202,13 @@ public sealed partial class Sidebar : UserControl
     private void RefreshHdrInfo()
     {
         var d = HdrController.LastDisplay;
-        string mode = HdrController.IsPassthroughActive ? "HDR10 パススルー" : "SDR";
+        string mode = HdrController.IsPassthroughActive ? L.T("HDR10 パススルー") : "SDR";
         HdrInfo.Text = d is null
-            ? $"出力: {mode}"
-            : $"出力: {mode} / ディスプレイ: {(d.IsHdr ? "HDR" : "SDR")} {d.BitsPerColor}bit, ピーク {d.MaxLuminance:0} nits, SDR 白 {d.SdrWhiteNits:0} nits";
+            ? L.F("出力: {0}", mode)
+            : L.F("出力: {0} / ディスプレイ: {1} {2}bit, ピーク {3:0} nits, SDR 白 {4:0} nits", mode, d.IsHdr ? "HDR" : "SDR", d.BitsPerColor, d.MaxLuminance, d.SdrWhiteNits);
         DecoderInfo.Text = string.IsNullOrEmpty(Vm.HwdecCurrent) || Vm.HwdecCurrent == "no"
-            ? "デコード: ソフトウェア"
-            : $"デコード: {Vm.HwdecCurrent}";
+            ? L.T("デコード: ソフトウェア")
+            : L.F("デコード: {0}", Vm.HwdecCurrent);
     }
 
     // ---- video -----------------------------------------------------------------------

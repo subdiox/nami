@@ -40,7 +40,7 @@ public sealed partial class OpenUrlDialog : ContentDialog
     {
         bool needs = YtDlp.LooksLikeStreamingSite(Url) && !YtDlp.IsInstalled;
         YtDlpPanel.Visibility = needs ? Visibility.Visible : Visibility.Collapsed;
-        if (needs) YtDlpText.Text = "このような URL の再生には yt-dlp が必要です。ダウンロードすると mpv が自動的に使います。";
+        if (needs) YtDlpText.Text = L.T("このような URL の再生には yt-dlp が必要です。ダウンロードすると mpv が自動的に使います。");
     }
 
     private async void YtDlpButton_Click(object sender, RoutedEventArgs e)
@@ -50,12 +50,12 @@ public sealed partial class OpenUrlDialog : ContentDialog
         try
         {
             await YtDlp.InstallOrUpdateAsync(new Progress<double>(v => YtDlpProgress.Value = v * 100), CancellationToken.None);
-            YtDlpText.Text = "yt-dlp を導入しました: " + await YtDlp.GetVersionAsync();
+            YtDlpText.Text = L.T("yt-dlp を導入しました: ") + await YtDlp.GetVersionAsync();
             YtDlpButton.Visibility = Visibility.Collapsed;
         }
         catch (Exception ex)
         {
-            YtDlpText.Text = "ダウンロードに失敗しました: " + ex.Message;
+            YtDlpText.Text = L.T("ダウンロードに失敗しました: ") + ex.Message;
             YtDlpButton.IsEnabled = true;
         }
         finally { YtDlpProgress.Visibility = Visibility.Collapsed; }

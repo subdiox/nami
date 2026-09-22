@@ -15,7 +15,7 @@ public sealed partial class MusicPanel : UserControl
     public MusicPanel()
     {
         InitializeComponent();
-        Loaded += (_, _) => { Vm.PropertyChanged += OnVmChanged; SyncAll(); };
+        Loaded += (_, _) => { Vm.PropertyChanged += OnVmChanged; SyncAll(); Services.L.Localize(this); };
         Unloaded += (_, _) => Vm.PropertyChanged -= OnVmChanged;
     }
 

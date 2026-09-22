@@ -40,7 +40,7 @@ public sealed partial class OnlineSubtitlesDialog : ContentDialog
         ApiKeyBox.Text = _apiKey;
         UserBox.Text = _user;
         SearchButton.IsEnabled = ok;
-        if (!ok) Status.Text = "API キーを保存すると検索できます。ダウンロードにはアカウントのログインも必要です。";
+        if (!ok) Status.Text = L.T("API キーを保存すると検索できます。ダウンロードにはアカウントのログインも必要です。");
     }
 
     private void SaveCredentials_Click(object sender, RoutedEventArgs e)
@@ -49,9 +49,9 @@ public sealed partial class OnlineSubtitlesDialog : ContentDialog
         {
             OpenSubtitles.SaveCredentials(ApiKeyBox.Text, UserBox.Text, PasswordBox.Password);
             LoadCredentials();
-            Status.Text = "保存しました。";
+            Status.Text = L.T("保存しました。");
         }
-        catch (Exception ex) { Status.Text = "保存に失敗しました: " + ex.Message; }
+        catch (Exception ex) { Status.Text = L.T("保存に失敗しました: ") + ex.Message; }
     }
 
     private void QueryBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -72,7 +72,7 @@ public sealed partial class OnlineSubtitlesDialog : ContentDialog
         {
             var list = await _client.SearchAsync(_apiKey, _filePath, QueryBox.Text.Trim(), LanguagesBox.Text.Trim(), _cts.Token);
             Results.ItemsSource = list;
-            Status.Text = list.Count == 0 ? "見つかりませんでした。" : $"{list.Count} 件（ハッシュ一致は上位に表示）";
+            Status.Text = list.Count == 0 ? L.T("見つかりませんでした。") : L.F("{0} 件（ハッシュ一致は上位に表示）", list.Count);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Status.Text = ex.Message; }
@@ -98,7 +98,7 @@ public sealed partial class OnlineSubtitlesDialog : ContentDialog
                 : "subtitle";
             string path = await _client.DownloadAsync(_apiKey, _user, _password, r, dir, baseName, _cts?.Token ?? CancellationToken.None);
             App.Vm.AddSubtitle(path);
-            Status.Text = "追加しました: " + path;
+            Status.Text = L.T("追加しました: ") + path;
             Hide();
         }
         catch (Exception ex) { Status.Text = ex.Message; }

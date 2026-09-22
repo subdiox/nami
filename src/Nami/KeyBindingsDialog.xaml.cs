@@ -12,7 +12,7 @@ public sealed class KeyBindingRow(string key, string command, bool user)
     public string Key { get; set; } = key;
     public string Command { get; set; } = command;
     public bool IsUser { get; } = user;
-    public string Source => IsUser ? "input.conf" : "mpv 既定";
+    public string Source => IsUser ? "input.conf" : L.T("mpv 既定");
 }
 
 /// <summary>

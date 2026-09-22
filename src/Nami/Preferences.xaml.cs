@@ -16,7 +16,13 @@ public sealed partial class Preferences : ContentDialog
     public Preferences()
     {
         InitializeComponent();
+        OscLayoutCombo.ItemsSource = new List<string> {L.T("フローティング（既定）"), L.T("下部バー"), L.T("上部バー")};
+        SubBorderStyleCombo.ItemsSource = new List<string> {L.T("縁取りと影"), L.T("不透明の箱"), L.T("背景の箱")};
+        SubAssOverrideCombo.ItemsSource = new List<string> {L.T("字幕ファイルのスタイルを使う"), L.T("この設定で上書きする（yes）"), L.T("サイズのみ合わせる（scale）"), L.T("強制的に上書き（force）"), L.T("装飾を取り除く（strip）")};
         var s = App.Settings;
+        LanguageCombo.ItemsSource = L.Available.Select(a => a.name).ToList();
+        int li = Array.FindIndex(L.Available, a => a.code == s.Language);
+        LanguageCombo.SelectedIndex = li < 0 ? 0 : li;
         ResizeSwitch.IsOn = s.ResizeWindowToVideo;
         RememberVolumeSwitch.IsOn = s.RememberVolume;
         ResumeSwitch.IsOn = s.ResumePlayback;
@@ -52,7 +58,7 @@ public sealed partial class Preferences : ContentDialog
     private async Task RefreshYtDlpStatusAsync()
     {
         string? v = await YtDlp.GetVersionAsync();
-        YtDlpStatus.Text = v is null ? "yt-dlp は未導入です（YouTube などのサイトを開くのに必要）" : $"yt-dlp {v}（{YtDlp.ExePath}）";
+        YtDlpStatus.Text = v is null ? L.T("yt-dlp は未導入です（YouTube などのサイトを開くのに必要）") : L.F("yt-dlp {0}（{1}）", v, YtDlp.ExePath);
     }
 
     private async void YtDlpInstall_Click(object sender, RoutedEventArgs e)
@@ -64,7 +70,7 @@ public sealed partial class Preferences : ContentDialog
             await YtDlp.InstallOrUpdateAsync(new Progress<double>(v => YtDlpProgress.Value = v * 100), CancellationToken.None);
             await RefreshYtDlpStatusAsync();
         }
-        catch (Exception ex) { YtDlpStatus.Text = "ダウンロードに失敗しました: " + ex.Message; }
+        catch (Exception ex) { YtDlpStatus.Text = L.T("ダウンロードに失敗しました: ") + ex.Message; }
         finally
         {
             YtDlpProgress.Visibility = Visibility.Collapsed;
@@ -81,9 +87,9 @@ public sealed partial class Preferences : ContentDialog
     private void LoadSubtitleStyle(SubtitleStyle st)
     {
         var fonts = SubtitleStyle.SystemFonts();
-        fonts.Insert(0, "(既定)");
+        fonts.Insert(0, L.T("(既定)"));
         SubFontCombo.ItemsSource = fonts;
-        SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? "(既定)" : st.Font;
+        SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? L.T("(既定)") : st.Font;
         SubSizeSlider.Value = st.Size;
         SubBoldCheck.IsChecked = st.Bold;
         SubItalicCheck.IsChecked = st.Italic;
@@ -141,7 +147,7 @@ public sealed partial class Preferences : ContentDialog
         string font = SubFontCombo.Text?.Trim() ?? "";
         return new SubtitleStyle
         {
-            Font = font == "(既定)" ? "" : font,
+            Font = font == L.T("(既定)") ? "" : font,
             Size = Math.Round(SubSizeSlider.Value),
             Bold = SubBoldCheck.IsChecked == true,
             Italic = SubItalicCheck.IsChecked == true,
@@ -167,7 +173,7 @@ public sealed partial class Preferences : ContentDialog
     private void UpdateAssocStatus()
     {
         bool reg = FileAssociation.IsRegistered;
-        AssocStatus.Text = reg ? "状態: 登録済み" : "状態: 未登録";
+        AssocStatus.Text = reg ? L.T("状態: 登録済み") : L.T("状態: 未登録");
         RegisterButton.IsEnabled = !reg;
         UnregisterButton.IsEnabled = reg;
     }
@@ -175,14 +181,14 @@ public sealed partial class Preferences : ContentDialog
     private void Register_Click(object sender, RoutedEventArgs e)
     {
         try { FileAssociation.Register(); }
-        catch (Exception ex) { AssocStatus.Text = "登録に失敗しました: " + ex.Message; return; }
+        catch (Exception ex) { AssocStatus.Text = L.T("登録に失敗しました: ") + ex.Message; return; }
         UpdateAssocStatus();
     }
 
     private void Unregister_Click(object sender, RoutedEventArgs e)
     {
         try { FileAssociation.Unregister(); }
-        catch (Exception ex) { AssocStatus.Text = "解除に失敗しました: " + ex.Message; return; }
+        catch (Exception ex) { AssocStatus.Text = L.T("解除に失敗しました: ") + ex.Message; return; }
         UpdateAssocStatus();
     }
 
@@ -205,6 +211,7 @@ public sealed partial class Preferences : ContentDialog
     {
         var s = App.Settings;
         s.ResizeWindowToVideo = ResizeSwitch.IsOn;
+        if (LanguageCombo.SelectedIndex >= 0) s.Language = L.Available[LanguageCombo.SelectedIndex].code;
         s.RememberVolume = RememberVolumeSwitch.IsOn;
         s.ResumePlayback = ResumeSwitch.IsOn;
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;

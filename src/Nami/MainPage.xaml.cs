@@ -80,7 +80,7 @@ public sealed partial class MainPage : Page
     {
         Focus(FocusState.Programmatic);
         Vm.PropertyChanged += OnVmChanged;
-        Vm.Error += msg => Vm.ShowText("エラー: " + msg, 4000);
+        Vm.Error += msg => Vm.ShowText(L.T("エラー: ") + msg, 4000);
         UpdateEmptyState();
         RestartHideTimer();
     }
@@ -314,35 +314,35 @@ public sealed partial class MainPage : Page
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
         var menu = new MenuFlyout();
-        menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? "再生" : "一時停止", Command = new Cmd(Vm.TogglePause) });
+        menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? L.T("再生") : L.T("一時停止"), Command = new Cmd(Vm.TogglePause) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = "ファイルを開く…", Command = new Cmd(OpenFiles) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "URL を開く…", Command = new Cmd(() => _ = OpenUrlAsync()) });
-        var recent = new MenuFlyoutSubItem { Text = "最近使ったファイル" };
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("ファイルを開く…"), Command = new Cmd(OpenFiles) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("URL を開く…"), Command = new Cmd(() => _ = OpenUrlAsync()) });
+        var recent = new MenuFlyoutSubItem { Text = L.T("最近使ったファイル") };
         foreach (var h in Vm.History.Entries.Take(12))
             recent.Items.Add(new MenuFlyoutItem { Text = h.Display, Command = new Cmd(() => Vm.Open(h.Path)) });
         recent.IsEnabled = recent.Items.Count > 0;
         menu.Items.Add(recent);
-        menu.Items.Add(new MenuFlyoutItem { Text = "字幕ファイルを追加…", Command = new Cmd(async () =>
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("字幕ファイルを追加…"), Command = new Cmd(async () =>
         {
             var f = await Controls.Sidebar.PickFilesAsync([".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
         }) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = "クイック設定", Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Settings)) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "プレイリスト", Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Playlist)) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("クイック設定"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Settings)) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("プレイリスト"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Playlist)) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new ToggleMenuFlyoutItem { Text = "全画面", IsChecked = Vm.Fullscreen, Command = new Cmd(Vm.ToggleFullscreen) });
-        menu.Items.Add(new ToggleMenuFlyoutItem { Text = "常に手前に表示", IsChecked = Vm.OnTop, Command = new Cmd(Vm.ToggleOnTop) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "ミニプレイヤー", Command = new Cmd(() => App.Window?.ToggleCompactMode()) });
+        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("全画面"), IsChecked = Vm.Fullscreen, Command = new Cmd(Vm.ToggleFullscreen) });
+        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("常に手前に表示"), IsChecked = Vm.OnTop, Command = new Cmd(Vm.ToggleOnTop) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("ミニプレイヤー"), Command = new Cmd(() => App.Window?.ToggleCompactMode()) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = "スクリーンショット", Command = new Cmd(Vm.Screenshot) });
-        menu.Items.Add(new MenuFlyoutItem { Text = double.IsNaN(Vm.AbLoopA) ? "A-B ループ: A 点を設定" : double.IsNaN(Vm.AbLoopB) ? "A-B ループ: B 点を設定" : "A-B ループを解除", Command = new Cmd(Vm.CycleAbLoop) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "コマ送り", Command = new Cmd(Vm.FrameStep) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "コマ戻し", Command = new Cmd(Vm.FrameBackStep) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "メディア情報…", Command = new Cmd(() => _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "キー操作…", Command = new Cmd(() => _ = new KeyBindingsDialog { XamlRoot = XamlRoot }.ShowAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "環境設定…", Command = new Cmd(() => App.Window?.ShowPreferencesAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("スクリーンショット"), Command = new Cmd(Vm.Screenshot) });
+        menu.Items.Add(new MenuFlyoutItem { Text = double.IsNaN(Vm.AbLoopA) ? L.T("A-B ループ: A 点を設定") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B ループ: B 点を設定") : L.T("A-B ループを解除"), Command = new Cmd(Vm.CycleAbLoop) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("コマ送り"), Command = new Cmd(Vm.FrameStep) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("コマ戻し"), Command = new Cmd(Vm.FrameBackStep) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("メディア情報…"), Command = new Cmd(() => _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("キー操作…"), Command = new Cmd(() => _ = new KeyBindingsDialog { XamlRoot = XamlRoot }.ShowAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("環境設定…"), Command = new Cmd(() => App.Window?.ShowPreferencesAsync()) });
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
     }
@@ -417,7 +417,7 @@ public sealed partial class MainPage : Page
         e.AcceptedOperation = e.DataView.Contains(StandardDataFormats.StorageItems) || e.DataView.Contains(StandardDataFormats.Text)
             ? DataPackageOperation.Copy
             : DataPackageOperation.None;
-        e.DragUIOverride.Caption = "Nami で再生";
+        e.DragUIOverride.Caption = L.T("Nami で再生");
     }
 
     private async void OnDrop(object sender, DragEventArgs e)
