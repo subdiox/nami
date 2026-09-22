@@ -26,12 +26,40 @@ public sealed partial class VideoView : SwapChainPanel
     /// <summary>Raised on the UI thread once the mpv core exists.</summary>
     public event Action<MpvPlayer>? PlayerCreated;
 
+    // Live-resize handling (see ApplyTransform / RequestSize):
+    //  - the swapchain transform is updated on every layout change so the frame already on screen
+    //    is stretched to the new panel size instead of leaving bands / jumping;
+    //  - buffer resizes (mpv: d3d11-composition-size → ResizeBuffers + redraw) are throttled, the
+    //    last requested size always wins;
+    //  - after a request, the transform is re-evaluated each tick until the buffer matches.
+    private static readonly TimeSpan ResizeThrottle = TimeSpan.FromMilliseconds(40);
+    private readonly DispatcherQueueTimer _throttle;
+    private readonly DispatcherQueueTimer _sync;
+    private (int w, int h) _wanted;
+    private bool _sizeDirty;
+    private DateTime _syncDeadline;
+
     public VideoView()
     {
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        SizeChanged += (_, _) => PushSize();
-        CompositionScaleChanged += (_, _) => { PushSize(); ApplyScale(); };
+        SizeChanged += (_, _) => { ApplyTransform(); RequestSize(); };
+        CompositionScaleChanged += (_, _) => { ApplyTransform(); RequestSize(); };
+
+        _throttle = DispatcherQueue.CreateTimer();
+        _throttle.Interval = ResizeThrottle;
+        _throttle.IsRepeating = false;
+        _throttle.Tick += (_, _) => { if (_sizeDirty) { _sizeDirty = false; PushSize(); _throttle.Start(); } };
+
+        _sync = DispatcherQueue.CreateTimer();
+        _sync.Interval = TimeSpan.FromMilliseconds(8);
+        _sync.IsRepeating = true;
+        _sync.Tick += (_, _) =>
+        {
+            ApplyTransform();
+            var (bw, bh) = SwapChainPanelInterop.GetBufferSize(_swapChain);
+            if ((bw == _wanted.w && bh == _wanted.h) || DateTime.UtcNow > _syncDeadline) _sync.Stop();
+        };
     }
 
     /// <summary>Run <paramref name="action"/> now if the player exists, otherwise as soon as it does.</summary>
@@ -99,7 +127,7 @@ public sealed partial class VideoView : SwapChainPanel
         if (swapChain == _swapChain) return;
         _swapChain = swapChain;
         SwapChainPanelInterop.SetSwapChain(this, swapChain);
-        ApplyScale();
+        ApplyTransform();
     }
 
     private (int w, int h) PixelSize()
@@ -109,16 +137,31 @@ public sealed partial class VideoView : SwapChainPanel
         return (Math.Max(1, w), Math.Max(1, h));
     }
 
+    /// <summary>Ask mpv for the current panel size, at most once per throttle window (last size wins).</summary>
+    private void RequestSize()
+    {
+        if (_player is null) return;
+        _wanted = PixelSize();
+        if (_throttle.IsRunning) { _sizeDirty = true; return; }
+        PushSize();
+        _throttle.Start();
+    }
+
     private void PushSize()
     {
         if (_player is null) return;
-        var (w, h) = PixelSize();
-        _player.SetOutputSize(w, h);
+        _wanted = PixelSize();
+        _player.SetOutputSize(_wanted.w, _wanted.h);
+        _syncDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(1);
+        if (!_sync.IsRunning) _sync.Start();
     }
 
-    private void ApplyScale()
+    /// <summary>Map the buffer onto the panel (DPI inverse once sizes match, a stretch while they do not).</summary>
+    private void ApplyTransform()
     {
-        if (_swapChain == 0) return;
-        SwapChainPanelInterop.SetCompositionScale(_swapChain, CompositionScaleX, CompositionScaleY);
+        if (_swapChain == 0 || ActualWidth <= 0 || ActualHeight <= 0) return;
+        var (bw, bh) = SwapChainPanelInterop.GetBufferSize(_swapChain);
+        if (bw <= 0 || bh <= 0) { SwapChainPanelInterop.SetTransform(_swapChain, 1f / CompositionScaleX, 1f / CompositionScaleY); return; }
+        SwapChainPanelInterop.SetTransform(_swapChain, (float)(ActualWidth / bw), (float)(ActualHeight / bh));
     }
 }

@@ -77,3 +77,4 @@ SetCursor
 ScreenToClient
 SendMessage
 GetWindowThreadProcessId
+DXGI_SWAP_CHAIN_DESC1
