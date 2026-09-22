@@ -75,7 +75,11 @@ public sealed partial class MainWindow : Window
             }
         };
         Vm.Shutdown += Close;
-        Activated += (_, e) => { if (e.WindowActivationState != WindowActivationState.Deactivated) Main.FocusVideo(); };
+        Activated += (_, e) =>
+        {
+            if (e.WindowActivationState == WindowActivationState.Deactivated) Main.SetCursorHidden(false);
+            else Main.FocusVideo();
+        };
         AppWindow.Changed += OnAppWindowChanged;
         Closed += (_, _) =>
         {

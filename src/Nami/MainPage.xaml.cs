@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,26 +18,27 @@ namespace Nami;
 public sealed partial class MainPage : Page
 {
     public PlayerViewModel Vm { get; }
-    private static readonly InputCursor? HiddenCursor = CreateHiddenCursor();
-    private static readonly InputCursor ArrowCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-
-    private static InputCursor? CreateHiddenCursor()
-    {
-        // A "custom" cursor with resource id 0 is the documented way to get a blank cursor.
-        try { return InputCursor.CreateFromCoreCursor(new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Custom, 0)); }
-        catch (Exception ex) { App.Log("hidden cursor unavailable: " + ex.Message); return null; }
-    }
-
-    private bool _cursorHidden;
+    private CursorHider? _cursorHider;
 
     /// <summary>Hide / show the mouse cursor over the player (IINA hides it together with the HUD).</summary>
-    private void SetCursorHidden(bool hide)
+    public void SetCursorHidden(bool hide)
     {
-        if (_cursorHidden == hide) return;
-        _cursorHidden = hide;
-        ProtectedCursor = hide && HiddenCursor is not null ? HiddenCursor : ArrowCursor;
-        // ProtectedCursor is applied on the next pointer update; hide right now as well.
-        if (hide) Windows.Win32.PInvoke.SetCursor(default);
+        if (hide)
+        {
+            if (!IsCursorOverPlayer() || Window is not { } w) return;
+            _cursorHider ??= new CursorHider(w.Hwnd);
+            _cursorHider.Hide();
+        }
+        else _cursorHider?.Show();
+    }
+
+    private bool IsCursorOverPlayer()
+    {
+        if (Window is not { } w) return false;
+        var pos = WindowInterop.CursorPosition;
+        var under = Windows.Win32.PInvoke.WindowFromPoint(pos);
+        return under != default
+            && Windows.Win32.PInvoke.GetAncestor(under, Windows.Win32.UI.WindowsAndMessaging.GET_ANCESTOR_FLAGS.GA_ROOT) == (Windows.Win32.Foundation.HWND)w.Hwnd;
     }
     public Controls.VideoView VideoView => Video;
     private MainWindow? Window => Vm.Window;
@@ -86,7 +86,7 @@ public sealed partial class MainPage : Page
         };
 
         Loaded += OnLoaded;
-        Unloaded += (_, _) => Vm.PropertyChanged -= OnVmChanged;
+        Unloaded += (_, _) => { Vm.PropertyChanged -= OnVmChanged; _cursorHider?.Dispose(); _cursorHider = null; };
 
         // Pointer input on the video surface
         Root.PointerMoved += OnPointerMoved;
