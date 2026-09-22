@@ -34,7 +34,7 @@ RemoveWindowSubclass
 SHChangeNotify
 SetEvent
 SetWindowSubclass
-ShowCursor
+SetCursor
 ToUnicode
 WMSZ_BOTTOM
 WMSZ_BOTTOMLEFT

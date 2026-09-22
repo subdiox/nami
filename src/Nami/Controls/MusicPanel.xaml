@@ -34,7 +34,7 @@
                 </StackPanel>
             </Grid>
 
-            <Slider x:Name="SeekSlider" Grid.Row="1" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.001" ValueChanged="SeekSlider_ValueChanged" />
+            <Slider x:Name="SeekSlider" Grid.Row="1" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.000001" ValueChanged="SeekSlider_ValueChanged" />
 
             <Grid Grid.Row="2">
                 <TextBlock x:Name="TimeText" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" HorizontalAlignment="Left" />

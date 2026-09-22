@@ -43,7 +43,7 @@
             <FontIcon x:Name="PlayIcon" Style="{StaticResource OscIcon}" FontSize="26" Glyph="&#xE768;" />
         </Button>
 
-        <Slider x:Name="SeekSlider" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.001"
+        <Slider x:Name="SeekSlider" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.000001"
                 VerticalAlignment="Bottom" Margin="12,0,12,4" ValueChanged="SeekSlider_ValueChanged" />
     </Grid>
 </UserControl>

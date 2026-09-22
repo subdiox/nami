@@ -11,7 +11,8 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- IINA-like translucent dark panels -->
-            <AcrylicBrush x:Key="PanelBrush" TintColor="#1C1C1E" TintOpacity="0.55" TintLuminosityOpacity="0.75" FallbackColor="#E61C1C1E" />
+            <!-- Translucent solid: in-app acrylic cannot sample the video swapchain and flickers white in fullscreen. -->
+            <SolidColorBrush x:Key="PanelBrush" Color="#D91C1C1E" />
             <SolidColorBrush x:Key="PanelBorderBrush" Color="#2EFFFFFF" />
             <SolidColorBrush x:Key="OverlayTextBrush" Color="#F2FFFFFF" />
             <SolidColorBrush x:Key="OverlaySubtleTextBrush" Color="#99FFFFFF" />

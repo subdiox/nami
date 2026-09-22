@@ -96,6 +96,17 @@ public sealed partial class Osc : UserControl
         SeekSlider.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrubbing = true), true);
         SeekSlider.AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => { _scrubbing = false; SyncTime(); }), true);
         SeekSlider.AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => { _scrubbing = false; SyncTime(); }), true);
+        // Wheel over the seek bar nudges by one second (Shift: 0.1 s, exact) for adjustments finer than a pixel.
+        SeekSlider.PointerWheelChanged += (_, e) =>
+        {
+            if (Vm.Duration <= 0) return;
+            int notches = e.GetCurrentPoint(SeekSlider).Properties.MouseWheelDelta / 120;
+            if (notches == 0) return;
+            bool shift = e.KeyModifiers.HasFlag(Windows.System.VirtualKeyModifiers.Shift);
+            double step = shift ? 0.1 : 1.0;
+            Vm.SeekFromSlider(Math.Clamp(Vm.TimePos + notches * step, 0, Vm.Duration), exact: true);
+            e.Handled = true;
+        };
     }
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)

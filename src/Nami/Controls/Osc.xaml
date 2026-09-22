@@ -84,7 +84,7 @@
                     <TextBlock x:Name="TimeText" Grid.Column="0" Text="00:00" FontSize="12" Foreground="{StaticResource OverlayTextBrush}"
                                VerticalAlignment="Center" MinWidth="40" TextAlignment="Right" FontFamily="Segoe UI Variable Text" />
                     <Grid x:Name="SeekHost" Grid.Column="1">
-                        <Slider x:Name="SeekSlider" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.001"
+                        <Slider x:Name="SeekSlider" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.000001"
                                 VerticalAlignment="Center" ValueChanged="SeekSlider_ValueChanged"
                                 PointerMoved="SeekSlider_PointerMoved" PointerExited="SeekSlider_PointerExited" />
                         <!-- A-B loop markers -->

@@ -19,7 +19,6 @@ namespace Nami;
 public sealed partial class MainPage : Page
 {
     public PlayerViewModel Vm { get; }
-    private readonly CursorVisibility _cursor = new();
     private static readonly InputCursor? HiddenCursor = CreateHiddenCursor();
     private static readonly InputCursor ArrowCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
 
@@ -37,8 +36,9 @@ public sealed partial class MainPage : Page
     {
         if (_cursorHidden == hide) return;
         _cursorHidden = hide;
-        if (HiddenCursor is not null) ProtectedCursor = hide ? HiddenCursor : ArrowCursor;
-        if (hide) _cursor.Hide(); else _cursor.Show();
+        ProtectedCursor = hide && HiddenCursor is not null ? HiddenCursor : ArrowCursor;
+        // ProtectedCursor is applied on the next pointer update; hide right now as well.
+        if (hide) Windows.Win32.PInvoke.SetCursor(default);
     }
     public Controls.VideoView VideoView => Video;
     private MainWindow? Window => Vm.Window;
@@ -48,7 +48,6 @@ public sealed partial class MainPage : Page
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _clickTimer;
     private bool _overlayVisible = true;
     private bool _pointerOverControls;
-    private bool _pointerInside;
 
     // drag-to-move state
     private Windows.Foundation.Point _pressPoint;
@@ -93,10 +92,9 @@ public sealed partial class MainPage : Page
         Root.PointerMoved += OnPointerMoved;
         Root.PointerPressed += OnPointerPressed;
         Root.PointerReleased += OnPointerReleased;
-        Root.PointerExited += (_, _) => { _pointerInside = false; if (!_dragging) _leftDown = false; };
+        Root.PointerExited += (_, _) => { if (!_dragging) _leftDown = false; };
         Root.PointerCaptureLost += (_, e) => EndDrag(e.Pointer);
         Root.PointerCanceled += (_, e) => EndDrag(e.Pointer);
-        Root.PointerEntered += (_, _) => _pointerInside = true;
         Root.PointerWheelChanged += OnPointerWheel;
         Root.RightTapped += OnRightTapped;
         Surface.Tapped += OnVideoTapped;
@@ -270,7 +268,7 @@ public sealed partial class MainPage : Page
         Fade(BottomShade, 0);
         Fade(Mini, 0);
         Window?.SetTitleOverlayVisible(false);
-        if (_pointerInside) SetCursorHidden(true);
+        SetCursorHidden(true);
     }
 
     internal static void Fade(UIElement element, double to)
@@ -330,7 +328,6 @@ public sealed partial class MainPage : Page
 
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        _pointerInside = true;
         ShowOverlay();
 
         if (!_leftDown || Vm.Fullscreen || Window is not { } w) return;
