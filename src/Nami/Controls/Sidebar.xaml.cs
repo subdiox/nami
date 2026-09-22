@@ -28,6 +28,11 @@ public sealed partial class Sidebar : UserControl
     {
         InitializeComponent();
         BuildEq();
+        // List<object>: a List<string> projects as IVector<string>, which XAML cannot enumerate as items.
+        AspectButtons.ItemsSource = new List<object> { L.T("Auto"), "4:3", "16:9", "16:10", "21:9", "1:1" };
+        CropButtons.ItemsSource = new List<object> { L.T("None"), "16:9", "4:3", "1:1", "2.35:1" };
+        RotateButtons.ItemsSource = new List<object> { "0°", "90°", "180°", "270°" };
+        HdrCombo.ItemsSource = new List<object> { L.T("Auto (follow the display)"), L.T("Tone-map to SDR"), L.T("HDR passthrough") };
     }
 
     /// <summary>Attach the sidebar to its window's player (called once by MainPage).</summary>
@@ -50,6 +55,7 @@ public sealed partial class Sidebar : UserControl
             Vm.Playlist.CollectionChanged += OnListsChanged;
             Vm.Chapters.CollectionChanged += OnListsChanged;
             Vm.History.Entries.CollectionChanged += OnListsChanged;
+            Vm.AudioDevices.CollectionChanged += OnAudioDevicesChanged;
             SyncAll();
             L.Localize(this);
         };
@@ -59,6 +65,7 @@ public sealed partial class Sidebar : UserControl
             Vm.Playlist.CollectionChanged -= OnListsChanged;
             Vm.Chapters.CollectionChanged -= OnListsChanged;
             Vm.History.Entries.CollectionChanged -= OnListsChanged;
+            Vm.AudioDevices.CollectionChanged -= OnAudioDevicesChanged;
         };
     }
 
@@ -99,6 +106,15 @@ public sealed partial class Sidebar : UserControl
     }
 
     // ---- sync from view model ---------------------------------------------------------
+
+    private void OnAudioDevicesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // The device list arrives after the first sync; re-select the current device once it exists.
+        App.Log($"audio devices: {Vm.AudioDevices.Count}, current={Vm.AudioDevice}");
+        _syncing = true;
+        try { AudioDeviceCombo.SelectedItem = Vm.AudioDevices.FirstOrDefault(d => d.Name == Vm.AudioDevice); }
+        finally { _syncing = false; }
+    }
 
     private void OnListsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {

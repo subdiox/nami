@@ -19,23 +19,23 @@ public sealed partial class Preferences : ContentDialog
     {
         _vm = vm;
         InitializeComponent();
-        OscLayoutCombo.ItemsSource = new List<string> {L.T("Floating (default)"), L.T("Bottom bar"), L.T("Top bar")};
-        SubBorderStyleCombo.ItemsSource = new List<string> {L.T("Outline and shadow"), L.T("Opaque box"), L.T("Background box")};
-        SubAssOverrideCombo.ItemsSource = new List<string> {L.T("Use the styles from the subtitle file"), L.T("Override with these settings (yes)"), L.T("Match size only (scale)"), L.T("Force override (force)"), L.T("Strip styling (strip)")};
+        OscLayoutCombo.ItemsSource = new List<object> {L.T("Floating (default)"), L.T("Bottom bar"), L.T("Top bar")};
+        SubBorderStyleCombo.ItemsSource = new List<object> {L.T("Outline and shadow"), L.T("Opaque box"), L.T("Background box")};
+        SubAssOverrideCombo.ItemsSource = new List<object> {L.T("Use the styles from the subtitle file"), L.T("Override with these settings (yes)"), L.T("Match size only (scale)"), L.T("Force override (force)"), L.T("Strip styling (strip)")};
         var s = _vm.Services.Settings;
-        LanguageCombo.ItemsSource = L.Available.Select(a => a.name).ToList();
+        LanguageCombo.ItemsSource = L.Available.Select(a => (object)a.name).ToList();
         int li = Array.FindIndex(L.Available, a => a.code == s.Language);
         LanguageCombo.SelectedIndex = li < 0 ? 0 : li;
         OsdSwitch.IsOn = s.Osd.Enabled;
-        OsdPositionCombo.ItemsSource = new List<string> { L.T("Top left"), L.T("Top right"), L.T("Bottom left"), L.T("Bottom right") };
+        OsdPositionCombo.ItemsSource = new List<object> { L.T("Top left"), L.T("Top right"), L.T("Bottom left"), L.T("Bottom right") };
         OsdPositionCombo.SelectedIndex = (int)s.Osd.Position;
-        OsdScaleCombo.ItemsSource = new List<string> { L.T("Small"), L.T("Normal"), L.T("Large") };
+        OsdScaleCombo.ItemsSource = new List<object> { L.T("Small"), L.T("Normal"), L.T("Large") };
         OsdScaleCombo.SelectedIndex = (int)s.Osd.Scale;
         OsdDurationSlider.Value = s.Osd.DurationSeconds;
         ResizeSwitch.IsOn = s.ResizeWindowToVideo;
         RememberVolumeSwitch.IsOn = s.RememberVolume;
         NewWindowSwitch.IsOn = s.OpenInNewWindow;
-        SingleClickCombo.ItemsSource = new List<string> { L.T("Do nothing"), L.T("Pause / resume"), L.T("Show / hide the controller") };
+        SingleClickCombo.ItemsSource = new List<object> { L.T("Do nothing"), L.T("Pause / resume"), L.T("Show / hide the controller") };
         SingleClickCombo.SelectedIndex = (int)s.SingleClick;
         ResumeSwitch.IsOn = s.ResumePlayback;
         AutoLoadFolderSwitch.IsOn = s.AutoLoadFolder;
@@ -48,7 +48,7 @@ public sealed partial class Preferences : ContentDialog
         UpdateAssocStatus();
         LoadSubtitleStyle(s.Subtitles);
         SubLanguagesBox.Text = s.SubtitleLanguages;
-        YtdlFormatCombo.ItemsSource = YtDlp.Formats.Select(f => f.label).ToList();
+        YtdlFormatCombo.ItemsSource = YtDlp.Formats.Select(f => (object)f.label).ToList();
         int fi = Array.FindIndex(YtDlp.Formats, f => f.value == s.YtdlFormat);
         YtdlFormatCombo.SelectedIndex = fi < 0 ? 3 : fi;
         _ = RefreshYtDlpStatusAsync();
@@ -100,7 +100,7 @@ public sealed partial class Preferences : ContentDialog
     {
         var fonts = SubtitleStyle.SystemFonts();
         fonts.Insert(0, L.T("(default)"));
-        SubFontCombo.ItemsSource = fonts;
+        SubFontCombo.ItemsSource = fonts.Cast<object>().ToList();
         SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? L.T("(default)") : st.Font;
         SubSizeSlider.Value = st.Size;
         SubBoldCheck.IsChecked = st.Bold;
@@ -108,7 +108,7 @@ public sealed partial class Preferences : ContentDialog
         SubBorderStyleCombo.SelectedIndex = Math.Max(0, Array.IndexOf(BorderStyles, st.BorderStyle));
         SubOutlineSlider.Value = st.OutlineSize;
         SubShadowSlider.Value = st.ShadowOffset;
-        SubCodepageCombo.ItemsSource = SubtitleStyle.Codepages;
+        SubCodepageCombo.ItemsSource = SubtitleStyle.Codepages.Cast<object>().ToList();
         SubCodepageCombo.SelectedIndex = Math.Max(0, Array.IndexOf(SubtitleStyle.Codepages, st.Codepage));
         SubAssOverrideCombo.SelectedIndex = Math.Max(0, Array.IndexOf(AssOverrides, st.AssOverride));
         _subColor = st.Color; _subOutline = st.OutlineColor; _subBack = st.BackColor;
