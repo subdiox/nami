@@ -81,6 +81,8 @@ public sealed partial class Preferences : Window
         ShowScreenshotDir(s.ScreenshotDirectory);
         ScreenshotFormatCombo.SelectedItem = s.ScreenshotFormat;
         if (ScreenshotFormatCombo.SelectedIndex < 0) ScreenshotFormatCombo.SelectedIndex = 0;
+        ToolTipService.SetToolTip(OpenScreenshotDirButton, L.T("Open folder"));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(OpenScreenshotDirButton, L.T("Open folder"));
         ShowValue(SubSizeSlider, "Size", "0");
         ShowValue(SubOutlineSlider, "Outline width", "0.#");
         ShowValue(SubShadowSlider, "Shadow offset", "0.#");
@@ -130,6 +132,13 @@ public sealed partial class Preferences : Window
     }
 
     private void ResetScreenshotDir_Click(object sender, RoutedEventArgs e) => ShowScreenshotDir("");
+
+    private async void OpenScreenshotDir_Click(object sender, RoutedEventArgs e)
+    {
+        string dir = string.IsNullOrEmpty(_screenshotDir) ? DefaultScreenshotDir : _screenshotDir;
+        try { Directory.CreateDirectory(dir); await Launcher.LaunchFolderPathAsync(dir); }
+        catch (Exception ex) { App.Log("open screenshot folder: " + ex.Message); }
+    }
 
     private async Task RefreshYtDlpStatusAsync()
     {
