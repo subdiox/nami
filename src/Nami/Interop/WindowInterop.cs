@@ -16,4 +16,12 @@ internal static class WindowInterop
             return p;
         }
     }
+
+    /// <summary>Diagnostic: what the OS currently shows as the cursor.</summary>
+    public static unsafe string CursorState()
+    {
+        var info = new Windows.Win32.UI.WindowsAndMessaging.CURSORINFO { cbSize = (uint)sizeof(Windows.Win32.UI.WindowsAndMessaging.CURSORINFO) };
+        PInvoke.GetCursorInfo(ref info);
+        return $"os flags {(uint)info.flags}, hcursor {(nint)info.hCursor:X}";
+    }
 }

@@ -18,24 +18,44 @@ namespace Nami;
 public sealed partial class MainPage : Page
 {
     public PlayerViewModel Vm { get; }
-    private CursorHider? _cursorHider;
+    private static readonly Microsoft.UI.Input.InputCursor? HiddenCursor = CreateHiddenCursor();
+    private static readonly Microsoft.UI.Input.InputCursor ArrowCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
+    private bool _cursorHidden;
+
+    private static Microsoft.UI.Input.InputCursor? CreateHiddenCursor()
+    {
+        // A "custom" cursor with resource id 0 is the documented way to get a blank cursor.
+        try { return Microsoft.UI.Input.InputCursor.CreateFromCoreCursor(new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Custom, 0)); }
+        catch (Exception ex) { App.Log("cursor: blank cursor unavailable: " + ex.Message); return null; }
+    }
 
     // Focus diagnostics (cheap; helps pin down "keys stopped working" reports).
     private static void OnAnyGotFocus(object? sender, FocusManagerGotFocusEventArgs e)
-        => App.Log($"focus -> {e.NewFocusedElement?.GetType().Name ?? "null"}");
+        => App.Log($"focus -> {Describe(e.NewFocusedElement)}");
+
+    private static string Describe(object? o)
+    {
+        if (o is not DependencyObject d) return "null";
+        var parts = new List<string>();
+        for (DependencyObject? cur = d; cur is not null && parts.Count < 8; cur = VisualTreeHelper.GetParent(cur))
+        {
+            string name = (cur as FrameworkElement)?.Name is { Length: > 0 } n ? $"#{n}" : "";
+            string content = cur is ContentControl cc && cc.Content is not null ? $"[{cc.Content.GetType().Name}]" : "";
+            parts.Add(cur.GetType().Name + name + content);
+        }
+        return string.Join(" < ", parts);
+    }
     private static void OnAnyLostFocus(object? sender, FocusManagerLostFocusEventArgs e)
         => App.Log($"focus lost from {e.OldFocusedElement?.GetType().Name ?? "null"}");
 
     /// <summary>Hide / show the mouse cursor over the player (IINA hides it together with the HUD).</summary>
     public void SetCursorHidden(bool hide)
     {
-        if (hide)
-        {
-            if (!IsCursorOverPlayer() || Window is not { } w) { App.Log("cursor: hide skipped (not over player)"); return; }
-            _cursorHider ??= new CursorHider(w.Hwnd);
-            _cursorHider.Hide();
-        }
-        else _cursorHider?.Show();
+        if (_cursorHidden == hide || HiddenCursor is null) return;
+        if (hide && !IsCursorOverPlayer()) { App.Log("cursor: hide skipped (not over player)"); return; }
+        _cursorHidden = hide;
+        ProtectedCursor = hide ? HiddenCursor : ArrowCursor;
+        App.Log($"cursor: {(hide ? "hidden" : "shown")} ({WindowInterop.CursorState()})");
     }
 
     private bool IsCursorOverPlayer()
@@ -97,8 +117,7 @@ public sealed partial class MainPage : Page
             Vm.PropertyChanged -= OnVmChanged;
             FocusManager.GotFocus -= OnAnyGotFocus;
             FocusManager.LostFocus -= OnAnyLostFocus;
-            _cursorHider?.Dispose();
-            _cursorHider = null;
+            SetCursorHidden(false);
         };
 
         // Pointer input on the video surface
@@ -380,6 +399,9 @@ public sealed partial class MainPage : Page
     private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
     {
         EndDrag(e.Pointer);
+        // WinUI's root ScrollViewer grabs focus on pointer release over non-focusable content,
+        // which would silently disconnect every keyboard shortcut. Take it back afterwards.
+        FocusVideo();
     }
 
     private void EndDrag(Microsoft.UI.Xaml.Input.Pointer? pointer)

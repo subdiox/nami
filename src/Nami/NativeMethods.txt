@@ -34,13 +34,6 @@ RemoveWindowSubclass
 SHChangeNotify
 SetEvent
 SetWindowSubclass
-SetCursor
-ShowCursor
-LoadCursor
-IDC_ARROW
-EnumChildWindows
-GetClassName
-WM_SETCURSOR
 WindowFromPoint
 GetAncestor
 ToUnicode
