@@ -41,7 +41,7 @@
                 <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" Click="MinimizeButton_Click" ToolTipService.ToolTip="Minimize" AutomationProperties.Name="Minimize">
                     <FontIcon Style="{StaticResource CaptionIcon}" Glyph="&#xE921;" />
                 </Button>
-                <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" Click="MaximizeButton_Click" ToolTipService.ToolTip="Maximize" AutomationProperties.Name="Maximize">
+                <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" Click="MaximizeButton_Click" ToolTipService.ToolTip="Full screen (F11)" AutomationProperties.Name="Full screen (F11)">
                     <FontIcon x:Name="MaximizeIcon" Style="{StaticResource CaptionIcon}" Glyph="&#xE922;" />
                 </Button>
                 <Button x:Name="CloseButton" Style="{StaticResource CaptionButton}" Click="CloseButton_Click" ToolTipService.ToolTip="Close" AutomationProperties.Name="Close">

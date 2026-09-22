@@ -40,7 +40,7 @@ public sealed partial class MainWindow : Window
 
         // No system title bar at all (IINA hides its title bar with the HUD; the system caption
         // buttons cannot fade, so we draw our own). Resize borders stay. Dragging, double-click to
-        // maximize and Snap Layouts come from the non-client regions set in UpdateNonClientRegions.
+        // maximize and Aero Snap come from the caption region (SetTitleBar below).
         _presenter.SetBorderAndTitleBar(true, false);
         // Still required: without it the frame reserves a blank caption band whenever the window
         // has no caption (fullscreen presenter, mini player). The drag region comes from DragRegion.
@@ -49,12 +49,10 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon("Assets/AppIcon.ico");
         AppWindow.ResizeClient(new SizeInt32(1280, 720));
 
+        // The caption region is non-client, so XAML never sees the pointer there: show the HUD ourselves.
         _nonClient = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
-        _nonClient.PointerEntered += OnNonClientPointer;
-        _nonClient.PointerMoved += OnNonClientPointer;
-        _nonClient.PointerExited += (_, e) => { if (e.RegionKind == NonClientRegionKind.Maximize) SetMaximizeHover(false); };
-        TitleOverlay.SizeChanged += (_, _) => UpdateNonClientRegions();
-        TitleOverlay.Loaded += (_, _) => UpdateNonClientRegions();
+        _nonClient.PointerEntered += (_, _) => Main.ShowOverlay();
+        _nonClient.PointerMoved += (_, _) => Main.ShowOverlay();
 
         Vm.PropertyChanged += OnVmChanged;
         Vm.FileLoaded += () => _fitOnNextVideoSize = _services.Settings.ResizeWindowToVideo;
@@ -104,44 +102,11 @@ public sealed partial class MainWindow : Window
 
     // ---- custom title bar -----------------------------------------------------------------
 
-    /// <summary>
-    /// The caption (drag / double-click / Aero Snap) is DragRegion via SetTitleBar; this marks our
-    /// maximize button as the system maximize button so Win11 shows the Snap Layouts flyout on hover.
-    /// Cleared in fullscreen and mini mode.
-    /// </summary>
-    private void UpdateNonClientRegions()
-    {
-        bool active = !IsFullScreen && !_compact && TitleOverlay.Visibility == Visibility.Visible
-                      && CaptionButtons.Visibility == Visibility.Visible && MaximizeButton.ActualWidth > 0;
-        if (active) _nonClient.SetRegionRects(NonClientRegionKind.Maximize, [ElementRect(MaximizeButton)]);
-        else _nonClient.ClearRegionRects(NonClientRegionKind.Maximize);
-    }
-
-    private RectInt32 ElementRect(FrameworkElement e)
-    {
-        double scale = Content.XamlRoot?.RasterizationScale ?? Scale;
-        var p = e.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, 0));
-        return new RectInt32((int)Math.Round(p.X * scale), (int)Math.Round(p.Y * scale),
-            (int)Math.Round(e.ActualWidth * scale), (int)Math.Round(e.ActualHeight * scale));
-    }
-
-    private void OnNonClientPointer(InputNonClientPointerSource sender, NonClientPointerEventArgs e)
-    {
-        // The caption regions are non-client, so XAML never sees the pointer there: show the HUD
-        // ourselves and mirror the hover state onto the maximize button.
-        Main.ShowOverlay();
-        SetMaximizeHover(e.RegionKind == NonClientRegionKind.Maximize);
-    }
-
-    private void SetMaximizeHover(bool on) =>
-        MaximizeButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(on ? Color(0x33, 0xFF, 0xFF, 0xFF) : Colors.Transparent);
-
+    /// <summary>The middle caption button is IINA's zoom button: it enters / leaves full screen.</summary>
     private void SyncMaximizeGlyph()
     {
-        bool restore = IsFullScreen || _presenter.State == OverlappedPresenterState.Maximized;
-        MaximizeIcon.Glyph = restore ? "\uE923" : "\uE922";
-        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(MaximizeButton,
-            L.T(IsFullScreen ? "Exit full screen (F11)" : restore ? "Restore" : "Maximize"));
+        MaximizeIcon.Glyph = IsFullScreen ? "\uE923" : "\uE922";
+        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(MaximizeButton, L.T(IsFullScreen ? "Exit full screen (F11)" : "Full screen (F11)"));
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
@@ -150,15 +115,8 @@ public sealed partial class MainWindow : Window
         _presenter.Minimize();
     }
 
-    private void MaximizeButton_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleFullscreen();
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
-
-    public void ToggleMaximize()
-    {
-        if (IsFullScreen) { Vm.SetFullscreen(false); return; }
-        if (_presenter.State == OverlappedPresenterState.Maximized) _presenter.Restore();
-        else if (_presenter.IsMaximizable) _presenter.Maximize();
-    }
 
     private static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
 
@@ -230,7 +188,6 @@ public sealed partial class MainWindow : Window
         }
         // Caption buttons stay in full screen too (they fade with the HUD); the middle one exits full screen.
         SyncMaximizeGlyph();
-        UpdateNonClientRegions();
     }
 
     private RectInt32? _musicRestoreBounds;
@@ -313,7 +270,6 @@ public sealed partial class MainWindow : Window
             if (_restoreBounds is { } r) AppWindow.MoveAndResize(r);
             if (_aspectLock is not null) _aspectLock.Aspect = Vm.VideoSize.IsValid ? Vm.VideoSize.Aspect : 0;
         }
-        UpdateNonClientRegions();
     }
 
     public bool IsCompact => _compact;
@@ -370,7 +326,7 @@ public sealed partial class MainWindow : Window
 
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
-        if (args.DidSizeChange || args.DidPresenterChange) SyncMaximizeGlyph();
+        if (args.DidPresenterChange) SyncMaximizeGlyph();
         if (!args.DidPositionChange) return;
         // Re-evaluate HDR when the window lands on another monitor.
         var info = Interop.DisplayInfo.Query(Hwnd);
