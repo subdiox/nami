@@ -1,18 +1,10 @@
 using Windows.Win32;
-using Windows.Win32.Foundation;
 
 namespace Nami.Interop;
 
 /// <summary>Stateless Win32 helpers for the player window.</summary>
 internal static class WindowInterop
 {
-    /// <summary>Let the user drag the window by its client area, as if they grabbed the caption.</summary>
-    public static void BeginWindowDrag(nint hwnd)
-    {
-        PInvoke.ReleaseCapture();
-        PInvoke.SendMessage((HWND)hwnd, PInvoke.WM_NCLBUTTONDOWN, new WPARAM(PInvoke.HTCAPTION), new LPARAM(0));
-    }
-
     public static TimeSpan DoubleClickTime => TimeSpan.FromMilliseconds(PInvoke.GetDoubleClickTime());
 
     /// <summary>Cursor position in physical screen pixels (same space as AppWindow.Position).</summary>

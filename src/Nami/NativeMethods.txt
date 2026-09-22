@@ -18,7 +18,6 @@ GetDpiForWindow
 GetKeyboardState
 GetMonitorInfo
 GetWindowRect
-HTCAPTION
 IDXGIAdapter1
 IDXGIFactory1
 IDXGIOutput
@@ -31,10 +30,8 @@ MapVirtualKey
 MonitorFromWindow
 QUERY_DISPLAY_CONFIG_FLAGS
 QueryDisplayConfig
-ReleaseCapture
 RemoveWindowSubclass
 SHChangeNotify
-SendMessage
 SetEvent
 SetWindowSubclass
 ShowCursor
@@ -47,5 +44,4 @@ WMSZ_RIGHT
 WMSZ_TOP
 WMSZ_TOPLEFT
 WMSZ_TOPRIGHT
-WM_NCLBUTTONDOWN
 WM_SIZING
