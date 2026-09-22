@@ -150,6 +150,50 @@ public sealed partial class PlayerViewModel : ObservableObject
     }
 
     /// <summary>
+    /// The key currently bound to an mpv command (input.conf or default), formatted for menus
+    /// ("S", "Ctrl+S", "Space"); null when nothing is bound.
+    /// </summary>
+    public string? KeyFor(string command)
+    {
+        if (_player?.GetNode("input-bindings") is not List<object?> list) return null;
+        string want = Normalize(command);
+        string? found = null;
+        foreach (var item in list)
+        {
+            if (item is not Dictionary<string, object?> d) continue;
+            string key = d.TryGetValue("key", out var k) ? k as string ?? "" : "";
+            string cmd = d.TryGetValue("cmd", out var c) ? c as string ?? "" : "";
+            string section = d.TryGetValue("section", out var sec) ? sec as string ?? "" : "";
+            if (key.Length == 0 || (section.Length > 0 && section != "default") || Normalize(cmd) != want) continue;
+            if (key.StartsWith("MBTN", StringComparison.Ordinal) || key.StartsWith("WHEEL", StringComparison.Ordinal) || key.StartsWith("AXIS", StringComparison.Ordinal)) continue;
+            found = key;
+            break;   // mpv lists the active (user) binding first
+        }
+        return found is null ? null : FormatKey(found);
+
+        static string Normalize(string s) => string.Join(' ', s.Split((char[])[' ', '\t'], StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    /// <summary>mpv key name → menu text ("Ctrl+s" → "Ctrl+S", "SPACE" → "Space").</summary>
+    public static string FormatKey(string key)
+    {
+        var parts = key.Split('+');
+        for (int i = 0; i < parts.Length; i++)
+        {
+            string p = parts[i];
+            parts[i] = p.ToUpperInvariant() switch
+            {
+                "CTRL" => "Ctrl", "ALT" => "Alt", "SHIFT" => "Shift", "META" => "Win",
+                "SPACE" => "Space", "ENTER" => "Enter", "ESC" => "Esc", "TAB" => "Tab", "BS" => "Backspace", "DEL" => "Delete",
+                "INS" => "Insert", "HOME" => "Home", "END" => "End", "PGUP" => "Page Up", "PGDWN" => "Page Down",
+                "UP" => "↑", "DOWN" => "↓", "LEFT" => "←", "RIGHT" => "→", "SHARP" => "#",
+                _ => p.Length == 1 ? p.ToUpperInvariant() : p,
+            };
+        }
+        return string.Join('+', parts);
+    }
+
+    /// <summary>
     /// mpv's media-title is the file's "title" tag when there is one. Downloaders often stamp a
     /// placeholder there ("na", "N/A", "unknown"…); fall back to the file name in that case.
     /// </summary>

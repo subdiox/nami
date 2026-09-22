@@ -106,13 +106,11 @@ public sealed partial class Preferences : Window
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
-    private async void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
+    private void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new Windows.Storage.Pickers.FolderPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary };
-        picker.FileTypeFilter.Add("*");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
-        var folder = await picker.PickSingleFolderAsync();
-        if (folder is not null) ShowScreenshotDir(folder.Path);
+        string? folder = Interop.FolderDialog.Pick(WinRT.Interop.WindowNative.GetWindowHandle(this), L.T("Screenshot folder"),
+            string.IsNullOrEmpty(_screenshotDir) ? DefaultScreenshotDir : _screenshotDir);
+        if (folder is not null) ShowScreenshotDir(folder);
     }
 
     private static string DefaultScreenshotDir => Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
@@ -123,7 +121,7 @@ public sealed partial class Preferences : Window
     {
         bool isDefault = string.IsNullOrWhiteSpace(dir) || string.Equals(Path.GetFullPath(dir).TrimEnd('\\'), DefaultScreenshotDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
         _screenshotDir = isDefault ? "" : dir;
-        ScreenshotDirBox.Text = isDefault ? DefaultScreenshotDir : dir;
+        ScreenshotDirText.Text = isDefault ? DefaultScreenshotDir : dir;
         ScreenshotDirResetButton.IsEnabled = !isDefault;
     }
 
@@ -162,14 +160,10 @@ public sealed partial class Preferences : Window
     {
         var fonts = SubtitleStyle.SystemFonts();
         fonts.Insert(0, L.T("(default)"));
-        SubFontCombo.ItemsSource = fonts.Cast<object>().ToList();
-        // An editable ComboBox does not render Text set before its template is applied (it shows up
-        // only after a click), so select the matching item instead; free text only for unknown fonts.
         string fontName = string.IsNullOrEmpty(st.Font) ? L.T("(default)") : st.Font;
-        int fontIndex = fonts.IndexOf(fontName);
-        if (fontIndex >= 0) SubFontCombo.SelectedIndex = fontIndex;
-        else SubFontCombo.Loaded += (_, _) => SubFontCombo.Text = fontName;
-        SubFontCombo.Text = fontName;
+        if (!fonts.Contains(fontName)) fonts.Insert(1, fontName);   // a font from another machine / mpv.conf
+        SubFontCombo.ItemsSource = fonts.Cast<object>().ToList();
+        SubFontCombo.SelectedIndex = fonts.IndexOf(fontName);
         SubSizeSlider.Value = st.Size;
         SubBoldCheck.IsChecked = st.Bold;
         SubItalicCheck.IsChecked = st.Italic;
@@ -224,7 +218,7 @@ public sealed partial class Preferences : Window
     private SubtitleStyle CollectSubtitleStyle()
     {
         var old = _vm.Services.Settings.Subtitles;
-        string font = SubFontCombo.Text?.Trim() ?? "";
+        string font = (SubFontCombo.SelectedItem as string)?.Trim() ?? "";
         return new SubtitleStyle
         {
             Font = font == L.T("(default)") ? "" : font,

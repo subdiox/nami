@@ -84,7 +84,7 @@ public sealed partial class Osc : UserControl
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(Toggle(L("Always on top"), Vm.OnTop, Vm.ToggleOnTop));
         menu.Items.Add(Item(L("Music mode"), () => MusicModeRequested?.Invoke()));
-        menu.Items.Add(Item(L("Screenshot"), Vm.Screenshot, "S"));
+        menu.Items.Add(Item(L("Screenshot"), Vm.Screenshot, Vm.KeyFor("screenshot")));
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(Item(L("Media info…"), () => page?.ShowMediaInfo(), "Ctrl+I"));
         menu.Items.Add(Item(L("Key bindings…"), () => page?.ShowKeyBindings(), "Ctrl+Shift+K"));

@@ -111,7 +111,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='Font'}" IsEditable="True" HorizontalAlignment="Stretch" />
+                            <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='Font'}" HorizontalAlignment="Stretch" />
                             <Slider x:Name="SubSizeSlider" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='Size'}" Minimum="16" Maximum="100" StepFrequency="1" />
                             <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="12">
                                 <CheckBox x:Name="SubBoldCheck" Content="{l:Tr Text='Bold'}" />
@@ -143,8 +143,13 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="110" />
                             </Grid.ColumnDefinitions>
-                            <!-- Read-only: the path is chosen with the folder picker, never typed. -->
-                            <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='Folder'}" IsReadOnly="True" IsSpellCheckEnabled="False" />
+                            <!-- The path is chosen with the folder dialog, never typed or selected. -->
+                            <StackPanel Grid.Column="0" Spacing="6">
+                                <TextBlock Text="{l:Tr Text='Folder'}" FontSize="12" />
+                                <Border Height="32" CornerRadius="4" Padding="10,0" Background="#14FFFFFF" BorderThickness="1" BorderBrush="{StaticResource PanelBorderBrush}">
+                                    <TextBlock x:Name="ScreenshotDirText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="False" />
+                                </Border>
+                            </StackPanel>
                             <Button Grid.Column="1" Content="{l:Tr Text='Change…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
                             <Button x:Name="ScreenshotDirResetButton" Grid.Column="2" Content="{l:Tr Text='Use Pictures'}" VerticalAlignment="Bottom" Click="ResetScreenshotDir_Click" />
                             <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="3" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">

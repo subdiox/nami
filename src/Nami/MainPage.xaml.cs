@@ -478,12 +478,13 @@ public sealed partial class MainPage : Page
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
         var menu = new MenuFlyout();
-        menu.Items.Add(Item(Vm.Paused ? L.T("Play") : L.T("Pause"), Vm.TogglePause));
+        // Shortcuts shown on the right: app-level ones are fixed, mpv ones follow the current key bindings.
+        menu.Items.Add(Item(Vm.Paused ? L.T("Play") : L.T("Pause"), Vm.TogglePause, Vm.KeyFor("cycle pause")));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item(L.T("Open file…"), OpenFiles));
-        menu.Items.Add(Item(L.T("Open URL…"), () => _ = OpenUrlAsync()));
-        menu.Items.Add(Item(L.T("Open in new window…"), OpenFilesInNewWindow));
-        menu.Items.Add(Item(L.T("New window"), () => Vm.Services.Windows.New()));
+        menu.Items.Add(Item(L.T("Open file…"), OpenFiles, "Ctrl+O"));
+        menu.Items.Add(Item(L.T("Open URL…"), () => _ = OpenUrlAsync(), "Ctrl+U"));
+        menu.Items.Add(Item(L.T("Open in new window…"), OpenFilesInNewWindow, "Ctrl+Alt+O"));
+        menu.Items.Add(Item(L.T("New window"), () => Vm.Services.Windows.New(), "Ctrl+N"));
         var recent = new MenuFlyoutSubItem { Text = L.T("Recent files") };
         foreach (var h in Vm.History.Entries.Take(12))
             recent.Items.Add(Item(h.Display, () => Vm.Open(h.Path)));
@@ -495,20 +496,20 @@ public sealed partial class MainPage : Page
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
         }));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item(L.T("Video, audio & subtitles"), () => Vm.ToggleSidebar(SidebarKind.Settings)));
-        menu.Items.Add(Item(L.T("Playlist"), () => Vm.ToggleSidebar(SidebarKind.Playlist)));
+        menu.Items.Add(Item(L.T("Video, audio & subtitles"), () => Vm.ToggleSidebar(SidebarKind.Settings), "Ctrl+Shift+S"));
+        menu.Items.Add(Item(L.T("Playlist"), () => Vm.ToggleSidebar(SidebarKind.Playlist), "Ctrl+Shift+P"));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Toggle(L.T("Full screen"), Vm.Fullscreen, Vm.ToggleFullscreen));
-        menu.Items.Add(Toggle(L.T("Always on top"), Vm.OnTop, Vm.ToggleOnTop));
-        menu.Items.Add(Item(L.T("Mini player"), () => Window?.ToggleCompactMode()));
+        menu.Items.Add(Toggle(L.T("Full screen"), Vm.Fullscreen, Vm.ToggleFullscreen, "F11"));
+        menu.Items.Add(Toggle(L.T("Always on top"), Vm.OnTop, Vm.ToggleOnTop, Vm.KeyFor("cycle ontop")));
+        menu.Items.Add(Item(L.T("Mini player"), () => Window?.ToggleCompactMode(), "Ctrl+Shift+M"));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item(L.T("Screenshot"), Vm.Screenshot));
-        menu.Items.Add(Item(double.IsNaN(Vm.AbLoopA) ? L.T("A-B loop: set point A") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B loop: set point B") : L.T("Clear A-B loop"), Vm.CycleAbLoop));
-        menu.Items.Add(Item(L.T("Frame step"), Vm.FrameStep));
-        menu.Items.Add(Item(L.T("Frame back step"), Vm.FrameBackStep));
-        menu.Items.Add(Item(L.T("Media info…"), () => _ = ShowDialogAsync(new InspectorDialog(Vm))));
-        menu.Items.Add(Item(L.T("Key bindings…"), () => _ = ShowDialogAsync(new KeyBindingsDialog(Vm))));
-        menu.Items.Add(Item(L.T("Preferences…"), () => Window?.ShowPreferencesAsync()));
+        menu.Items.Add(Item(L.T("Screenshot"), Vm.Screenshot, Vm.KeyFor("screenshot")));
+        menu.Items.Add(Item(double.IsNaN(Vm.AbLoopA) ? L.T("A-B loop: set point A") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B loop: set point B") : L.T("Clear A-B loop"), Vm.CycleAbLoop, Vm.KeyFor("ab-loop")));
+        menu.Items.Add(Item(L.T("Frame step"), Vm.FrameStep, Vm.KeyFor("frame-step")));
+        menu.Items.Add(Item(L.T("Frame back step"), Vm.FrameBackStep, Vm.KeyFor("frame-back-step")));
+        menu.Items.Add(Item(L.T("Media info…"), () => _ = ShowDialogAsync(new InspectorDialog(Vm)), "Ctrl+I"));
+        menu.Items.Add(Item(L.T("Key bindings…"), () => _ = ShowDialogAsync(new KeyBindingsDialog(Vm)), "Ctrl+Shift+K"));
+        menu.Items.Add(Item(L.T("Preferences…"), () => Window?.ShowPreferencesAsync(), "Ctrl+,"));
         menu.Opened += (_, _) => SetMenuOpen(true);
         menu.Closed += (_, _) => { SetMenuOpen(false); FocusVideo(); };
         menu.ShowAt(Root, e.GetPosition(Root));
@@ -625,16 +626,18 @@ public sealed partial class MainPage : Page
 
     // Click handlers instead of ICommand: a managed ICommand cannot be marshaled to WinRT under NativeAOT
     // (CCW creation fails), which crashed the context menu in published builds.
-    private static MenuFlyoutItem Item(string text, Action action)
+    private static MenuFlyoutItem Item(string text, Action action, string? accelerator = null)
     {
         var item = new MenuFlyoutItem { Text = text };
+        if (accelerator is not null) item.KeyboardAcceleratorTextOverride = accelerator;
         item.Click += (_, _) => action();
         return item;
     }
 
-    private static ToggleMenuFlyoutItem Toggle(string text, bool isChecked, Action action)
+    private static ToggleMenuFlyoutItem Toggle(string text, bool isChecked, Action action, string? accelerator = null)
     {
         var item = new ToggleMenuFlyoutItem { Text = text, IsChecked = isChecked };
+        if (accelerator is not null) item.KeyboardAcceleratorTextOverride = accelerator;
         item.Click += (_, _) => action();
         return item;
     }
