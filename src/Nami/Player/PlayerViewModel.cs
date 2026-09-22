@@ -72,6 +72,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial int PlaylistTab { get; set; }
 
     public History History { get; } = History.Load();
+    public ThumbnailGenerator Thumbnails { get; } = new();
     private string? _autoLoadedFolder;
 
     public event Action? FileLoaded;
@@ -86,7 +87,11 @@ public sealed partial class PlayerViewModel : ObservableObject
         _player = player;
         player.PropertyChanged += OnMpvProperty;
         player.FileLoaded += OnFileLoaded;
-        player.PlaybackRestart += () => PlaybackRestart?.Invoke();
+        player.PlaybackRestart += () =>
+        {
+            PlaybackRestart?.Invoke();
+            StartThumbnails();
+        };
         player.Hook += name =>
         {
             // Runs on the mpv event thread, before the file is unloaded.
@@ -144,6 +149,16 @@ public sealed partial class PlayerViewModel : ObservableObject
         }
         // The current file is at index 0; move it to its natural position.
         if (index > 0) _player.TryCommand("playlist-move", "0", (index + 1).ToString());
+    }
+
+    private string? _thumbPath;
+
+    private void StartThumbnails()
+    {
+        if (!App.Settings.SeekThumbnails) { Thumbnails.Stop(); _thumbPath = null; return; }
+        if (FilePath is null || FilePath == _thumbPath || !VideoSize.IsValid || Duration <= 0) return;
+        _thumbPath = FilePath;
+        Thumbnails.Start(FilePath, Duration, VideoSize.Aspect);
     }
 
     /// <summary>Called periodically / on unload so the history remembers where we were.</summary>

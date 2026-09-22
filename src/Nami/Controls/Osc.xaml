@@ -12,8 +12,11 @@
     <Grid>
         <!-- Hover time tooltip above the seek bar -->
         <Border x:Name="SeekTip" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,-30,0,0"
-                Background="#E6202020" CornerRadius="4" Padding="6,2" Visibility="Collapsed" IsHitTestVisible="False">
-            <TextBlock x:Name="SeekTipText" FontSize="11" Foreground="White" />
+                Background="#E6202020" CornerRadius="6" Padding="4" Visibility="Collapsed" IsHitTestVisible="False">
+            <StackPanel Spacing="3">
+                <Image x:Name="SeekThumb" Width="160" Stretch="Uniform" Visibility="Collapsed" />
+                <TextBlock x:Name="SeekTipText" FontSize="11" Foreground="White" HorizontalAlignment="Center" />
+            </StackPanel>
         </Border>
 
         <Border x:Name="Panel" Width="480" Padding="14,8,14,8" CornerRadius="12"

@@ -127,8 +127,31 @@ internal unsafe struct MpvByteArray
     public nuint Size;
 }
 
+internal enum MpvRenderParamType
+{
+    Invalid = 0,
+    ApiType = 1,
+    SwSize = 17,
+    SwFormat = 18,
+    SwStride = 19,
+    SwPointer = 20,
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct MpvRenderParam
+{
+    public MpvRenderParamType Type;
+    public void* Data;
+}
+
 internal static unsafe partial class LibMpv
 {
+    [LibraryImport(Lib)] public static partial int mpv_render_context_create(nint* res, nint mpv, MpvRenderParam* params_);
+    [LibraryImport(Lib)] public static partial void mpv_render_context_set_update_callback(nint ctx, delegate* unmanaged<void*, void> callback, void* callbackCtx);
+    [LibraryImport(Lib)] public static partial ulong mpv_render_context_update(nint ctx);
+    [LibraryImport(Lib)] public static partial int mpv_render_context_render(nint ctx, MpvRenderParam* params_);
+    [LibraryImport(Lib)] public static partial void mpv_render_context_free(nint ctx);
+
     private const string Lib = "libmpv-2";
 
     [LibraryImport(Lib)] public static partial uint mpv_client_api_version();

@@ -24,6 +24,7 @@ public sealed class AppSettings
     public bool AutoLoadFolder { get; set; } = true;
     public bool KeepHistory { get; set; } = true;
     public string SubtitleLanguages { get; set; } = "ja,en";
+    public bool SeekThumbnails { get; set; } = true;
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =

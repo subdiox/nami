@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Nami.Player;
 
 namespace Nami.Controls;
@@ -123,16 +124,56 @@ public sealed partial class Osc : UserControl
         Vm.SeekAbsolute(e.NewValue * Vm.Duration, exact: _scrubbing);
     }
 
+    private Microsoft.UI.Xaml.Media.Imaging.WriteableBitmap? _thumbBitmap;
+    private int _thumbIndex = -1;
+    private ThumbnailSet? _thumbSet;
+
     private void SeekSlider_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (Vm.Duration <= 0) { SeekTip.Visibility = Visibility.Collapsed; return; }
         var p = e.GetCurrentPoint(SeekSlider).Position;
         double frac = Math.Clamp(p.X / Math.Max(1, SeekSlider.ActualWidth), 0, 1);
-        SeekTipText.Text = Fmt.Time(frac * Vm.Duration);
+        double t = frac * Vm.Duration;
+        SeekTipText.Text = Fmt.Time(t);
+        UpdateThumbnail(t);
         SeekTip.Visibility = Visibility.Visible;
         SeekTip.UpdateLayout();
         var sliderPos = SeekSlider.TransformToVisual(this).TransformPoint(new Windows.Foundation.Point(p.X, 0));
-        SeekTip.Margin = new Thickness(Math.Max(0, sliderPos.X - SeekTip.ActualWidth / 2), -30, 0, 0);
+        SeekTip.Margin = new Thickness(Math.Max(0, sliderPos.X - SeekTip.ActualWidth / 2), -(SeekTip.ActualHeight + 8), 0, 0);
+    }
+
+    private void UpdateThumbnail(double time)
+    {
+        var set = Vm.Thumbnails.Current;
+        if (set is null || set.Path != Vm.FilePath)
+        {
+            SeekThumb.Visibility = Visibility.Collapsed;
+            _thumbSet = null;
+            _thumbIndex = -1;
+            return;
+        }
+        var frame = set.Get(time);
+        if (frame is null) { SeekThumb.Visibility = Visibility.Collapsed; return; }
+        var (index, bgra) = frame.Value;
+        if (_thumbSet != set || _thumbBitmap is null)
+        {
+            _thumbBitmap = new Microsoft.UI.Xaml.Media.Imaging.WriteableBitmap(set.Width, set.Height);
+            _thumbSet = set;
+            _thumbIndex = -1;
+        }
+        if (index != _thumbIndex)
+        {
+            using (var stream = _thumbBitmap.PixelBuffer.AsStream())
+            {
+                stream.Position = 0;
+                stream.Write(bgra, 0, bgra.Length);
+            }
+            _thumbBitmap.Invalidate();
+            _thumbIndex = index;
+        }
+        SeekThumb.Source = _thumbBitmap;
+        SeekThumb.Height = 160.0 * set.Height / set.Width;
+        SeekThumb.Visibility = Visibility.Visible;
     }
 
     private void SeekSlider_PointerExited(object sender, PointerRoutedEventArgs e) => SeekTip.Visibility = Visibility.Collapsed;

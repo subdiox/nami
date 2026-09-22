@@ -22,6 +22,7 @@ public sealed partial class Preferences : ContentDialog
         ResumeSwitch.IsOn = s.ResumePlayback;
         AutoLoadFolderSwitch.IsOn = s.AutoLoadFolder;
         HistorySwitch.IsOn = s.KeepHistory;
+        ThumbnailSwitch.IsOn = s.SeekThumbnails;
         MpvConfBox.Text = ReadOrEmpty(MpvConfPath);
         InputConfBox.Text = ReadOrEmpty(InputConfPath);
         UpdateAssocStatus();
@@ -157,6 +158,7 @@ public sealed partial class Preferences : ContentDialog
         s.ResumePlayback = ResumeSwitch.IsOn;
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
         s.KeepHistory = HistorySwitch.IsOn;
+        s.SeekThumbnails = ThumbnailSwitch.IsOn;
         s.Subtitles = CollectSubtitleStyle();
         s.SubtitleLanguages = SubLanguagesBox.Text.Trim();
         if (App.Vm.Player is { } sp) s.Subtitles.Apply(sp);

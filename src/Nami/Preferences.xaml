@@ -20,6 +20,7 @@
             <ToggleSwitch x:Name="ResumeSwitch" Header="前回の再生位置から再開する" />
             <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="同じフォルダーのファイルを自動的にプレイリストへ追加する" />
             <ToggleSwitch x:Name="HistorySwitch" Header="再生履歴を記録する" />
+            <ToggleSwitch x:Name="ThumbnailSwitch" Header="シークバーにサムネイルを表示する（バックグラウンドで生成）" />
 
             <TextBlock Style="{StaticResource SectionHeader}" Text="字幕の見た目" />
             <Grid ColumnSpacing="8" RowSpacing="8">
