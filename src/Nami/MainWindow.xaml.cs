@@ -42,6 +42,10 @@ public sealed partial class MainWindow : Window
         // buttons cannot fade, so we draw our own). Resize borders stay. Dragging, double-click to
         // maximize and Snap Layouts come from the non-client regions set in UpdateNonClientRegions.
         _presenter.SetBorderAndTitleBar(true, false);
+        // Still required: without it the frame reserves a blank caption band whenever the window
+        // has no caption (fullscreen presenter, mini player). The drag region comes from DragRegion.
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(DragRegion);
         AppWindow.SetIcon("Assets/AppIcon.ico");
         AppWindow.ResizeClient(new SizeInt32(1280, 720));
 
@@ -88,18 +92,16 @@ public sealed partial class MainWindow : Window
     // ---- custom title bar -----------------------------------------------------------------
 
     /// <summary>
-    /// Tell the system which parts of our XAML title bar act as the caption (drag / double-click /
-    /// Aero Snap) and as the maximize button (Snap Layouts flyout). Cleared in fullscreen and mini mode.
+    /// The caption (drag / double-click / Aero Snap) is DragRegion via SetTitleBar; this marks our
+    /// maximize button as the system maximize button so Win11 shows the Snap Layouts flyout on hover.
+    /// Cleared in fullscreen and mini mode.
     /// </summary>
     private void UpdateNonClientRegions()
     {
-        if (IsFullScreen || _compact || TitleOverlay.Visibility == Visibility.Collapsed || DragRegion.ActualWidth <= 0)
-        {
-            _nonClient.ClearAllRegionRects();
-            return;
-        }
-        _nonClient.SetRegionRects(NonClientRegionKind.Caption, [ElementRect(DragRegion)]);
-        _nonClient.SetRegionRects(NonClientRegionKind.Maximize, MaximizeButton.Visibility == Visibility.Visible ? [ElementRect(MaximizeButton)] : []);
+        bool active = !IsFullScreen && !_compact && TitleOverlay.Visibility == Visibility.Visible
+                      && CaptionButtons.Visibility == Visibility.Visible && MaximizeButton.ActualWidth > 0;
+        if (active) _nonClient.SetRegionRects(NonClientRegionKind.Maximize, [ElementRect(MaximizeButton)]);
+        else _nonClient.ClearRegionRects(NonClientRegionKind.Maximize);
     }
 
     private RectInt32 ElementRect(FrameworkElement e)

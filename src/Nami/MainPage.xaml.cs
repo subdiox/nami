@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,6 +20,26 @@ public sealed partial class MainPage : Page
 {
     public PlayerViewModel Vm { get; }
     private readonly CursorVisibility _cursor = new();
+    private static readonly InputCursor? HiddenCursor = CreateHiddenCursor();
+    private static readonly InputCursor ArrowCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+
+    private static InputCursor? CreateHiddenCursor()
+    {
+        // A "custom" cursor with resource id 0 is the documented way to get a blank cursor.
+        try { return InputCursor.CreateFromCoreCursor(new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Custom, 0)); }
+        catch (Exception ex) { App.Log("hidden cursor unavailable: " + ex.Message); return null; }
+    }
+
+    private bool _cursorHidden;
+
+    /// <summary>Hide / show the mouse cursor over the player (IINA hides it together with the HUD).</summary>
+    private void SetCursorHidden(bool hide)
+    {
+        if (_cursorHidden == hide) return;
+        _cursorHidden = hide;
+        if (HiddenCursor is not null) ProtectedCursor = hide ? HiddenCursor : ArrowCursor;
+        if (hide) _cursor.Hide(); else _cursor.Show();
+    }
     public Controls.VideoView VideoView => Video;
     private MainWindow? Window => Vm.Window;
 
@@ -184,7 +205,7 @@ public sealed partial class MainPage : Page
 
     public void ShowOverlay()
     {
-        _cursor.Show();
+        SetCursorHidden(false);
         if (!_overlayVisible)
         {
             _overlayVisible = true;
@@ -221,7 +242,7 @@ public sealed partial class MainPage : Page
         Fade(BottomShade, 0);
         Fade(Mini, 0);
         Window?.SetTitleOverlayVisible(false);
-        if (_pointerInside) _cursor.Hide();
+        if (_pointerInside) SetCursorHidden(true);
     }
 
     internal static void Fade(UIElement element, double to)
