@@ -20,11 +20,23 @@ dotnet build src\Nami -c Debug -p:Platform=x64
 dotnet run --project src\Nami -- "C:\path\to\video.mkv"
 ```
 
-配布用 (Native AOT, 自己完結型):
+配布用 (Native AOT, 自己完結型)。VS Build Tools の C++ ワークロード（リンカ）が必要:
 
 ```powershell
-dotnet publish src\Nami -c Release -p:Platform=x64
+scripts\publish.ps1
 ```
+
+## 操作
+
+| 操作 | 動作 |
+|---|---|
+| クリック / ダブルクリック | 一時停止 / 全画面 |
+| ドラッグ | ウィンドウ移動（動画上のどこでも） |
+| ホイール | 音量（横ホイールでシーク） |
+| 右クリック | コンテキストメニュー |
+| キーボード | mpv の既定バインドと `input.conf` がそのまま効く（Space, ←→, 9/0, m, f, q など） |
+| Ctrl+O / Ctrl+Shift+S / Ctrl+Shift+P / Ctrl+Shift+M / Ctrl+, / F11 | 開く / クイック設定 / プレイリスト / ミニプレイヤー / 環境設定 / 全画面 |
+| `Nami.exe --register` | エクスプローラーの「プログラムから開く」と既定のアプリに登録（HKCU。`--unregister` で解除） |
 
 ## 構成
 
@@ -34,7 +46,14 @@ dotnet publish src\Nami -c Release -p:Platform=x64
 | `src/Nami/Mpv/MpvPlayer.cs` | mpv コアのラッパー。イベントスレッド、プロパティ監視、UI スレッドへのディスパッチ |
 | `src/Nami/Controls/VideoView.cs` | SwapChainPanel 派生。プレイヤー生成、スワップチェーン貼り付け、サイズ/DPI 追従 |
 | `src/Nami/Interop/SwapChainPanelInterop.cs` | ISwapChainPanelNative と IDXGISwapChain2 の呼び出し |
-| `src/Nami/MainPage.xaml` | 画面。今は仮のトランスポートバー |
+| `src/Nami/Player/PlayerViewModel.cs` | mpv プロパティを UI 向け状態に写像。コマンドもここ |
+| `src/Nami/Controls/Osc.xaml` | IINA 風フローティング OSC |
+| `src/Nami/Controls/Sidebar.xaml` | クイック設定（映像/音声/字幕）とプレイリスト/チャプターのサイドバー |
+| `src/Nami/MainPage.xaml` | 動画面。ポインタ/キー入力、OSC の自動非表示、ドラッグ&ドロップ |
+| `src/Nami/MainWindow.xaml` | 透明タイトルバー、全画面、動画サイズへのフィット、ミニプレイヤー |
+| `src/Nami/Interop/AspectRatioLock.cs` | WM_SIZING でウィンドウのアスペクト比を動画に固定 |
+| `src/Nami/Interop/DisplayInfo.cs` | DXGI でモニターの HDR 状態・輝度・SDR 白レベルを取得（`Player/HdrController.cs` が mpv に渡す） |
+| `src/Nami/Services/FileAssociation.cs` | HKCU へのメディアアプリ登録 |
 | `third_party/libmpv/` | libmpv のヘッダと DLL（DLL は git 管理外） |
 
 mpv の設定ファイルは `%LOCALAPPDATA%\Nami\mpv\` （`mpv.conf`, `input.conf` など）から読む。ログは同じ場所の `mpv.log`。
