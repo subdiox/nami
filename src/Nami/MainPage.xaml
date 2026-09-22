@@ -38,6 +38,15 @@
             </Rectangle.Fill>
         </Rectangle>
 
+        <!-- Opening a file / waiting for the cache (IINA shows a spinner while a file loads or buffers) -->
+        <Border x:Name="LoadingPanel" Visibility="Collapsed" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="{StaticResource PanelBrush}" CornerRadius="8" Padding="20,14">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <ProgressRing x:Name="LoadingRing" IsActive="False" Width="28" Height="28" Foreground="White" />
+                <TextBlock x:Name="LoadingText" Foreground="White" FontSize="14" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
         <controls:Osd x:Name="Osd" />
 
         <controls:Osc x:Name="Osc" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28" />

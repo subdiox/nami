@@ -27,6 +27,8 @@ public sealed unsafe class MpvPlayer : IDisposable
     public event Action<nint>? SwapChainChanged;
     public event Action<string, object?>? PropertyChanged;
     public event Action<MpvLogMessage>? LogMessage;
+    /// <summary>A file is being opened (before FileLoaded or EndFile).</summary>
+    public event Action? StartFile;
     public event Action? FileLoaded;
     public event Action? PlaybackRestart;
     /// <summary>A seek was initiated (keyboard, slider, script…).</summary>
@@ -320,6 +322,10 @@ public sealed unsafe class MpvPlayer : IDisposable
                     Post(() => PropertyChanged?.Invoke(name, value));
                     break;
                 }
+
+                case MpvEventId.StartFile:
+                    Post(() => StartFile?.Invoke());
+                    break;
 
                 case MpvEventId.FileLoaded:
                     Post(() => FileLoaded?.Invoke());

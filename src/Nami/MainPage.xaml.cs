@@ -98,6 +98,12 @@ public sealed partial class MainPage : Page
         _clickTimer = DispatcherQueue.CreateTimer();
         _clickTimer.Interval = WindowInterop.DoubleClickTime;
         _clickTimer.IsRepeating = false;
+
+        // Show the spinner only when opening or buffering takes a moment; local files never see it.
+        _loadingTimer = DispatcherQueue.CreateTimer();
+        _loadingTimer.Interval = TimeSpan.FromMilliseconds(400);
+        _loadingTimer.IsRepeating = false;
+        _loadingTimer.Tick += (_, _) => UpdateLoadingIndicator(show: true);
         _clickTimer.Tick += (_, _) =>
         {
             switch (Vm.Services.Settings.SingleClick)
@@ -202,7 +208,22 @@ public sealed partial class MainPage : Page
             case nameof(PlayerViewModel.Paused):
                 if (Vm.Paused) ShowOverlay(); else RestartHideTimer();
                 break;
+            case nameof(PlayerViewModel.Loading):
+            case nameof(PlayerViewModel.PausedForCache):
+                if (Vm.Loading || Vm.PausedForCache) { if (!_loadingTimer.IsRunning && LoadingPanel.Visibility != Visibility.Visible) _loadingTimer.Start(); }
+                else { _loadingTimer.Stop(); UpdateLoadingIndicator(show: false); }
+                break;
         }
+    }
+
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _loadingTimer;
+
+    private void UpdateLoadingIndicator(bool show)
+    {
+        show = show && (Vm.Loading || Vm.PausedForCache);
+        LoadingText.Text = L.T(Vm.Loading ? "Loading…" : "Buffering…");
+        LoadingRing.IsActive = show;
+        LoadingPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public void ApplyOsdSettings(OsdSettings s) => Osd.Configure(s);

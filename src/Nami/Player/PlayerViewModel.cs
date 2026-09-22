@@ -27,6 +27,8 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial double CacheDuration { get; set; }
     [ObservableProperty] public partial bool Seeking { get; set; }
     [ObservableProperty] public partial bool PausedForCache { get; set; }
+    /// <summary>A file is being opened (mpv start-file until file-loaded or end-file).</summary>
+    [ObservableProperty] public partial bool Loading { get; set; }
     [ObservableProperty] public partial bool EofReached { get; set; }
     [ObservableProperty] public partial double Volume { get; set; } = 100;
     [ObservableProperty] public partial bool Muted { get; set; }
@@ -129,7 +131,12 @@ public sealed partial class PlayerViewModel : ObservableObject
             if (name == "on_unload" && Services.Settings.ResumePlayback)
                 player.TryCommand("write-watch-later-config");
         };
-        player.EndFile += e => { if (e.IsError) Error?.Invoke(LibMpv.ErrorString(e.ErrorCode)); };
+        player.StartFile += () => Loading = true;
+        player.EndFile += e =>
+        {
+            Loading = false;
+            if (e.IsError) Error?.Invoke(LibMpv.ErrorString(e.ErrorCode));
+        };
         player.Shutdown += () => Shutdown?.Invoke();
 
         foreach (var (name, fmt) in ObservedProperties)
@@ -210,6 +217,7 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private void OnFileLoaded()
     {
+        Loading = false;
         string? path = _player?.GetString("path");
         if (!string.IsNullOrEmpty(path))
         {

@@ -74,6 +74,8 @@ internal static class Translations
         ["download quota exceeded"] = "ダウンロード上限に達しました",
         ["Download yt-dlp"] = "yt-dlp をダウンロード",
         ["Drop a video here"] = "ここに動画をドロップ",
+        ["Loading…"] = "読み込み中…",
+        ["Buffering…"] = "バッファリング中…",
         ["Drop files here or add them with +"] = "ここにファイルをドロップするか、＋ で追加",
         ["Dropped frames"] = "ドロップしたフレーム",
         ["Duration"] = "長さ",
