@@ -27,6 +27,19 @@
             <ToggleSwitch x:Name="AutoMusicSwitch" Header="{l:Tr Text='Switch to music mode automatically for audio files'}" />
             <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='Controller (OSC) layout'}" HorizontalAlignment="Stretch" />
 
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='On-screen display'}" />
+            <ToggleSwitch x:Name="OsdSwitch" Header="{l:Tr Text='Show on-screen messages (volume, seek, track changes…)'}" />
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ComboBox x:Name="OsdPositionCombo" Grid.Column="0" Header="{l:Tr Text='Position'}" HorizontalAlignment="Stretch" />
+                <ComboBox x:Name="OsdScaleCombo" Grid.Column="1" Header="{l:Tr Text='Size'}" HorizontalAlignment="Stretch" />
+                <Slider x:Name="OsdDurationSlider" Grid.Column="2" Header="{l:Tr Text='Duration (seconds)'}" Minimum="0.5" Maximum="5" StepFrequency="0.5" />
+            </Grid>
+
             <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle appearance'}" />
             <Grid ColumnSpacing="8" RowSpacing="8">
                 <Grid.ColumnDefinitions>

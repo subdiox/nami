@@ -10,6 +10,17 @@ public enum OscLayout
     Top,
 }
 
+public enum OsdPosition { TopLeft, TopRight, BottomLeft, BottomRight }
+public enum OsdScale { Small, Normal, Large }
+
+public sealed class OsdSettings
+{
+    public bool Enabled { get; set; } = true;
+    public OsdPosition Position { get; set; } = OsdPosition.TopLeft;
+    public OsdScale Scale { get; set; } = OsdScale.Normal;
+    public double DurationSeconds { get; set; } = 1.5;
+}
+
 public enum HdrMode
 {
     /// <summary>Pass HDR through when the display is in HDR mode, otherwise tone-map to SDR.</summary>
@@ -41,6 +52,7 @@ public sealed class AppSettings
     public bool EqEnabled { get; set; }
     public string Language { get; set; } = "auto";
     public bool OpenInNewWindow { get; set; }
+    public OsdSettings Osd { get; set; } = new();
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =
@@ -81,4 +93,5 @@ public sealed class AppSettings
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AppSettings))]
 [JsonSerializable(typeof(SubtitleStyle))]
+[JsonSerializable(typeof(OsdSettings))]
 internal partial class SettingsJsonContext : JsonSerializerContext;

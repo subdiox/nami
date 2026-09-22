@@ -195,7 +195,7 @@ public sealed partial class Osc : UserControl
     private void SeekSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (_syncing || Vm.Duration <= 0) return;
-        Vm.SeekAbsolute(e.NewValue * Vm.Duration, exact: _scrubbing);
+        Vm.SeekFromSlider(e.NewValue * Vm.Duration, exact: _scrubbing);
     }
 
     private Microsoft.UI.Xaml.Media.Imaging.WriteableBitmap? _thumbBitmap;

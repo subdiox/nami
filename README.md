@@ -36,6 +36,7 @@ scripts\publish.ps1
 - Subtitles: track switching, external files, OpenSubtitles.com search, font / color / outline / encoding settings
 - Video: aspect ratio, crop, rotation, flip, zoom (pinch), picture adjustments, deinterlace, HDR output mode
 - Audio: output device, 10-band equalizer, delay, shuffle / repeat
+- App-drawn OSD (IINA style: icon, text, bar; position / size / duration settings; `script-message osd <text>` bridge for scripts)
 - Seek-bar thumbnails, A-B loop, frame stepping, media info inspector
 - URL playback with yt-dlp (downloaded in-app), `namiplayer://` URL scheme, bookmarklet
 - Music mode (automatic for audio files), mini player, always on top

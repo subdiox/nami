@@ -35,6 +35,8 @@
             </Rectangle.Fill>
         </Rectangle>
 
+        <controls:Osd x:Name="Osd" />
+
         <controls:Osc x:Name="Osc" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28" />
 
         <controls:MusicPanel x:Name="Music" VerticalAlignment="Bottom" Visibility="Collapsed" />

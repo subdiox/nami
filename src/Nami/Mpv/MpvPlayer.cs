@@ -29,6 +29,12 @@ public sealed unsafe class MpvPlayer : IDisposable
     public event Action<MpvLogMessage>? LogMessage;
     public event Action? FileLoaded;
     public event Action? PlaybackRestart;
+    /// <summary>A seek was initiated (keyboard, slider, script…).</summary>
+    public event Action? SeekStarted;
+    /// <summary>mpv "script-message" arguments.</summary>
+    public event Action<string[]>? ClientMessage;
+    /// <summary>A screenshot was written to the given path.</summary>
+    public event Action<string>? ScreenshotSaved;
     public event Action<MpvEndFile>? EndFile;
     public event Action? Shutdown;
     /// <summary>Raised on the event thread when a hook fires; the handler runs before mpv continues.</summary>
@@ -69,18 +75,9 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("osc", "no");
         Option("cursor-autohide", "no");
 
-        // IINA-like OSD: a translucent box in the top-left corner, no bar.
+        // The app draws its own OSD (see Controls/Osd); mpv's is off. Subtitles are unaffected.
+        Option("osd-level", "0");
         Option("osd-bar", "no");
-        Option("osd-font", "Segoe UI");
-        Option("osd-font-size", "30");
-        Option("osd-border-style", "background-box");
-        Option("osd-back-color", "#B3000000");
-        Option("osd-border-size", "0");
-        Option("osd-align-x", "left");
-        Option("osd-align-y", "top");
-        Option("osd-margin-x", "24");
-        Option("osd-margin-y", "24");
-        Option("osd-duration", "1500");
 
         Option("screenshot-directory", string.IsNullOrEmpty(settings.ScreenshotDirectory)
             ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) : settings.ScreenshotDirectory);
@@ -110,7 +107,8 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("ytdl", "yes");
         Option("ytdl-format", settings.YtdlFormat);
 
-        MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "warn"), "request_log_messages");
+        // "info" so screenshot confirmations ("[screenshot] Screenshot: 'path'") reach us.
+        MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "info"), "request_log_messages");
         MpvException.ThrowIfError(LibMpv.mpv_initialize(_handle), "mpv_initialize");
 
         Observe("display-swapchain", MpvFormat.Int64);
@@ -264,6 +262,11 @@ public sealed unsafe class MpvPlayer : IDisposable
                     var msg = new MpvLogMessage(LibMpv.Utf8(m->Prefix), LibMpv.Utf8(m->Level), LibMpv.Utf8(m->Text).TrimEnd());
                     if (msg.Level is "error" or "warn" or "fatal")
                         Debug.WriteLine($"[mpv/{msg.Prefix}] {msg.Level}: {msg.Text}");
+                    if (msg.Prefix == "screenshot" && msg.Text.StartsWith("Screenshot: '", StringComparison.Ordinal))
+                    {
+                        string path = msg.Text[13..].TrimEnd('\'');
+                        Post(() => ScreenshotSaved?.Invoke(path));
+                    }
                     Post(() => LogMessage?.Invoke(msg));
                     break;
                 }
@@ -289,6 +292,19 @@ public sealed unsafe class MpvPlayer : IDisposable
                 case MpvEventId.PlaybackRestart:
                     Post(() => PlaybackRestart?.Invoke());
                     break;
+
+                case MpvEventId.Seek:
+                    Post(() => SeekStarted?.Invoke());
+                    break;
+
+                case MpvEventId.ClientMessage:
+                {
+                    var cm = (MpvEventClientMessage*)ev->Data;
+                    var args = new string[cm->NumArgs];
+                    for (int i = 0; i < cm->NumArgs; i++) args[i] = LibMpv.Utf8(cm->Args[i]);
+                    Post(() => ClientMessage?.Invoke(args));
+                    break;
+                }
 
                 case MpvEventId.Hook:
                 {

@@ -98,6 +98,12 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     public event Action? FileLoaded;
     public event Action? PlaybackRestart;
+    public event Action? SeekStarted;
+    public event Action<string[]>? ClientMessage;
+    public event Action<string>? ScreenshotSaved;
+    /// <summary>Explicit OSD requests from app code (the OSD controller renders them).</summary>
+    public event Action<OsdMessage>? OsdRequested;
+    public OsdController? Osd { get; set; }
     public event Action<string>? Error;
     public event Action? Shutdown;
 
@@ -113,6 +119,9 @@ public sealed partial class PlayerViewModel : ObservableObject
             PlaybackRestart?.Invoke();
             StartThumbnails();
         };
+        player.SeekStarted += () => SeekStarted?.Invoke();
+        player.ClientMessage += args => ClientMessage?.Invoke(args);
+        player.ScreenshotSaved += path => ScreenshotSaved?.Invoke(path);
         player.Hook += name =>
         {
             // Runs on the mpv event thread, before the file is unloaded.
@@ -435,7 +444,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void OpenMany(IEnumerable<string> paths, bool append = false)
     {
         bool first = !append;
-        foreach (var path in paths) { Open(path, append: !first); first = false; }
+        int n = 0;
+        foreach (var path in paths) { Open(path, append: !first); first = false; n++; }
+        if (append && n > 0) ShowOsd(OsdMessage.IconPlaylist, L.F("Added {0} to the playlist", n));
     }
 
     public void TogglePause() => Run(p => p.TogglePause());
@@ -444,6 +455,8 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void Stop() => Run(p => p.Stop());
     public void SeekRelative(double seconds) => Run(p => p.Seek(seconds, relative: true));
     public void SeekAbsolute(double seconds, bool exact = false) => Run(p => p.Seek(seconds, relative: false, exact: exact));
+    /// <summary>Seek from the slider: no seek OSD, the slider shows the time itself.</summary>
+    public void SeekFromSlider(double seconds, bool exact) { Osd?.SuppressNextSeek(); SeekAbsolute(seconds, exact); }
     public void FrameStep() => Run(p => p.Command("frame-step"));
     public void FrameBackStep() => Run(p => p.Command("frame-back-step"));
     public void SetVolume(double v) => Run(p => p.SetProperty("volume", Math.Clamp(v, 0, 130)));
@@ -473,7 +486,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void AddSubtitle(string path) => Run(p => p.TryCommand("sub-add", path, "select"));
     public void AddAudio(string path) => Run(p => p.TryCommand("audio-add", path, "select"));
     public void Screenshot() => Run(p => p.TryCommand("screenshot"));
-    public void ShowText(string text, int ms = 1500) => Run(p => p.TryCommand("show-text", text, ms.ToString()));
+    /// <summary>Show a notification on the app's OSD.</summary>
+    public void ShowOsd(string icon, string text, string? detail = null, double? progress = null)
+        => OsdRequested?.Invoke(new OsdMessage(icon, text, detail, progress));
     public void Keypress(string key) => Run(p => p.TryCommand("keypress", key));
     public void Quit() => Run(p => p.TryCommand("quit"));
 
@@ -486,7 +501,6 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (!faster && s > 1 && next < 1) next = 1;
         SetSpeed(next);
         if (Paused) Play();
-        ShowText(L.F("Speed {0}", Fmt.Speed(next)));
     }
 
     public void ToggleShuffle() => Run(p =>
@@ -494,15 +508,14 @@ public sealed partial class PlayerViewModel : ObservableObject
         bool on = !Shuffle;
         p.SetProperty("shuffle", on);
         p.TryCommand(on ? "playlist-shuffle" : "playlist-unshuffle");
-        ShowText(on ? L.T("Shuffle: on") : L.T("Shuffle: off"));
     });
 
     /// <summary>off → playlist → file → off</summary>
     public void CycleLoop() => Run(p =>
     {
-        if (!LoopPlaylist && !LoopFile) { p.SetProperty("loop-playlist", "inf"); ShowText(L.T("Repeat: playlist")); }
-        else if (LoopPlaylist) { p.SetProperty("loop-playlist", "no"); p.SetProperty("loop-file", "inf"); ShowText(L.T("Repeat: one")); }
-        else { p.SetProperty("loop-file", "no"); ShowText(L.T("Repeat: off")); }
+        if (!LoopPlaylist && !LoopFile) p.SetProperty("loop-playlist", "inf");
+        else if (LoopPlaylist) { p.SetProperty("loop-playlist", "no"); p.SetProperty("loop-file", "inf"); }
+        else p.SetProperty("loop-file", "no");
     });
 
     /// <summary>mpv's ab-loop cycle: set A → set B → clear.</summary>

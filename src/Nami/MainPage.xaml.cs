@@ -40,6 +40,8 @@ public sealed partial class MainPage : Page
         InitializeComponent();
         Video.Vm = Vm;
         Osc.Vm = Vm;
+        Osd.Configure(services.Settings.Osd);
+        Vm.Osd = new OsdController(Vm, Osd.Show);
         Music.Vm = Vm;
         Sidebar.Bind(Vm);
 
@@ -87,7 +89,7 @@ public sealed partial class MainPage : Page
     {
         Focus(FocusState.Programmatic);
         Vm.PropertyChanged += OnVmChanged;
-        Vm.Error += msg => Vm.ShowText(L.T("Error: ") + msg, 4000);
+        Vm.Error += msg => Osd.Show(new OsdMessage(OsdMessage.IconInfo, L.T("Error"), msg, Seconds: 4));
         UpdateEmptyState();
         RestartHideTimer();
     }
@@ -108,6 +110,8 @@ public sealed partial class MainPage : Page
                 break;
         }
     }
+
+    public void ApplyOsdSettings(OsdSettings s) => Osd.Configure(s);
 
     public void ApplyOscLayout(Services.OscLayout layout)
     {

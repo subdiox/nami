@@ -87,6 +87,13 @@ internal struct MpvEventEndFile
 }
 
 [StructLayout(LayoutKind.Sequential)]
+internal unsafe struct MpvEventClientMessage
+{
+    public int NumArgs;
+    public byte** Args;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 internal unsafe struct MpvEventHook
 {
     public byte* Name;

@@ -26,6 +26,12 @@ public sealed partial class Preferences : ContentDialog
         LanguageCombo.ItemsSource = L.Available.Select(a => a.name).ToList();
         int li = Array.FindIndex(L.Available, a => a.code == s.Language);
         LanguageCombo.SelectedIndex = li < 0 ? 0 : li;
+        OsdSwitch.IsOn = s.Osd.Enabled;
+        OsdPositionCombo.ItemsSource = new List<string> { L.T("Top left"), L.T("Top right"), L.T("Bottom left"), L.T("Bottom right") };
+        OsdPositionCombo.SelectedIndex = (int)s.Osd.Position;
+        OsdScaleCombo.ItemsSource = new List<string> { L.T("Small"), L.T("Normal"), L.T("Large") };
+        OsdScaleCombo.SelectedIndex = (int)s.Osd.Scale;
+        OsdDurationSlider.Value = s.Osd.DurationSeconds;
         ResizeSwitch.IsOn = s.ResizeWindowToVideo;
         RememberVolumeSwitch.IsOn = s.RememberVolume;
         NewWindowSwitch.IsOn = s.OpenInNewWindow;
@@ -214,6 +220,14 @@ public sealed partial class Preferences : ContentDialog
     private void OnSave(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var s = _vm.Services.Settings;
+        s.Osd = new OsdSettings
+        {
+            Enabled = OsdSwitch.IsOn,
+            Position = (OsdPosition)Math.Max(0, OsdPositionCombo.SelectedIndex),
+            Scale = (OsdScale)Math.Max(0, OsdScaleCombo.SelectedIndex),
+            DurationSeconds = OsdDurationSlider.Value,
+        };
+        foreach (var w in _vm.Services.Windows.All) w.Page.ApplyOsdSettings(s.Osd);
         s.ResizeWindowToVideo = ResizeSwitch.IsOn;
         if (LanguageCombo.SelectedIndex >= 0) s.Language = L.Available[LanguageCombo.SelectedIndex].code;
         s.RememberVolume = RememberVolumeSwitch.IsOn;

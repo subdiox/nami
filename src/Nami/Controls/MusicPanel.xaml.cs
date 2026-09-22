@@ -82,7 +82,7 @@ public sealed partial class MusicPanel : UserControl
     private void SeekSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (_syncing || Vm.Duration <= 0) return;
-        Vm.SeekAbsolute(e.NewValue * Vm.Duration);
+        Vm.SeekFromSlider(e.NewValue * Vm.Duration, exact: false);
     }
 
     private void Play_Click(object sender, RoutedEventArgs e) => Vm.TogglePause();
