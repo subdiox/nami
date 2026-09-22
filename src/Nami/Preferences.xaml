@@ -72,6 +72,23 @@
             <TextBlock x:Name="SubLangHeader" Text="オンライン字幕の言語（カンマ区切り）" FontSize="12" Margin="0,8,0,0" />
             <TextBox x:Name="SubLanguagesBox" />
 
+            <TextBlock Style="{StaticResource SectionHeader}" Text="スクリーンショット" />
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="120" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="保存先（空欄でピクチャ）" />
+                <Button Grid.Column="1" Content="参照…" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
+                <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="2" Header="形式" HorizontalAlignment="Stretch">
+                    <x:String>png</x:String>
+                    <x:String>jpg</x:String>
+                    <x:String>webp</x:String>
+                    <x:String>jxl</x:String>
+                </ComboBox>
+            </Grid>
+
             <TextBlock Style="{StaticResource SectionHeader}" Text="オンライン動画 (yt-dlp)" />
             <TextBlock x:Name="YtDlpStatus" FontSize="12" TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="8">

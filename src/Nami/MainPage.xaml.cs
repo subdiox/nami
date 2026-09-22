@@ -59,6 +59,7 @@ public sealed partial class MainPage : Page
         Root.RightTapped += OnRightTapped;
         Surface.Tapped += OnVideoTapped;
         Surface.DoubleTapped += OnVideoDoubleTapped;
+        Surface.ManipulationDelta += OnManipulationDelta;
 
         foreach (var c in new UIElement[] { Osc, Sidebar })
         {
@@ -277,6 +278,13 @@ public sealed partial class MainPage : Page
         Vm.ToggleFullscreen();
     }
 
+    /// <summary>Trackpad pinch → video zoom (IINA gesture).</summary>
+    private void OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+    {
+        if (Math.Abs(e.Delta.Scale - 1) < 0.001) return;
+        Vm.SetZoom(Vm.VideoZoom + Math.Log2(e.Delta.Scale));
+    }
+
     private void OnPointerWheel(object sender, PointerRoutedEventArgs e)
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
@@ -329,6 +337,10 @@ public sealed partial class MainPage : Page
         menu.Items.Add(new MenuFlyoutItem { Text = "ミニプレイヤー", Command = new Cmd(() => App.Window?.ToggleCompactMode()) });
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = "スクリーンショット", Command = new Cmd(Vm.Screenshot) });
+        menu.Items.Add(new MenuFlyoutItem { Text = double.IsNaN(Vm.AbLoopA) ? "A-B ループ: A 点を設定" : double.IsNaN(Vm.AbLoopB) ? "A-B ループ: B 点を設定" : "A-B ループを解除", Command = new Cmd(Vm.CycleAbLoop) });
+        menu.Items.Add(new MenuFlyoutItem { Text = "コマ送り", Command = new Cmd(Vm.FrameStep) });
+        menu.Items.Add(new MenuFlyoutItem { Text = "コマ戻し", Command = new Cmd(Vm.FrameBackStep) });
+        menu.Items.Add(new MenuFlyoutItem { Text = "メディア情報…", Command = new Cmd(() => _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync()) });
         menu.Items.Add(new MenuFlyoutItem { Text = "環境設定…", Command = new Cmd(() => App.Window?.ShowPreferencesAsync()) });
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
@@ -368,6 +380,7 @@ public sealed partial class MainPage : Page
         {
             case VirtualKey.O when ctrl: OpenFiles(); break;
             case VirtualKey.U when ctrl: _ = OpenUrlAsync(); break;
+            case VirtualKey.I when ctrl: _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync(); break;
             case VirtualKey.P when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Playlist); break;
             case VirtualKey.S when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Settings); break;
             case VirtualKey.M when ctrl && shift: App.Window?.ToggleCompactMode(); break;

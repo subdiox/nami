@@ -94,6 +94,22 @@
                             <x:String>1:1</x:String>
                         </RadioButtons>
 
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="クロップ" />
+                        <RadioButtons x:Name="CropButtons" MaxColumns="5" SelectionChanged="CropButtons_SelectionChanged">
+                            <x:String>なし</x:String>
+                            <x:String>16:9</x:String>
+                            <x:String>4:3</x:String>
+                            <x:String>1:1</x:String>
+                            <x:String>2.35:1</x:String>
+                        </RadioButtons>
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="反転 / ズーム" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ToggleButton x:Name="HFlipButton" Content="左右反転" Click="HFlip_Click" />
+                            <ToggleButton x:Name="VFlipButton" Content="上下反転" Click="VFlip_Click" />
+                            <Button Content="ズームをリセット" Click="ResetZoom_Click" />
+                        </StackPanel>
+
                         <TextBlock Style="{StaticResource SectionHeader}" Text="回転" />
                         <RadioButtons x:Name="RotateButtons" MaxColumns="4" SelectionChanged="RotateButtons_SelectionChanged">
                             <x:String>0°</x:String>
@@ -151,6 +167,18 @@
                             <TextBlock x:Name="VolumeLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100%" />
                         </Grid>
                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="130" StepFrequency="1" IsThumbToolTipEnabled="False" ValueChanged="VolumeSlider_ValueChanged" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="出力デバイス" />
+                        <ComboBox x:Name="AudioDeviceCombo" HorizontalAlignment="Stretch" DisplayMemberPath="Display" SelectionChanged="AudioDeviceCombo_SelectionChanged" />
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="イコライザー" Margin="0" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                <HyperlinkButton Content="フラット" Padding="4,0" Click="EqFlat_Click" />
+                                <ToggleSwitch x:Name="EqSwitch" OnContent="" OffContent="" MinWidth="0" Toggled="EqSwitch_Toggled" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid x:Name="EqGrid" Height="150" />
 
                         <Grid Margin="0,16,0,6">
                             <TextBlock Style="{StaticResource SectionHeader}" Text="音声の遅延" Margin="0" />

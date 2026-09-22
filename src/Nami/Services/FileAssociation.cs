@@ -12,6 +12,24 @@ namespace Nami.Services;
 public static class FileAssociation
 {
     public const string ProgId = "Nami.Media";
+    /// <summary>namiplayer://open?url=&lt;encoded&gt;  or  namiplayer://&lt;url&gt; — for bookmarklets and other apps.</summary>
+    public const string UrlScheme = "namiplayer";
+
+    public static string? ParseSchemeUrl(string arg)
+    {
+        string rest = arg[(UrlScheme.Length + 3)..];
+        if (rest.StartsWith("open?", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var kv in rest[5..].Split('&'))
+            {
+                int eq = kv.IndexOf('=');
+                if (eq > 0 && kv[..eq].Equals("url", StringComparison.OrdinalIgnoreCase))
+                    return Uri.UnescapeDataString(kv[(eq + 1)..]);
+            }
+            return null;
+        }
+        return Uri.UnescapeDataString(rest);
+    }
     private const string AppName = "Nami";
 
     public static readonly string[] VideoExtensions =
@@ -79,6 +97,17 @@ public static class FileAssociation
         using (var reg = Registry.CurrentUser.CreateSubKey(@"Software\RegisteredApplications"))
             reg.SetValue(AppName, @"Software\Nami\Capabilities");
 
+        // namiplayer:// URL protocol
+        using (var scheme = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{UrlScheme}"))
+        {
+            scheme.SetValue("", "URL:Nami Player");
+            scheme.SetValue("URL Protocol", "");
+            using var icon = scheme.CreateSubKey("DefaultIcon");
+            icon.SetValue("", $"\"{exe}\",0");
+            using var cmd = scheme.CreateSubKey(@"shell\open\command");
+            cmd.SetValue("", openCommand);
+        }
+
         // Per-extension "Open with" entries
         foreach (var ext in AllExtensions)
         {
@@ -94,6 +123,7 @@ public static class FileAssociation
         Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{ProgId}", throwOnMissingSubKey: false);
         Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\Applications\Nami.exe", throwOnMissingSubKey: false);
         Registry.CurrentUser.DeleteSubKeyTree(@"Software\Nami\Capabilities", throwOnMissingSubKey: false);
+        Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{UrlScheme}", throwOnMissingSubKey: false);
         using (var reg = Registry.CurrentUser.OpenSubKey(@"Software\RegisteredApplications", writable: true))
             reg?.DeleteValue(AppName, throwOnMissingValue: false);
         foreach (var ext in AllExtensions)

@@ -82,9 +82,14 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="TimeText" Grid.Column="0" Text="00:00" FontSize="12" Foreground="{StaticResource OverlayTextBrush}"
                                VerticalAlignment="Center" MinWidth="40" TextAlignment="Right" FontFamily="Segoe UI Variable Text" />
-                    <Slider x:Name="SeekSlider" Grid.Column="1" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.001"
-                            VerticalAlignment="Center" ValueChanged="SeekSlider_ValueChanged"
-                            PointerMoved="SeekSlider_PointerMoved" PointerExited="SeekSlider_PointerExited" />
+                    <Grid x:Name="SeekHost" Grid.Column="1">
+                        <Slider x:Name="SeekSlider" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.001"
+                                VerticalAlignment="Center" ValueChanged="SeekSlider_ValueChanged"
+                                PointerMoved="SeekSlider_PointerMoved" PointerExited="SeekSlider_PointerExited" />
+                        <!-- A-B loop markers -->
+                        <Rectangle x:Name="LoopA" Width="2" Height="14" Fill="#FFFFC83D" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Collapsed" IsHitTestVisible="False" />
+                        <Rectangle x:Name="LoopB" Width="2" Height="14" Fill="#FFFFC83D" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Collapsed" IsHitTestVisible="False" />
+                    </Grid>
                     <Button x:Name="DurationButton" Grid.Column="2" Style="{StaticResource OscButton}" Width="52" Height="24" Click="DurationButton_Click"
                             ToolTipService.ToolTip="残り時間に切替" AutomationProperties.Name="残り時間に切替">
                         <TextBlock x:Name="DurationText" Text="00:00" FontSize="12" Foreground="{StaticResource OverlayTextBrush}" MinWidth="40" FontFamily="Segoe UI Variable Text" />

@@ -179,6 +179,9 @@ internal static unsafe partial class LibMpv
     public static partial byte* mpv_get_property_string(nint ctx, string name);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial byte* mpv_get_property_osd_string(nint ctx, string name);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     public static partial int mpv_observe_property(nint ctx, ulong replyUserdata, string name, MpvFormat format);
 
     [LibraryImport(Lib)] public static partial int mpv_unobserve_property(nint ctx, ulong registeredReplyUserdata);

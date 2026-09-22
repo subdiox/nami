@@ -30,6 +30,11 @@ public sealed record ChapterInfo(int Index, string Title, double Time)
     public string TimeText => Fmt.Time(Time);
 }
 
+public sealed record AudioDeviceInfo(string Name, string Description)
+{
+    public string Display => Name == "auto" ? "自動（既定のデバイス）" : (string.IsNullOrEmpty(Description) ? Name : Description);
+}
+
 /// <summary>Display size of the current video (aspect-corrected, rotation applied). 0x0 when unknown.</summary>
 public readonly record struct VideoSize(long Width, long Height)
 {

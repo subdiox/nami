@@ -88,8 +88,22 @@ public partial class App : Application
                     catch (Exception ex) { Log("unregister failed: " + ex); }
                     continue;
             }
+            if (a.StartsWith("--mpv-", StringComparison.Ordinal))
+            {
+                // --mpv-hwdec=no  →  mpv option hwdec=no (only effective before the core is created)
+                string body = a[6..];
+                int eq = body.IndexOf('=');
+                Mpv.MpvPlayer.ExtraOptions.Add(eq < 0 ? (body, "yes") : (body[..eq], body[(eq + 1)..]));
+                continue;
+            }
             if (a.StartsWith("--", StringComparison.Ordinal)) continue;
-            Vm.Open(a, append: !first);
+            string target = a;
+            if (a.StartsWith(FileAssociation.UrlScheme + "://", StringComparison.OrdinalIgnoreCase))
+            {
+                target = FileAssociation.ParseSchemeUrl(a) ?? "";
+                if (target.Length == 0) continue;
+            }
+            Vm.Open(target, append: !first);
             first = false;
         }
     }

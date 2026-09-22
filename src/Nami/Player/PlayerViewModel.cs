@@ -68,6 +68,13 @@ public sealed partial class PlayerViewModel : ObservableObject
     /// <summary>True when the current file has no real video (audio only, or cover art only).</summary>
     [ObservableProperty] public partial bool IsAudioOnly { get; set; }
     [ObservableProperty] public partial bool MusicMode { get; set; }
+    [ObservableProperty] public partial double AbLoopA { get; set; } = double.NaN;
+    [ObservableProperty] public partial double AbLoopB { get; set; } = double.NaN;
+    [ObservableProperty] public partial string AudioDevice { get; set; } = "auto";
+    [ObservableProperty] public partial string Crop { get; set; } = "";
+    [ObservableProperty] public partial string VideoFilters { get; set; } = "";
+    [ObservableProperty] public partial double VideoZoom { get; set; }
+    public ObservableCollection<AudioDeviceInfo> AudioDevices { get; } = [];
 
     public ObservableCollection<TrackInfo> VideoTracks { get; } = [];
     public ObservableCollection<TrackInfo> AudioTracks { get; } = [];
@@ -116,7 +123,10 @@ public sealed partial class PlayerViewModel : ObservableObject
         // Restore persisted state.
         var s = App.Settings;
         s.Subtitles.Apply(player);
-        if (s.RememberVolume)
+        if (s.EqEnabled) ApplyEq(s.EqGains, true);
+        // Command-line --mpv-volume / --mpv-mute win over the remembered values.
+        bool cliVolume = MpvPlayer.ExtraOptions.Any(o => o.name is "volume" or "mute");
+        if (s.RememberVolume && !cliVolume)
         {
             Try(() => player.SetProperty("volume", s.Volume));
             Try(() => player.SetProperty("mute", s.Muted));
@@ -194,6 +204,8 @@ public sealed partial class PlayerViewModel : ObservableObject
         ("playlist-pos", MpvFormat.Int64), ("playlist-count", MpvFormat.Int64),
         ("track-list", MpvFormat.Node), ("playlist", MpvFormat.Node), ("chapter-list", MpvFormat.Node),
         ("metadata", MpvFormat.Node), ("shuffle", MpvFormat.Flag), ("loop-file", MpvFormat.String), ("loop-playlist", MpvFormat.String),
+        ("ab-loop-a", MpvFormat.String), ("ab-loop-b", MpvFormat.String), ("audio-device", MpvFormat.String),
+        ("audio-device-list", MpvFormat.Node), ("video-crop", MpvFormat.String), ("vf", MpvFormat.String), ("video-zoom", MpvFormat.Double),
     ];
 
     private void OnMpvProperty(string name, object? value)
@@ -281,6 +293,13 @@ public sealed partial class PlayerViewModel : ObservableObject
                 break;
             }
             case "shuffle": Shuffle = value is true; break;
+            case "ab-loop-a": AbLoopA = ParseTime(value as string); break;
+            case "ab-loop-b": AbLoopB = ParseTime(value as string); break;
+            case "audio-device": AudioDevice = value as string ?? "auto"; break;
+            case "audio-device-list": UpdateAudioDevices(value as List<object?>); break;
+            case "video-crop": Crop = value as string ?? ""; break;
+            case "vf": VideoFilters = value as string ?? ""; break;
+            case "video-zoom": VideoZoom = value as double? ?? 0; break;
             case "loop-file": LoopFile = value is string lf && lf != "no"; break;
             case "loop-playlist": LoopPlaylist = value is string lp && lp != "no"; break;
         }
@@ -297,6 +316,19 @@ public sealed partial class PlayerViewModel : ObservableObject
     }
 
     // ---- node parsing -------------------------------------------------------------
+
+    private static double ParseTime(string? s)
+        => s is not null && s != "no" && double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN;
+
+    private void UpdateAudioDevices(List<object?>? list)
+    {
+        var items = new List<AudioDeviceInfo>();
+        if (list is not null)
+            foreach (var item in list)
+                if (item is Dictionary<string, object?> d)
+                    items.Add(new AudioDeviceInfo(Str(d, "name") ?? "auto", Str(d, "description") ?? ""));
+        Replace(AudioDevices, items);
+    }
 
     private static string MetaValue(Dictionary<string, object?>? d, params string[] keys)
     {
@@ -466,6 +498,33 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (!LoopPlaylist && !LoopFile) { p.SetProperty("loop-playlist", "inf"); ShowText("リピート: プレイリスト"); }
         else if (LoopPlaylist) { p.SetProperty("loop-playlist", "no"); p.SetProperty("loop-file", "inf"); ShowText("リピート: 1 曲"); }
         else { p.SetProperty("loop-file", "no"); ShowText("リピート: オフ"); }
+    });
+
+    /// <summary>mpv's ab-loop cycle: set A → set B → clear.</summary>
+    public void CycleAbLoop() => Run(p => p.TryCommand("ab-loop"));
+    public void ClearAbLoop() => Run(p => { p.SetProperty("ab-loop-a", "no"); p.SetProperty("ab-loop-b", "no"); });
+    public void SetAudioDevice(string name) => Run(p => p.SetProperty("audio-device", name));
+    public void SetCrop(string v) => Run(p => p.SetProperty("video-crop", v));
+    public void ToggleFlip(bool horizontal) => Run(p => p.TryCommand("vf", "toggle", horizontal ? "hflip" : "vflip"));
+    public void SetZoom(double zoom) => Run(p => p.SetProperty("video-zoom", Math.Clamp(zoom, -3, 3)));
+    public void ResetZoom() => Run(p => { p.SetProperty("video-zoom", 0.0); p.SetProperty("video-pan-x", 0.0); p.SetProperty("video-pan-y", 0.0); });
+
+    public static readonly int[] EqBands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+
+    /// <summary>10-band equalizer via ffmpeg's equalizer filter chain (IINA does the same).</summary>
+    public void ApplyEq(double[] gains, bool enabled) => Run(p =>
+    {
+        if (!enabled || gains.All(g => Math.Abs(g) < 0.05))
+        {
+            p.TryCommand("af", "remove", "@nami-eq");
+            return;
+        }
+        var parts = new List<string>();
+        for (int i = 0; i < EqBands.Length && i < gains.Length; i++)
+            parts.Add($"equalizer=f={EqBands[i]}:t=o:w=1:g={gains[i].ToString("0.0", CultureInfo.InvariantCulture)}");
+        string graph = "@nami-eq:lavfi=[" + string.Join(",", parts) + "]";
+        p.TryCommand("af", "remove", "@nami-eq");
+        p.TryCommand("af", "add", graph);
     });
 
     public void ToggleSidebar(SidebarKind kind) => Sidebar = Sidebar == kind ? SidebarKind.None : kind;

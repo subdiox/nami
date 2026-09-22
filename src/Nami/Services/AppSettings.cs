@@ -35,6 +35,10 @@ public sealed class AppSettings
     public string YtdlFormat { get; set; } = "bestvideo[height<=?1080]+bestaudio/best";
     public OscLayout OscLayout { get; set; } = OscLayout.Floating;
     public bool AutoMusicMode { get; set; } = true;
+    public string ScreenshotDirectory { get; set; } = "";
+    public string ScreenshotFormat { get; set; } = "png";
+    public double[] EqGains { get; set; } = new double[10];
+    public bool EqEnabled { get; set; }
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =

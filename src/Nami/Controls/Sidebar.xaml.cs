@@ -20,6 +20,8 @@ public sealed partial class Sidebar : UserControl
     private SidebarKind _kind = SidebarKind.None;
 
     private static readonly string[] AspectValues = ["no", "4:3", "16:9", "16:10", "21:9", "1:1"];
+    private static readonly string[] CropValues = ["", "16:9", "4:3", "1:1", "2.35:1"];
+    private readonly Slider[] _eqSliders = new Slider[10];
 
     public Sidebar()
     {
@@ -31,6 +33,8 @@ public sealed partial class Sidebar : UserControl
         PlaylistList.ItemsSource = Vm.Playlist;
         ChapterList.ItemsSource = Vm.Chapters;
         HistoryList.ItemsSource = Vm.History.Entries;
+        AudioDeviceCombo.ItemsSource = Vm.AudioDevices;
+        BuildEq();
 
         Loaded += (_, _) =>
         {
@@ -143,6 +147,19 @@ public sealed partial class Sidebar : UserControl
                 case nameof(PlayerViewModel.FilePath):
                     RefreshHdrInfo();
                     break;
+                case nameof(PlayerViewModel.Crop):
+                {
+                    int ci = Array.IndexOf(CropValues, Vm.Crop);
+                    CropButtons.SelectedIndex = ci < 0 ? 0 : ci;
+                    break;
+                }
+                case nameof(PlayerViewModel.VideoFilters):
+                    HFlipButton.IsChecked = Vm.VideoFilters.Contains("hflip");
+                    VFlipButton.IsChecked = Vm.VideoFilters.Contains("vflip");
+                    break;
+                case nameof(PlayerViewModel.AudioDevice):
+                    AudioDeviceCombo.SelectedItem = Vm.AudioDevices.FirstOrDefault(d => d.Name == Vm.AudioDevice);
+                    break;
             }
         }
         finally { _syncing = false; }
@@ -162,6 +179,11 @@ public sealed partial class Sidebar : UserControl
         OnListsChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         _syncing = true;
         HdrCombo.SelectedIndex = (int)App.Settings.HdrMode;
+        EqSwitch.IsOn = App.Settings.EqEnabled;
+        for (int i = 0; i < _eqSliders.Length; i++) _eqSliders[i].Value = App.Settings.EqGains.Length > i ? App.Settings.EqGains[i] : 0;
+        OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.Crop)));
+        OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.VideoFilters)));
+        OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.AudioDevice)));
         _syncing = false;
         RefreshHdrInfo();
     }
@@ -231,6 +253,81 @@ public sealed partial class Sidebar : UserControl
     }
 
     private void ResetEq_Click(object sender, RoutedEventArgs e) => Vm.ResetEq();
+
+    private void CropButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncing || CropButtons.SelectedIndex < 0) return;
+        string v = CropValues[CropButtons.SelectedIndex];
+        if (v == Vm.Crop) return;
+        Vm.SetCrop(v);
+    }
+
+    private void HFlip_Click(object sender, RoutedEventArgs e) => Vm.ToggleFlip(horizontal: true);
+    private void VFlip_Click(object sender, RoutedEventArgs e) => Vm.ToggleFlip(horizontal: false);
+    private void ResetZoom_Click(object sender, RoutedEventArgs e) => Vm.ResetZoom();
+
+    // ---- equalizer -----------------------------------------------------------------------
+
+    private void BuildEq()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            EqGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var s = new Slider
+            {
+                Orientation = Orientation.Vertical, Minimum = -12, Maximum = 12, StepFrequency = 0.5, Value = 0,
+                IsThumbToolTipEnabled = true, HorizontalAlignment = HorizontalAlignment.Center, Height = 120, Tag = i,
+            };
+            s.ValueChanged += EqBand_ValueChanged;
+            var label = new TextBlock
+            {
+                Text = PlayerViewModel.EqBands[i] >= 1000 ? $"{PlayerViewModel.EqBands[i] / 1000}k" : PlayerViewModel.EqBands[i].ToString(),
+                FontSize = 10, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom,
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["OverlaySubtleTextBrush"],
+            };
+            var cell = new Grid();
+            cell.Children.Add(s);
+            cell.Children.Add(label);
+            Grid.SetColumn(cell, i);
+            EqGrid.Children.Add(cell);
+            _eqSliders[i] = s;
+        }
+    }
+
+    private void EqBand_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_syncing) return;
+        PushEq();
+    }
+
+    private void EqSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_syncing) return;
+        PushEq();
+    }
+
+    private void EqFlat_Click(object sender, RoutedEventArgs e)
+    {
+        _syncing = true;
+        foreach (var s in _eqSliders) s.Value = 0;
+        _syncing = false;
+        PushEq();
+    }
+
+    private void PushEq()
+    {
+        var gains = _eqSliders.Select(s => s.Value).ToArray();
+        App.Settings.EqGains = gains;
+        App.Settings.EqEnabled = EqSwitch.IsOn;
+        App.Settings.Save();
+        Vm.ApplyEq(gains, EqSwitch.IsOn);
+    }
+
+    private void AudioDeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncing || AudioDeviceCombo.SelectedItem is not AudioDeviceInfo d || d.Name == Vm.AudioDevice) return;
+        Vm.SetAudioDevice(d.Name);
+    }
 
     private void HdrCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

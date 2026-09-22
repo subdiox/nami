@@ -34,6 +34,12 @@ public sealed unsafe class MpvPlayer : IDisposable
     /// <summary>Raised on the event thread when a hook fires; the handler runs before mpv continues.</summary>
     public event Action<string>? Hook;
 
+    /// <summary>Raw mpv handle for the few call sites that need a property the wrapper does not expose.</summary>
+    internal nint Handle => _handle;
+
+    /// <summary>"--mpv-name=value" command-line passthrough, applied before mpv_initialize.</summary>
+    public static List<(string name, string value)> ExtraOptions { get; } = [];
+
     public MpvPlayer(DispatcherQueue ui, int initialWidth, int initialHeight, string configDir)
     {
         _ui = ui;
@@ -78,8 +84,18 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("osd-margin-y", "24");
         Option("osd-duration", "1500");
 
-        Option("screenshot-directory", Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+        Option("screenshot-directory", string.IsNullOrEmpty(App.Settings.ScreenshotDirectory)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) : App.Settings.ScreenshotDirectory);
         Option("screenshot-template", "Nami-%F-%P");
+        Option("screenshot-format", App.Settings.ScreenshotFormat);
+        Option("screenshot-jpeg-quality", "92");
+        Option("screenshot-png-compression", "5");
+
+        foreach (var (name, value) in ExtraOptions)
+        {
+            int r = LibMpv.mpv_set_option_string(_handle, name, value);
+            if (r < 0) App.Log($"--mpv-{name}={value}: {LibMpv.ErrorString(r)}");
+        }
 
         Option("audio-client-name", "Nami");
 

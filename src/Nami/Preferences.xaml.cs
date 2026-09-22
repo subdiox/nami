@@ -34,6 +34,19 @@ public sealed partial class Preferences : ContentDialog
         int fi = Array.FindIndex(YtDlp.Formats, f => f.value == s.YtdlFormat);
         YtdlFormatCombo.SelectedIndex = fi < 0 ? 3 : fi;
         _ = RefreshYtDlpStatusAsync();
+        ScreenshotDirBox.Text = s.ScreenshotDirectory;
+        ScreenshotFormatCombo.SelectedItem = s.ScreenshotFormat;
+        if (ScreenshotFormatCombo.SelectedIndex < 0) ScreenshotFormatCombo.SelectedIndex = 0;
+    }
+
+    private async void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Window is null) return;
+        var picker = new Windows.Storage.Pickers.FolderPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary };
+        picker.FileTypeFilter.Add("*");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        var folder = await picker.PickSingleFolderAsync();
+        if (folder is not null) ScreenshotDirBox.Text = folder.Path;
     }
 
     private async Task RefreshYtDlpStatusAsync()
@@ -189,6 +202,18 @@ public sealed partial class Preferences : ContentDialog
         s.KeepHistory = HistorySwitch.IsOn;
         s.SeekThumbnails = ThumbnailSwitch.IsOn;
         s.AutoMusicMode = AutoMusicSwitch.IsOn;
+        s.ScreenshotDirectory = ScreenshotDirBox.Text.Trim();
+        s.ScreenshotFormat = ScreenshotFormatCombo.SelectedItem as string ?? "png";
+        if (App.Vm.Player is { } shp)
+        {
+            try
+            {
+                shp.SetProperty("screenshot-directory", string.IsNullOrEmpty(s.ScreenshotDirectory)
+                    ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) : s.ScreenshotDirectory);
+                shp.SetProperty("screenshot-format", s.ScreenshotFormat);
+            }
+            catch (Mpv.MpvException) { }
+        }
         s.OscLayout = (OscLayout)Math.Max(0, OscLayoutCombo.SelectedIndex);
         App.Window?.Page.ApplyOscLayout(s.OscLayout);
         if (YtdlFormatCombo.SelectedIndex >= 0)

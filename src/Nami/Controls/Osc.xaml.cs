@@ -43,7 +43,7 @@ public sealed partial class Osc : UserControl
 
     private void ApplyLayout()
     {
-        foreach (var el in new FrameworkElement[] { VolumePanel, CenterPanel, ToolbarPanel, TimeText, SeekSlider, DurationButton })
+        foreach (var el in new FrameworkElement[] { VolumePanel, CenterPanel, ToolbarPanel, TimeText, SeekHost, DurationButton })
             Detach(el);
 
         if (_layout == Services.OscLayout.Floating)
@@ -52,7 +52,7 @@ public sealed partial class Osc : UserControl
             FloatingRow1.Children.Add(CenterPanel); Grid.SetColumn(CenterPanel, 1);
             FloatingRow1.Children.Add(ToolbarPanel); Grid.SetColumn(ToolbarPanel, 2);
             FloatingRow2.Children.Add(TimeText); Grid.SetColumn(TimeText, 0);
-            FloatingRow2.Children.Add(SeekSlider); Grid.SetColumn(SeekSlider, 1);
+            FloatingRow2.Children.Add(SeekHost); Grid.SetColumn(SeekHost, 1);
             FloatingRow2.Children.Add(DurationButton); Grid.SetColumn(DurationButton, 2);
             FloatingRoot.Visibility = Visibility.Visible;
             BarRoot.Visibility = Visibility.Collapsed;
@@ -61,7 +61,7 @@ public sealed partial class Osc : UserControl
         {
             BarRow.Children.Add(CenterPanel); Grid.SetColumn(CenterPanel, 0);
             BarRow.Children.Add(TimeText); Grid.SetColumn(TimeText, 1);
-            BarRow.Children.Add(SeekSlider); Grid.SetColumn(SeekSlider, 2);
+            BarRow.Children.Add(SeekHost); Grid.SetColumn(SeekHost, 2);
             BarRow.Children.Add(DurationButton); Grid.SetColumn(DurationButton, 3);
             BarRow.Children.Add(VolumePanel); Grid.SetColumn(VolumePanel, 4);
             BarRow.Children.Add(ToolbarPanel); Grid.SetColumn(ToolbarPanel, 5);
@@ -81,6 +81,7 @@ public sealed partial class Osc : UserControl
         };
         Unloaded += (_, _) => Vm.PropertyChanged -= OnVmChanged;
 
+        SeekSlider.SizeChanged += (_, _) => SyncLoopMarkers();
         SeekSlider.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrubbing = true), true);
         SeekSlider.AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => { _scrubbing = false; SyncTime(); }), true);
         SeekSlider.AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => { _scrubbing = false; SyncTime(); }), true);
@@ -102,9 +103,27 @@ public sealed partial class Osc : UserControl
             case nameof(PlayerViewModel.Muted):
                 SyncVolume();
                 break;
+            case nameof(PlayerViewModel.AbLoopA):
+            case nameof(PlayerViewModel.AbLoopB):
+                SyncLoopMarkers();
+                break;
             case nameof(PlayerViewModel.Fullscreen):
                 FullscreenIcon.Glyph = Vm.Fullscreen ? "" : "";
                 break;
+        }
+    }
+
+    private void SyncLoopMarkers()
+    {
+        double w = SeekSlider.ActualWidth;
+        Place(LoopA, Vm.AbLoopA, w);
+        Place(LoopB, Vm.AbLoopB, w);
+
+        void Place(Microsoft.UI.Xaml.Shapes.Rectangle r, double t, double width)
+        {
+            if (double.IsNaN(t) || Vm.Duration <= 0 || width <= 0) { r.Visibility = Visibility.Collapsed; return; }
+            r.Margin = new Thickness(Math.Clamp(t / Vm.Duration, 0, 1) * width - 1, 0, 0, 0);
+            r.Visibility = Visibility.Visible;
         }
     }
 
