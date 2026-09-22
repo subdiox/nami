@@ -107,6 +107,8 @@ public sealed partial class VideoView : SwapChainPanel
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
         Vm?.Attach(player);
+        if (Vm is not null)
+            Vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PlayerViewModel.VideoSize)) { _fillOutput = false; ApplyKeepAspect(); } };
         PlayerCreated?.Invoke(player);
     }
 
@@ -151,17 +153,52 @@ public sealed partial class VideoView : SwapChainPanel
     {
         if (_player is null) return;
         _wanted = PixelSize();
+        ApplyKeepAspect();
         _player.SetOutputSize(_wanted.w, _wanted.h);
         _syncDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(1);
         if (!_sync.IsRunning) _sync.Start();
     }
 
-    /// <summary>Map the buffer onto the panel (DPI inverse once sizes match, a stretch while they do not).</summary>
+    /// <summary>
+    /// Map the buffer onto the panel: the DPI inverse once sizes match; while they do not (a live
+    /// resize, before mpv has caught up) the frame is scaled uniformly to fit and centered, so it
+    /// never looks squashed for a frame.
+    /// </summary>
     private void ApplyTransform()
     {
         if (_swapChain == 0 || ActualWidth <= 0 || ActualHeight <= 0) return;
         var (bw, bh) = SwapChainPanelInterop.GetBufferSize(_swapChain);
         if (bw <= 0 || bh <= 0) { SwapChainPanelInterop.SetTransform(_swapChain, 1f / CompositionScaleX, 1f / CompositionScaleY); return; }
-        SwapChainPanelInterop.SetTransform(_swapChain, (float)(ActualWidth / bw), (float)(ActualHeight / bh));
+        double sx = ActualWidth / bw, sy = ActualHeight / bh;
+        if (Math.Abs(sx - sy) / Math.Max(sx, sy) < 0.005)
+        {
+            SwapChainPanelInterop.SetTransform(_swapChain, (float)sx, (float)sy);   // same aspect: fill exactly
+            return;
+        }
+        double s = Math.Min(sx, sy);
+        SwapChainPanelInterop.SetTransform(_swapChain, (float)s, (float)s,
+            (float)((ActualWidth - bw * s) / 2), (float)((ActualHeight - bh * s) / 2));
     }
+
+    /// <summary>
+    /// mpv letterboxes whenever the output is not exactly the video aspect, and the window's aspect
+    /// lock can only be integer-exact, so a 1 px black line would show up at many sizes. When the
+    /// panel is within 1 % of the video aspect, let mpv fill the output instead (a sub-pixel stretch
+    /// nobody can see); at real letterbox aspects (maximized, snapped, full screen) keep the bars.
+    /// </summary>
+    private void ApplyKeepAspect()
+    {
+        if (_player is null || Vm is null) return;
+        bool fill = false;
+        if (Vm.VideoSize.IsValid && ActualWidth > 0 && ActualHeight > 0)
+        {
+            var (w, h) = PixelSize();
+            fill = Math.Abs((double)w / h / Vm.VideoSize.Aspect - 1) < 0.01;
+        }
+        if (fill == _fillOutput) return;
+        _fillOutput = fill;
+        try { _player.SetProperty("keepaspect", !fill); } catch (MpvException) { }
+    }
+
+    private bool _fillOutput;
 }

@@ -39,7 +39,7 @@ internal static unsafe class SwapChainPanelInterop
     /// the plain DPI inverse once the buffer matches the panel, and a temporary stretch while it
     /// does not (during a live resize, until mpv has resized and presented).
     /// </summary>
-    public static void SetTransform(nint swapChain, float m11, float m22)
+    public static void SetTransform(nint swapChain, float m11, float m22, float dx = 0, float dy = 0)
     {
         if (swapChain == 0 || !(m11 > 0) || !(m22 > 0)) return;
         Guid iid = IDXGISwapChain2.IID_Guid;
@@ -48,7 +48,7 @@ internal static unsafe class SwapChainPanelInterop
         try
         {
             var sc = (IDXGISwapChain2*)p;
-            var m = new DXGI_MATRIX_3X2_F { _11 = m11, _22 = m22 };
+            var m = new DXGI_MATRIX_3X2_F { _11 = m11, _22 = m22, _31 = dx, _32 = dy };
             sc->SetMatrixTransform(&m);
         }
         finally
