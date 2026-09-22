@@ -53,3 +53,4 @@ GetModuleHandle
 RoGetActivationFactory
 WindowsCreateString
 WindowsDeleteString
+SetWindowLongPtr

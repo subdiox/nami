@@ -51,6 +51,8 @@ public sealed class WindowManager
         };
         window.Closed += (_, _) =>
         {
+            // An owned preferences window is destroyed with its owner; close it cleanly first.
+            if (_preferences?.Owner == window) { try { _preferences.Close(); } catch { } _preferences = null; }
             _windows.Remove(window);
             if (Active == window) Active = _windows.LastOrDefault();
         };

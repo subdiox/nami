@@ -15,6 +15,9 @@ public sealed partial class Preferences : Window
 
     private readonly Player.PlayerViewModel _vm;
 
+    /// <summary>The player window this preferences window is owned by (closed together with it).</summary>
+    public MainWindow? Owner { get; private set; }
+
     public Preferences(Player.PlayerViewModel vm)
     {
         _vm = vm;
@@ -26,6 +29,11 @@ public sealed partial class Preferences : Window
         AppWindow.ResizeClient(size);
         if (_vm.Window is { } owner)
         {
+            // Owned by the player window: stays above it even when the player is "always on top"
+            // (owned windows share their owner's z-order band), minimizes with it, no extra taskbar entry.
+            Owner = owner;
+            Windows.Win32.PInvoke.SetWindowLongPtr((Windows.Win32.Foundation.HWND)WinRT.Interop.WindowNative.GetWindowHandle(this),
+                Windows.Win32.UI.WindowsAndMessaging.WINDOW_LONG_PTR_INDEX.GWLP_HWNDPARENT, owner.Hwnd);
             // Centered over the player window that opened it.
             var o = owner.AppWindow;
             AppWindow.Move(new Windows.Graphics.PointInt32(o.Position.X + (o.Size.Width - AppWindow.Size.Width) / 2, o.Position.Y + (o.Size.Height - AppWindow.Size.Height) / 2));
