@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            $v = "${{ github.ref_name }}".Substring(1)
+          } else {
+            $v = "0.0.${{ github.run_number }}"
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $v"
+
+      - name: Fetch libmpv
+        shell: pwsh
+        run: scripts/fetch-libmpv.ps1
+
+      - name: Build (Debug, catches XAML/C# errors fast)
+        shell: pwsh
+        run: dotnet build src/Nami -c Debug -p:Platform=x64 -nologo
+
+      - name: Publish (Release, Native AOT)
+        shell: pwsh
+        run: scripts/publish.ps1 -Version ${{ steps.version.outputs.version }}
+
+      - name: Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
+            /DAppVersion=${{ steps.version.outputs.version }} `
+            installer/Nami.iss
+          Get-ChildItem installer/Output
+
+      - name: Portable zip
+        shell: pwsh
+        run: |
+          $pub = "src/Nami/bin/Release/net10.0-windows10.0.26100.0/win-x64/publish"
+          Compress-Archive -Path "$pub/*" -DestinationPath "installer/Output/Nami-${{ steps.version.outputs.version }}-win-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nami-${{ steps.version.outputs.version }}
+          path: installer/Output/*
+          if-no-files-found: error
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/Output/*
+          generate_release_notes: true

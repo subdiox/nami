@@ -47,6 +47,23 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        var argv = Environment.GetCommandLineArgs().Skip(1).ToList();
+        if (argv.Count > 0 && argv.All(a => a is "--register" or "--unregister"))
+        {
+            // Installer / uninstaller mode: no window.
+            foreach (var a in argv)
+            {
+                try
+                {
+                    if (a == "--register") FileAssociation.Register(); else FileAssociation.Unregister();
+                    Log($"{a}: ok");
+                }
+                catch (Exception ex) { Log($"{a} failed: {ex}"); }
+            }
+            Exit();
+            return;
+        }
+
         var window = _services.Windows.New();
         Log($"T+{Program.Uptime} ms window activated");
         window.Vm.FileLoaded += () => Log($"T+{Program.Uptime} ms file loaded: {window.Vm.FilePath}");

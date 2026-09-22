@@ -56,3 +56,6 @@ Generated\ Files/
 
 # libmpv binary is fetched by scripts/fetch-libmpv.ps1
 third_party/libmpv/*.dll
+
+# installer output
+installer/Output/

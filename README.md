@@ -24,8 +24,20 @@ dotnet run --project src\Nami -- "C:\path\to\video.mkv"
 Release build (Native AOT, self-contained; needs the VS Build Tools C++ workload for the linker):
 
 ```powershell
-scripts\publish.ps1
+scripts\publish.ps1 -Version 0.1.0
 ```
+
+Installer (Inno Setup 6, `winget install JRSoftware.InnoSetup`):
+
+```powershell
+scripts\make-installer.ps1 -Version 0.1.0     # → installer\Output\Nami-Setup-0.1.0.exe
+```
+
+The installer is per-user by default, registers file associations and `namiplayer://` through
+`Nami.exe --register`, and unregisters them on uninstall. User data in `%LOCALAPPDATA%\Nami` is kept.
+
+CI: `.github/workflows/build.yml` builds, publishes and packages on every push; pushing a tag like
+`v0.1.0` also creates a GitHub release with the installer and a portable zip.
 
 ## Features
 
