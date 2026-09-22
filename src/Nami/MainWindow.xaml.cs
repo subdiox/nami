@@ -315,6 +315,17 @@ public sealed partial class MainWindow : Window
 
     public bool IsCompact => _compact;
 
+    /// <summary>
+    /// Start the system window-move loop from a client-area drag (what WPF's Window.DragMove does):
+    /// SC_MOVE with HTCAPTION makes Windows treat the drag as a caption drag, including Aero Snap.
+    /// </summary>
+    public void BeginSystemMove()
+    {
+        Windows.Win32.PInvoke.ReleaseCapture();
+        Windows.Win32.PInvoke.SendMessage((Windows.Win32.Foundation.HWND)Hwnd, Windows.Win32.PInvoke.WM_SYSCOMMAND,
+            new Windows.Win32.Foundation.WPARAM(Windows.Win32.PInvoke.SC_MOVE | Windows.Win32.PInvoke.HTCAPTION), default);
+    }
+
     private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)Hwnd) / 96.0;
 
     /// <summary>Resize the window so the client area matches the video aspect (IINA does this on open).</summary>

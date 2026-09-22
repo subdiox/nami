@@ -382,9 +382,17 @@ public sealed partial class MainPage : Page
         if (!_dragging)
         {
             if (Math.Abs(p.X - _pressPoint.X) <= DragThreshold && Math.Abs(p.Y - _pressPoint.Y) <= DragThreshold) return;
-            if (w.IsMaximized) { _leftDown = false; return; }   // Windows does not drag maximized windows either
-            _dragging = true;
             _clickTimer.Stop();
+            if (!w.IsCompact)
+            {
+                // Normal window: hand the drag to the system's move loop, exactly like dragging the
+                // title bar (Aero Snap at the screen edges, restore-from-maximized, Snap groups).
+                _leftDown = false;
+                w.BeginSystemMove();
+                return;
+            }
+            // Mini player: plain move, no snapping (a picture-in-picture window should not be snapped to half a screen).
+            _dragging = true;
             _dragWindowOrigin = w.AppWindow.Position;
             _dragCursorOrigin = WindowInterop.CursorPosition;
             Root.CapturePointer(e.Pointer);
