@@ -51,7 +51,8 @@ public sealed unsafe class ThumbnailGenerator : IDisposable
 
     private Thread? _thread;
     private CancellationTokenSource? _cts;
-    private static readonly ManualResetEventSlim s_frameEvent = new(false);
+    private readonly ManualResetEventSlim _frameEvent = new(false);
+    private GCHandle _self;
 
     public ThumbnailSet? Current { get; private set; }
     public event Action<ThumbnailSet>? Progress;
@@ -78,10 +79,17 @@ public sealed unsafe class ThumbnailGenerator : IDisposable
         _cts = null;
     }
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        Stop();
+        if (_self.IsAllocated) _self.Free();
+    }
 
     [UnmanagedCallersOnly]
-    private static void OnUpdate(void* ctx) => s_frameEvent.Set();
+    private static void OnUpdate(void* ctx)
+    {
+        if (GCHandle.FromIntPtr((nint)ctx).Target is ThumbnailGenerator self) self._frameEvent.Set();
+    }
 
     private void Run(ThumbnailSet set, CancellationToken ct)
     {
@@ -115,7 +123,8 @@ public sealed unsafe class ThumbnailGenerator : IDisposable
                 nint rc;
                 if (LibMpv.mpv_render_context_create(&rc, mpv, createParams) < 0) { App.Log("thumbnails: render context failed"); return; }
                 render = rc;
-                LibMpv.mpv_render_context_set_update_callback(render, &OnUpdate, null);
+                if (!_self.IsAllocated) _self = GCHandle.Alloc(this, GCHandleType.Weak);
+                LibMpv.mpv_render_context_set_update_callback(render, &OnUpdate, (void*)GCHandle.ToIntPtr(_self));
 
                 // load the file
                 Command(mpv, "loadfile", set.Path);
@@ -132,12 +141,12 @@ public sealed unsafe class ThumbnailGenerator : IDisposable
                 for (int i = 0; i < set.Count && !ct.IsCancellationRequested; i++)
                 {
                     double t = set.Duration * (i + 0.5) / set.Count;
-                    s_frameEvent.Reset();
+                    _frameEvent.Reset();
                     Command(mpv, "seek", t.ToString("F3", System.Globalization.CultureInfo.InvariantCulture), "absolute+exact");
                     if (!WaitFor(mpv, MpvEventId.PlaybackRestart, TimeSpan.FromSeconds(5), ct)) continue;
-                    if (!s_frameEvent.Wait(TimeSpan.FromSeconds(2), ct)) continue;
+                    if (!_frameEvent.Wait(TimeSpan.FromSeconds(2), ct)) continue;
                     ulong flags = LibMpv.mpv_render_context_update(render);
-                    if ((flags & 1) == 0 && !s_frameEvent.Wait(500, ct)) continue;
+                    if ((flags & 1) == 0 && !_frameEvent.Wait(500, ct)) continue;
                     if (LibMpv.mpv_render_context_render(render, renderParams) < 0) continue;
                     set.Set(i, (byte[])buffer.Clone());
                     Progress?.Invoke(set);

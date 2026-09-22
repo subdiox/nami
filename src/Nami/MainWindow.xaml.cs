@@ -3,12 +3,15 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Nami.Player;
+using Nami.Services;
 using Windows.Graphics;
 
 namespace Nami;
 
 public sealed partial class MainWindow : Window
 {
+    private readonly AppServices _services;
+    private readonly MainPage Main;
     public PlayerViewModel Vm => Main.Vm;
     private Interop.AspectRatioLock? _aspectLock;
     public Interop.DisplayInfo? LastDisplay { get; private set; }
@@ -22,9 +25,12 @@ public sealed partial class MainWindow : Window
     public nint Hwnd { get; }
     public MainPage Page => Main;
 
-    public MainWindow()
+    public MainWindow(AppServices services)
     {
+        _services = services;
         InitializeComponent();
+        Main = new MainPage(services);
+        RootGrid.Children.Insert(0, Main);
         Hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         Vm.Window = this;
 
@@ -49,10 +55,10 @@ public sealed partial class MainWindow : Window
         }
 
         Vm.PropertyChanged += OnVmChanged;
-        Vm.FileLoaded += () => _fitOnNextVideoSize = App.Settings.ResizeWindowToVideo;
+        Vm.FileLoaded += () => _fitOnNextVideoSize = _services.Settings.ResizeWindowToVideo;
         Vm.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName != nameof(PlayerViewModel.IsAudioOnly) || !App.Settings.AutoMusicMode) return;
+            if (e.PropertyName != nameof(PlayerViewModel.IsAudioOnly) || !_services.Settings.AutoMusicMode) return;
             // Audio file → music mode; video file → back to the normal window.
             if (Vm.IsAudioOnly && !Vm.MusicMode) SetMusicMode(true);
             else if (!Vm.IsAudioOnly && Vm.MusicMode && Vm.VideoTracks.Count > 0) SetMusicMode(false);
@@ -268,7 +274,7 @@ public sealed partial class MainWindow : Window
     {
         if (Vm.Player is { } p)
         {
-            (LastDisplay, IsHdrPassthrough) = HdrController.Apply(p, Hwnd, App.Settings.HdrMode);
+            (LastDisplay, IsHdrPassthrough) = HdrController.Apply(p, Hwnd, _services.Settings.HdrMode);
             _lastDisplayDevice = LastDisplay?.DeviceName;
         }
     }

@@ -67,7 +67,8 @@ public sealed partial class VideoView : SwapChainPanel
         Directory.CreateDirectory(configDir);
 
         App.Log($"T+{Program.Uptime} ms creating mpv core ({w}x{h})");
-        var player = new MpvPlayer(DispatcherQueue.GetForCurrentThread(), w, h, configDir);
+        if (Vm is null) throw new InvalidOperationException("VideoView.Vm must be set before the control loads");
+        var player = new MpvPlayer(DispatcherQueue.GetForCurrentThread(), w, h, configDir, Vm.Services.Settings, Vm.Services.Launch.Extra);
         App.Log($"T+{Program.Uptime} ms mpv core ready");
         player.SwapChainChanged += OnSwapChainChanged;
         _player = player;

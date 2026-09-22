@@ -187,9 +187,9 @@ public sealed partial class Sidebar : UserControl
             OnVmChanged(this, new PropertyChangedEventArgs(name));
         OnListsChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         _syncing = true;
-        HdrCombo.SelectedIndex = (int)App.Settings.HdrMode;
-        EqSwitch.IsOn = App.Settings.EqEnabled;
-        for (int i = 0; i < _eqSliders.Length; i++) _eqSliders[i].Value = App.Settings.EqGains.Length > i ? App.Settings.EqGains[i] : 0;
+        HdrCombo.SelectedIndex = (int)Vm.Services.Settings.HdrMode;
+        EqSwitch.IsOn = Vm.Services.Settings.EqEnabled;
+        for (int i = 0; i < _eqSliders.Length; i++) _eqSliders[i].Value = Vm.Services.Settings.EqGains.Length > i ? Vm.Services.Settings.EqGains[i] : 0;
         OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.Crop)));
         OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.VideoFilters)));
         OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.AudioDevice)));
@@ -326,9 +326,9 @@ public sealed partial class Sidebar : UserControl
     private void PushEq()
     {
         var gains = _eqSliders.Select(s => s.Value).ToArray();
-        App.Settings.EqGains = gains;
-        App.Settings.EqEnabled = EqSwitch.IsOn;
-        App.Settings.Save();
+        Vm.Services.Settings.EqGains = gains;
+        Vm.Services.Settings.EqEnabled = EqSwitch.IsOn;
+        Vm.Services.Settings.Save();
         Vm.ApplyEq(gains, EqSwitch.IsOn);
     }
 
@@ -341,9 +341,9 @@ public sealed partial class Sidebar : UserControl
     private void HdrCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_syncing || HdrCombo.SelectedIndex < 0) return;
-        App.Settings.HdrMode = (HdrMode)HdrCombo.SelectedIndex;
-        App.Settings.Save();
-        foreach (var w in App.Windows) w.ApplyHdr();
+        Vm.Services.Settings.HdrMode = (HdrMode)HdrCombo.SelectedIndex;
+        Vm.Services.Settings.Save();
+        foreach (var w in Vm.Services.Windows.All) w.ApplyHdr();
         RefreshHdrInfo();
     }
 
@@ -474,7 +474,7 @@ public sealed partial class Sidebar : UserControl
 
     private async void AddToPlaylist_Click(object sender, RoutedEventArgs e)
     {
-        var files = await PickFilesAsync(FileAssociation.AllExtensions);
+        var files = await PickFilesAsync(Vm.Window, FileAssociation.AllExtensions);
         if (files.Count > 0) Vm.OpenMany(files, append: true);
     }
 
@@ -516,20 +516,20 @@ public sealed partial class Sidebar : UserControl
 
     // ---- pickers ---------------------------------------------------------------------
 
-    private static async Task<string?> PickFileAsync(IEnumerable<string> extensions)
+    private async Task<string?> PickFileAsync(IEnumerable<string> extensions)
     {
-        var files = await PickFilesAsync(extensions, multiple: false);
+        var files = await PickFilesAsync(Vm.Window, extensions, multiple: false);
         return files.Count > 0 ? files[0] : null;
     }
 
-    public static async Task<List<string>> PickFilesAsync(IEnumerable<string> extensions, bool multiple = true)
+    public static async Task<List<string>> PickFilesAsync(MainWindow? owner, IEnumerable<string> extensions, bool multiple = true)
     {
         var result = new List<string>();
-        if (App.ActiveWindow is null) return result;
+        if (owner is null) return result;
         var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.VideosLibrary };
         foreach (var ext in extensions) picker.FileTypeFilter.Add(ext);
         picker.FileTypeFilter.Add("*");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.ActiveWindow));
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(owner));
         if (multiple)
         {
             var files = await picker.PickMultipleFilesAsync();

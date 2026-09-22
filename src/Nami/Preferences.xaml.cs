@@ -22,7 +22,7 @@ public sealed partial class Preferences : ContentDialog
         OscLayoutCombo.ItemsSource = new List<string> {L.T("Floating (default)"), L.T("Bottom bar"), L.T("Top bar")};
         SubBorderStyleCombo.ItemsSource = new List<string> {L.T("Outline and shadow"), L.T("Opaque box"), L.T("Background box")};
         SubAssOverrideCombo.ItemsSource = new List<string> {L.T("Use the styles from the subtitle file"), L.T("Override with these settings (yes)"), L.T("Match size only (scale)"), L.T("Force override (force)"), L.T("Strip styling (strip)")};
-        var s = App.Settings;
+        var s = _vm.Services.Settings;
         LanguageCombo.ItemsSource = L.Available.Select(a => a.name).ToList();
         int li = Array.FindIndex(L.Available, a => a.code == s.Language);
         LanguageCombo.SelectedIndex = li < 0 ? 0 : li;
@@ -51,10 +51,10 @@ public sealed partial class Preferences : ContentDialog
 
     private async void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
     {
-        if (App.ActiveWindow is null) return;
+        if (_vm.Window is null) return;
         var picker = new Windows.Storage.Pickers.FolderPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary };
         picker.FileTypeFilter.Add("*");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.ActiveWindow));
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(_vm.Window));
         var folder = await picker.PickSingleFolderAsync();
         if (folder is not null) ScreenshotDirBox.Text = folder.Path;
     }
@@ -147,7 +147,7 @@ public sealed partial class Preferences : ContentDialog
 
     private SubtitleStyle CollectSubtitleStyle()
     {
-        var old = App.Settings.Subtitles;
+        var old = _vm.Services.Settings.Subtitles;
         string font = SubFontCombo.Text?.Trim() ?? "";
         return new SubtitleStyle
         {
@@ -213,7 +213,7 @@ public sealed partial class Preferences : ContentDialog
 
     private void OnSave(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        var s = App.Settings;
+        var s = _vm.Services.Settings;
         s.ResizeWindowToVideo = ResizeSwitch.IsOn;
         if (LanguageCombo.SelectedIndex >= 0) s.Language = L.Available[LanguageCombo.SelectedIndex].code;
         s.RememberVolume = RememberVolumeSwitch.IsOn;
@@ -225,7 +225,7 @@ public sealed partial class Preferences : ContentDialog
         s.AutoMusicMode = AutoMusicSwitch.IsOn;
         s.ScreenshotDirectory = ScreenshotDirBox.Text.Trim();
         s.ScreenshotFormat = ScreenshotFormatCombo.SelectedItem as string ?? "png";
-        foreach (var shp in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>())
+        foreach (var shp in _vm.Services.Windows.Players)
         {
             try
             {
@@ -236,16 +236,16 @@ public sealed partial class Preferences : ContentDialog
             catch (Mpv.MpvException) { }
         }
         s.OscLayout = (OscLayout)Math.Max(0, OscLayoutCombo.SelectedIndex);
-        foreach (var w in App.Windows) w.Page.ApplyOscLayout(s.OscLayout);
+        foreach (var w in _vm.Services.Windows.All) w.Page.ApplyOscLayout(s.OscLayout);
         if (YtdlFormatCombo.SelectedIndex >= 0)
         {
             s.YtdlFormat = YtDlp.Formats[YtdlFormatCombo.SelectedIndex].value;
-            foreach (var yp in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>()) { try { yp.SetProperty("ytdl-format", s.YtdlFormat); } catch (Mpv.MpvException) { } }
+            foreach (var yp in _vm.Services.Windows.Players) { try { yp.SetProperty("ytdl-format", s.YtdlFormat); } catch (Mpv.MpvException) { } }
         }
         s.Subtitles = CollectSubtitleStyle();
         s.SubtitleLanguages = SubLanguagesBox.Text.Trim();
-        foreach (var sp in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>()) s.Subtitles.Apply(sp);
-        foreach (var pl in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>())
+        foreach (var sp in _vm.Services.Windows.Players) s.Subtitles.Apply(sp);
+        foreach (var pl in _vm.Services.Windows.Players)
         {
             try
             {
@@ -261,7 +261,7 @@ public sealed partial class Preferences : ContentDialog
         File.WriteAllText(InputConfPath, InputConfBox.Text);
 
         // Best-effort live apply of mpv.conf: "name=value" lines become property sets.
-        foreach (var p in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>())
+        foreach (var p in _vm.Services.Windows.Players)
         {
             foreach (var raw in MpvConfBox.Text.Split('\n'))
             {

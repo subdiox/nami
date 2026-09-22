@@ -6,14 +6,7 @@ namespace Nami;
 
 public partial class App : Application
 {
-    /// <summary>All open player windows, in creation order.</summary>
-    public static List<MainWindow> Windows { get; } = [];
-
-    /// <summary>The most recently activated window; new files go here unless a new window is requested.</summary>
-    public static MainWindow? ActiveWindow { get; set; }
-
-    public static AppSettings Settings { get; private set; } = new();
-    public static History History { get; private set; } = new();
+    private readonly AppServices _services;
 
     public static string LogPath { get; } = Path.Combine(AppSettings.Directory, "nami.log");
 
@@ -21,8 +14,9 @@ public partial class App : Application
     {
         SetupLogging();
         InitializeComponent();
-        Settings = AppSettings.Load();
-        History = History.Load();
+        var settings = AppSettings.Load();
+        L.Configure(settings.Language);
+        _services = new AppServices(settings, History.Load());
         AppInstance.GetCurrent().Activated += OnRedirectedActivation;
         UnhandledException += (_, e) =>
         {
@@ -45,6 +39,7 @@ public partial class App : Application
         catch { }
     }
 
+    /// <summary>Diagnostic log line (file in %LOCALAPPDATA%\Nami). Stateless, so it stays static.</summary>
     public static void Log(string message)
     {
         System.Diagnostics.Trace.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
@@ -52,30 +47,11 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        var window = NewWindow();
+        var window = _services.Windows.New();
         Log($"T+{Program.Uptime} ms window activated");
         window.Vm.FileLoaded += () => Log($"T+{Program.Uptime} ms file loaded: {window.Vm.FilePath}");
         window.Vm.PlaybackRestart += () => Log($"T+{Program.Uptime} ms first frame / playback started");
         HandleArguments(Environment.GetCommandLineArgs().Skip(1), window);
-    }
-
-    /// <summary>Create and show a new player window.</summary>
-    public static MainWindow NewWindow()
-    {
-        var window = new MainWindow();
-        Windows.Add(window);
-        ActiveWindow = window;
-        window.Activated += (_, e) =>
-        {
-            if (e.WindowActivationState != WindowActivationState.Deactivated) ActiveWindow = window;
-        };
-        window.Closed += (_, _) =>
-        {
-            Windows.Remove(window);
-            if (ActiveWindow == window) ActiveWindow = Windows.LastOrDefault();
-        };
-        window.Activate();
-        return window;
     }
 
     /// <summary>Another instance was started (e.g. from Explorer) and redirected to us.</summary>
@@ -88,20 +64,20 @@ public partial class App : Application
         if (argv.Count > 0 && argv[0].EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             argv.RemoveAt(0);
 
-        var target = ActiveWindow ?? Windows.LastOrDefault();
+        var target = _services.Windows.Active ?? _services.Windows.All.LastOrDefault();
         var dispatcher = target?.DispatcherQueue;
         if (dispatcher is null) return;
         dispatcher.TryEnqueue(() =>
         {
-            bool newWindow = Settings.OpenInNewWindow || argv.Contains("--new-window");
-            var window = newWindow || ActiveWindow is null ? NewWindow() : ActiveWindow;
+            bool newWindow = _services.Settings.OpenInNewWindow || argv.Contains("--new-window");
+            var window = newWindow || _services.Windows.Active is null ? _services.Windows.New() : _services.Windows.Active;
             HandleArguments(argv, window);
             window.BringToFront();
         });
     }
 
     /// <summary>Apply command-line arguments: files/URLs to play plus a few switches.</summary>
-    private static void HandleArguments(IEnumerable<string> args, MainWindow window)
+    private void HandleArguments(IEnumerable<string> args, MainWindow window)
     {
         bool first = true;
         foreach (var a in args)
@@ -121,10 +97,10 @@ public partial class App : Application
             }
             if (a.StartsWith("--mpv-", StringComparison.Ordinal))
             {
-                // --mpv-hwdec=no  →  mpv option hwdec=no (only effective before the core is created)
+                // --mpv-hwdec=no  →  mpv option hwdec=no (only effective for cores created afterwards)
                 string body = a[6..];
                 int eq = body.IndexOf('=');
-                Mpv.MpvPlayer.ExtraOptions.Add(eq < 0 ? (body, "yes") : (body[..eq], body[(eq + 1)..]));
+                _services.Launch.Extra.Add(eq < 0 ? (body, "yes") : (body[..eq], body[(eq + 1)..]));
                 continue;
             }
             if (a.StartsWith("--", StringComparison.Ordinal)) continue;

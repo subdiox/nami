@@ -21,7 +21,7 @@ public sealed partial class OnlineSubtitlesDialog : ContentDialog
         InitializeComponent();
         _filePath = filePath;
         QueryBox.Text = GuessQuery(filePath, title);
-        LanguagesBox.Text = App.Settings.SubtitleLanguages;
+        LanguagesBox.Text = _vm.Services.Settings.SubtitleLanguages;
         LoadCredentials();
         Closing += (_, _) => _cts?.Cancel();
     }
@@ -69,8 +69,8 @@ public sealed partial class OnlineSubtitlesDialog : ContentDialog
         Busy.Visibility = Visibility.Visible;
         Status.Text = "";
         Results.ItemsSource = null;
-        App.Settings.SubtitleLanguages = LanguagesBox.Text.Trim();
-        App.Settings.Save();
+        _vm.Services.Settings.SubtitleLanguages = LanguagesBox.Text.Trim();
+        _vm.Services.Settings.Save();
         try
         {
             var list = await _client.SearchAsync(_apiKey, _filePath, QueryBox.Text.Trim(), LanguagesBox.Text.Trim(), _cts.Token);

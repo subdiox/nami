@@ -17,7 +17,8 @@ namespace Nami;
 
 public sealed partial class MainPage : Page
 {
-    public PlayerViewModel Vm { get; } = new();
+    public PlayerViewModel Vm { get; }
+    private readonly CursorVisibility _cursor = new();
     public Controls.VideoView VideoView => Video;
     private MainWindow? Window => Vm.Window;
 
@@ -33,8 +34,9 @@ public sealed partial class MainPage : Page
     private bool _leftDown;
     private bool _dragging;
 
-    public MainPage()
+    public MainPage(AppServices services)
     {
+        Vm = new PlayerViewModel(services);
         InitializeComponent();
         Video.Vm = Vm;
         Osc.Vm = Vm;
@@ -74,7 +76,7 @@ public sealed partial class MainPage : Page
 
         Osc.PipRequested += () => Window?.ToggleCompactMode();
         Osc.MusicModeRequested += () => Window?.SetMusicMode(true);
-        ApplyOscLayout(App.Settings.OscLayout);
+        ApplyOscLayout(Vm.Services.Settings.OscLayout);
 
         DragOver += OnDragOver;
         Drop += OnDrop;
@@ -138,7 +140,7 @@ public sealed partial class MainPage : Page
     {
         Music.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         Osc.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        BottomShade.Visibility = on || App.Settings.OscLayout != Services.OscLayout.Floating ? Visibility.Collapsed : Visibility.Visible;
+        BottomShade.Visibility = on || Vm.Services.Settings.OscLayout != Services.OscLayout.Floating ? Visibility.Collapsed : Visibility.Visible;
         Video.Margin = on ? new Thickness(0, 0, 0, Music.Height) : new Thickness(0);
         if (on) ShowOverlay();
     }
@@ -150,7 +152,7 @@ public sealed partial class MainPage : Page
 
     public void ShowOverlay()
     {
-        WindowInterop.ShowCursor();
+        _cursor.Show();
         if (!_overlayVisible)
         {
             _overlayVisible = true;
@@ -175,7 +177,7 @@ public sealed partial class MainPage : Page
         Fade(Osc, 0);
         Fade(BottomShade, 0);
         Window?.SetTitleOverlayVisible(false);
-        if (_pointerInside) WindowInterop.HideCursor();
+        if (_pointerInside) _cursor.Hide();
     }
 
     internal static void Fade(UIElement element, double to)
@@ -324,7 +326,7 @@ public sealed partial class MainPage : Page
         menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open file…"), Command = new Cmd(OpenFiles) });
         menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open URL…"), Command = new Cmd(() => _ = OpenUrlAsync()) });
         menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open in new window…"), Command = new Cmd(OpenFilesInNewWindow) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("New window"), Command = new Cmd(() => App.NewWindow()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("New window"), Command = new Cmd(() => Vm.Services.Windows.New()) });
         var recent = new MenuFlyoutSubItem { Text = L.T("Recent files") };
         foreach (var h in Vm.History.Entries.Take(12))
             recent.Items.Add(new MenuFlyoutItem { Text = h.Display, Command = new Cmd(() => Vm.Open(h.Path)) });
@@ -332,7 +334,7 @@ public sealed partial class MainPage : Page
         menu.Items.Add(recent);
         menu.Items.Add(new MenuFlyoutItem { Text = L.T("Add subtitle file…"), Command = new Cmd(async () =>
         {
-            var f = await Controls.Sidebar.PickFilesAsync([".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);
+            var f = await Controls.Sidebar.PickFilesAsync(Window, [".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
         }) });
         menu.Items.Add(new MenuFlyoutSeparator());
@@ -365,14 +367,14 @@ public sealed partial class MainPage : Page
 
     public async void OpenFiles()
     {
-        var files = await Controls.Sidebar.PickFilesAsync(FileAssociation.AllExtensions);
+        var files = await Controls.Sidebar.PickFilesAsync(Window, FileAssociation.AllExtensions);
         if (files.Count > 0) Vm.OpenMany(files);
     }
 
     public async void OpenFilesInNewWindow()
     {
-        var files = await Controls.Sidebar.PickFilesAsync(FileAssociation.AllExtensions);
-        if (files.Count > 0) App.NewWindow().Vm.OpenMany(files);
+        var files = await Controls.Sidebar.PickFilesAsync(Window, FileAssociation.AllExtensions);
+        if (files.Count > 0) Vm.Services.Windows.New().Vm.OpenMany(files);
     }
 
     // ---- keyboard ---------------------------------------------------------------------
@@ -394,7 +396,7 @@ public sealed partial class MainPage : Page
         {
             case VirtualKey.O when ctrl && alt: OpenFilesInNewWindow(); break;
             case VirtualKey.O when ctrl: OpenFiles(); break;
-            case VirtualKey.N when ctrl: App.NewWindow(); break;
+            case VirtualKey.N when ctrl: Vm.Services.Windows.New(); break;
             case VirtualKey.U when ctrl: _ = OpenUrlAsync(); break;
             case VirtualKey.I when ctrl: _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync(); break;
             case VirtualKey.K when ctrl && shift: _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync(); break;

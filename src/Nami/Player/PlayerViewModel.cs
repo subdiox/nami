@@ -87,7 +87,10 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial int SettingsTab { get; set; }
     [ObservableProperty] public partial int PlaylistTab { get; set; }
 
-    public History History => App.History;
+    public AppServices Services { get; }
+    public History History => Services.History;
+
+    public PlayerViewModel(AppServices services) => Services = services;
     /// <summary>The window hosting this player (set by MainWindow).</summary>
     public MainWindow? Window { get; set; }
     public ThumbnailGenerator Thumbnails { get; } = new();
@@ -113,7 +116,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         player.Hook += name =>
         {
             // Runs on the mpv event thread, before the file is unloaded.
-            if (name == "on_unload" && App.Settings.ResumePlayback)
+            if (name == "on_unload" && Services.Settings.ResumePlayback)
                 player.TryCommand("write-watch-later-config");
         };
         player.EndFile += e => { if (e.IsError) Error?.Invoke(LibMpv.ErrorString(e.ErrorCode)); };
@@ -123,11 +126,11 @@ public sealed partial class PlayerViewModel : ObservableObject
             player.Observe(name, fmt);
 
         // Restore persisted state.
-        var s = App.Settings;
+        var s = Services.Settings;
         s.Subtitles.Apply(player);
         if (s.EqEnabled) ApplyEq(s.EqGains, true);
         // Command-line --mpv-volume / --mpv-mute win over the remembered values.
-        bool cliVolume = MpvPlayer.ExtraOptions.Any(o => o.name is "volume" or "mute");
+        bool cliVolume = Services.Launch.Extra.Any(o => o.name is "volume" or "mute");
         if (s.RememberVolume && !cliVolume)
         {
             Try(() => player.SetProperty("volume", s.Volume));
@@ -143,7 +146,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         string? path = _player?.GetString("path");
         if (!string.IsNullOrEmpty(path))
         {
-            if (App.Settings.KeepHistory)
+            if (Services.Settings.KeepHistory)
                 History.Touch(path, _player?.GetString("media-title") ?? "", _player?.GetDouble("duration") ?? 0);
             AutoLoadFolder(path);
         }
@@ -153,7 +156,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     /// <summary>IINA: when a single local file is opened, queue the rest of its folder.</summary>
     private void AutoLoadFolder(string path)
     {
-        if (!App.Settings.AutoLoadFolder || _player is null) return;
+        if (!Services.Settings.AutoLoadFolder || _player is null) return;
         if (path.Contains("://") || !File.Exists(path)) return;
         if ((_player.GetInt64("playlist-count") ?? 0) != 1) return;
         string? dir = Path.GetDirectoryName(path);
@@ -176,7 +179,7 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private void StartThumbnails()
     {
-        if (!App.Settings.SeekThumbnails) { Thumbnails.Stop(); _thumbPath = null; return; }
+        if (!Services.Settings.SeekThumbnails) { Thumbnails.Stop(); _thumbPath = null; return; }
         if (FilePath is null || FilePath == _thumbPath || !VideoSize.IsValid || Duration <= 0) return;
         _thumbPath = FilePath;
         Thumbnails.Start(FilePath, Duration, VideoSize.Aspect);
@@ -185,7 +188,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     /// <summary>Called periodically / on unload so the history remembers where we were.</summary>
     public void RecordPosition()
     {
-        if (!App.Settings.KeepHistory || string.IsNullOrEmpty(FilePath)) return;
+        if (!Services.Settings.KeepHistory || string.IsNullOrEmpty(FilePath)) return;
         History.UpdatePosition(FilePath, TimePos, Duration);
     }
 
@@ -309,7 +312,7 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private void PersistVolume()
     {
-        var s = App.Settings;
+        var s = Services.Settings;
         if (!s.RememberVolume) return;
         if (Math.Abs(s.Volume - Volume) < 0.01 && s.Muted == Muted) return;
         s.Volume = Volume;

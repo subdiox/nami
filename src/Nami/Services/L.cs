@@ -10,8 +10,16 @@ namespace Nami.Services;
 /// </summary>
 public static class L
 {
+    private static string _setting = "auto";
     private static string? _lang;
     private static IReadOnlyDictionary<string, string>? _table;
+
+    /// <summary>Choose the language ("auto", "en", "ja"). Called once at startup from the settings.</summary>
+    public static void Configure(string setting)
+    {
+        _setting = setting;
+        Reload();
+    }
 
     /// <summary>"en", "ja", … Resolved from settings ("auto" = OS UI language) on first use.</summary>
     public static string Language
@@ -32,7 +40,7 @@ public static class L
 
     public static void Reload()
     {
-        string setting = App.Settings.Language;
+        string setting = _setting;
         string lang = setting is "auto" or ""
             ? (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja" ? "ja" : "en")
             : setting;

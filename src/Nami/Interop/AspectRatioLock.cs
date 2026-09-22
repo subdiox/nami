@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Windows.Win32;
@@ -9,42 +8,44 @@ namespace Nami.Interop;
 /// <summary>
 /// Keeps a window's client area at a fixed aspect ratio while the user drags its edges,
 /// the way IINA constrains its window to the video. One instance per window; the
-/// WM_SIZING handler is a window subclass.
+/// WM_SIZING handler is a window subclass that finds its instance through a GCHandle.
 /// </summary>
 internal sealed unsafe class AspectRatioLock : IDisposable
 {
-    private static readonly ConcurrentDictionary<nint, double> s_aspects = new();
     private const nuint SubclassId = 0x4E41;
 
     private readonly HWND _hwnd;
+    private GCHandle _self;
     private bool _installed;
-
-    public AspectRatioLock(nint hwnd)
-    {
-        _hwnd = (HWND)hwnd;
-        _installed = PInvoke.SetWindowSubclass(_hwnd, &Proc, SubclassId, 0);
-        s_aspects[hwnd] = 0;
-    }
 
     /// <summary>Client aspect (w/h); 0 disables the constraint.</summary>
     public double Aspect
     {
-        get => s_aspects.TryGetValue((nint)_hwnd, out var a) ? a : 0;
-        set => s_aspects[(nint)_hwnd] = value > 0 && double.IsFinite(value) ? value : 0;
+        get;
+        set => field = value > 0 && double.IsFinite(value) ? value : 0;
+    }
+
+    public AspectRatioLock(nint hwnd)
+    {
+        _hwnd = (HWND)hwnd;
+        _self = GCHandle.Alloc(this, GCHandleType.Weak);
+        _installed = PInvoke.SetWindowSubclass(_hwnd, &Proc, SubclassId, (nuint)GCHandle.ToIntPtr(_self));
     }
 
     public void Dispose()
     {
         if (_installed) PInvoke.RemoveWindowSubclass(_hwnd, &Proc, SubclassId);
         _installed = false;
-        s_aspects.TryRemove((nint)_hwnd, out _);
+        if (_self.IsAllocated) _self.Free();
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static LRESULT Proc(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam, nuint id, nuint refData)
     {
-        if (msg == PInvoke.WM_SIZING && s_aspects.TryGetValue((nint)hwnd, out double aspect) && aspect > 0)
+        if (msg == PInvoke.WM_SIZING
+            && GCHandle.FromIntPtr((nint)refData).Target is AspectRatioLock { Aspect: > 0 } self)
         {
+            double aspect = self.Aspect;
             var rect = (RECT*)(nint)lParam;
             RECT win, client;
             if (PInvoke.GetWindowRect(hwnd, &win) && PInvoke.GetClientRect(hwnd, &client))

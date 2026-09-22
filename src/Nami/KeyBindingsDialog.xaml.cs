@@ -142,7 +142,7 @@ public sealed partial class KeyBindingsDialog : ContentDialog
         File.WriteAllText(InputConfPath, string.Join(Environment.NewLine, lines) + Environment.NewLine);
 
         // Apply live in every window: user bindings override, removed ones fall back to mpv's default table.
-        foreach (var w in App.Windows)
+        foreach (var w in _vm.Services.Windows.All)
         {
             if (w.Vm.Player is not { } p) continue;
             foreach (var r in _user) p.TryCommand("keybind", r.Key, r.Command);

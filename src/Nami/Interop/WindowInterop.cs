@@ -3,25 +3,9 @@ using Windows.Win32.Foundation;
 
 namespace Nami.Interop;
 
+/// <summary>Stateless Win32 helpers for the player window.</summary>
 internal static class WindowInterop
 {
-    private static bool _cursorHidden;
-
-    /// <summary>Hide the mouse cursor for this thread's windows (idempotent).</summary>
-    public static void HideCursor()
-    {
-        if (_cursorHidden) return;
-        _cursorHidden = true;
-        PInvoke.ShowCursor(false);
-    }
-
-    public static void ShowCursor()
-    {
-        if (!_cursorHidden) return;
-        _cursorHidden = false;
-        PInvoke.ShowCursor(true);
-    }
-
     /// <summary>Let the user drag the window by its client area, as if they grabbed the caption.</summary>
     public static void BeginWindowDrag(nint hwnd)
     {
@@ -30,4 +14,27 @@ internal static class WindowInterop
     }
 
     public static TimeSpan DoubleClickTime => TimeSpan.FromMilliseconds(PInvoke.GetDoubleClickTime());
+}
+
+/// <summary>
+/// Hides / shows the mouse cursor for the calling UI thread. ShowCursor keeps a counter,
+/// so each owner tracks its own state and never unbalances the count.
+/// </summary>
+internal sealed class CursorVisibility
+{
+    private bool _hidden;
+
+    public void Hide()
+    {
+        if (_hidden) return;
+        _hidden = true;
+        PInvoke.ShowCursor(false);
+    }
+
+    public void Show()
+    {
+        if (!_hidden) return;
+        _hidden = false;
+        PInvoke.ShowCursor(true);
+    }
 }

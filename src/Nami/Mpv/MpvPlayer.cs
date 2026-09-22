@@ -37,10 +37,8 @@ public sealed unsafe class MpvPlayer : IDisposable
     /// <summary>Raw mpv handle for the few call sites that need a property the wrapper does not expose.</summary>
     internal nint Handle => _handle;
 
-    /// <summary>"--mpv-name=value" command-line passthrough, applied before mpv_initialize.</summary>
-    public static List<(string name, string value)> ExtraOptions { get; } = [];
-
-    public MpvPlayer(DispatcherQueue ui, int initialWidth, int initialHeight, string configDir)
+    public MpvPlayer(DispatcherQueue ui, int initialWidth, int initialHeight, string configDir,
+                     Services.AppSettings settings, IReadOnlyList<(string name, string value)> extraOptions)
     {
         _ui = ui;
         _handle = LibMpv.mpv_create();
@@ -84,14 +82,14 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("osd-margin-y", "24");
         Option("osd-duration", "1500");
 
-        Option("screenshot-directory", string.IsNullOrEmpty(App.Settings.ScreenshotDirectory)
-            ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) : App.Settings.ScreenshotDirectory);
+        Option("screenshot-directory", string.IsNullOrEmpty(settings.ScreenshotDirectory)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) : settings.ScreenshotDirectory);
         Option("screenshot-template", "Nami-%F-%P");
-        Option("screenshot-format", App.Settings.ScreenshotFormat);
+        Option("screenshot-format", settings.ScreenshotFormat);
         Option("screenshot-jpeg-quality", "92");
         Option("screenshot-png-compression", "5");
 
-        foreach (var (name, value) in ExtraOptions)
+        foreach (var (name, value) in extraOptions)
         {
             int r = LibMpv.mpv_set_option_string(_handle, name, value);
             if (r < 0) App.Log($"--mpv-{name}={value}: {LibMpv.ErrorString(r)}");
@@ -100,8 +98,8 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("audio-client-name", "Nami");
 
         // Resume where we left off (IINA: "resume last playback position").
-        Option("save-position-on-quit", App.Settings.ResumePlayback ? "yes" : "no");
-        Option("resume-playback", App.Settings.ResumePlayback ? "yes" : "no");
+        Option("save-position-on-quit", settings.ResumePlayback ? "yes" : "no");
+        Option("resume-playback", settings.ResumePlayback ? "yes" : "no");
         Option("watch-later-dir", Path.Combine(configDir, "watch_later"));
         Option("watch-later-options", "start");
 
@@ -110,7 +108,7 @@ public sealed unsafe class MpvPlayer : IDisposable
 
         // yt-dlp: mpv's ytdl_hook looks in the config directory, where we drop yt-dlp.exe.
         Option("ytdl", "yes");
-        Option("ytdl-format", App.Settings.YtdlFormat);
+        Option("ytdl-format", settings.YtdlFormat);
 
         MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "warn"), "request_log_messages");
         MpvException.ThrowIfError(LibMpv.mpv_initialize(_handle), "mpv_initialize");

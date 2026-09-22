@@ -10,8 +10,7 @@
     Title="Nami"
     mc:Ignorable="d">
 
-    <Grid RequestedTheme="Dark">
-        <local:MainPage x:Name="Main" />
+    <Grid x:Name="RootGrid" RequestedTheme="Dark">
 
         <!-- IINA-style title bar: transparent, floats over the video, fades with the OSC. -->
         <Grid x:Name="TitleOverlay" VerticalAlignment="Top" Height="44">
