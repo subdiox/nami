@@ -94,6 +94,7 @@ public sealed unsafe class MpvPlayer : IDisposable
 
         // yt-dlp: mpv's ytdl_hook looks in the config directory, where we drop yt-dlp.exe.
         Option("ytdl", "yes");
+        Option("ytdl-format", App.Settings.YtdlFormat);
 
         MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "warn"), "request_log_messages");
         MpvException.ThrowIfError(LibMpv.mpv_initialize(_handle), "mpv_initialize");

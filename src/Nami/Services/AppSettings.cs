@@ -25,6 +25,7 @@ public sealed class AppSettings
     public bool KeepHistory { get; set; } = true;
     public string SubtitleLanguages { get; set; } = "ja,en";
     public bool SeekThumbnails { get; set; } = true;
+    public string YtdlFormat { get; set; } = "bestvideo[height<=?1080]+bestaudio/best";
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =

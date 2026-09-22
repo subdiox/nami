@@ -271,6 +271,7 @@ public sealed partial class MainPage : Page
         menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? "再生" : "一時停止", Command = new Cmd(Vm.TogglePause) });
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = "ファイルを開く…", Command = new Cmd(OpenFiles) });
+        menu.Items.Add(new MenuFlyoutItem { Text = "URL を開く…", Command = new Cmd(() => _ = OpenUrlAsync()) });
         var recent = new MenuFlyoutSubItem { Text = "最近使ったファイル" };
         foreach (var h in Vm.History.Entries.Take(12))
             recent.Items.Add(new MenuFlyoutItem { Text = h.Display, Command = new Cmd(() => Vm.Open(h.Path)) });
@@ -293,6 +294,15 @@ public sealed partial class MainPage : Page
         menu.Items.Add(new MenuFlyoutItem { Text = "環境設定…", Command = new Cmd(() => App.Window?.ShowPreferencesAsync()) });
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
+    }
+
+    public async Task OpenUrlAsync()
+    {
+        var dlg = new OpenUrlDialog { XamlRoot = XamlRoot };
+        var result = await dlg.ShowAsync();
+        if (string.IsNullOrEmpty(dlg.Url)) return;
+        if (result == ContentDialogResult.Primary) Vm.Open(dlg.Url);
+        else if (result == ContentDialogResult.Secondary) Vm.Open(dlg.Url, append: true);
     }
 
     public async void OpenFiles()
@@ -319,6 +329,7 @@ public sealed partial class MainPage : Page
         switch (e.Key)
         {
             case VirtualKey.O when ctrl: OpenFiles(); break;
+            case VirtualKey.U when ctrl: _ = OpenUrlAsync(); break;
             case VirtualKey.P when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Playlist); break;
             case VirtualKey.S when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Settings); break;
             case VirtualKey.M when ctrl && shift: App.Window?.ToggleCompactMode(); break;

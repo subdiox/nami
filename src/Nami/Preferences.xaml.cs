@@ -28,6 +28,33 @@ public sealed partial class Preferences : ContentDialog
         UpdateAssocStatus();
         LoadSubtitleStyle(s.Subtitles);
         SubLanguagesBox.Text = s.SubtitleLanguages;
+        YtdlFormatCombo.ItemsSource = YtDlp.Formats.Select(f => f.label).ToList();
+        int fi = Array.FindIndex(YtDlp.Formats, f => f.value == s.YtdlFormat);
+        YtdlFormatCombo.SelectedIndex = fi < 0 ? 3 : fi;
+        _ = RefreshYtDlpStatusAsync();
+    }
+
+    private async Task RefreshYtDlpStatusAsync()
+    {
+        string? v = await YtDlp.GetVersionAsync();
+        YtDlpStatus.Text = v is null ? "yt-dlp は未導入です（YouTube などのサイトを開くのに必要）" : $"yt-dlp {v}（{YtDlp.ExePath}）";
+    }
+
+    private async void YtDlpInstall_Click(object sender, RoutedEventArgs e)
+    {
+        YtDlpInstallButton.IsEnabled = false;
+        YtDlpProgress.Visibility = Visibility.Visible;
+        try
+        {
+            await YtDlp.InstallOrUpdateAsync(new Progress<double>(v => YtDlpProgress.Value = v * 100), CancellationToken.None);
+            await RefreshYtDlpStatusAsync();
+        }
+        catch (Exception ex) { YtDlpStatus.Text = "ダウンロードに失敗しました: " + ex.Message; }
+        finally
+        {
+            YtDlpProgress.Visibility = Visibility.Collapsed;
+            YtDlpInstallButton.IsEnabled = true;
+        }
     }
 
     // ---- subtitle style ----------------------------------------------------------------
@@ -159,6 +186,11 @@ public sealed partial class Preferences : ContentDialog
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
         s.KeepHistory = HistorySwitch.IsOn;
         s.SeekThumbnails = ThumbnailSwitch.IsOn;
+        if (YtdlFormatCombo.SelectedIndex >= 0)
+        {
+            s.YtdlFormat = YtDlp.Formats[YtdlFormatCombo.SelectedIndex].value;
+            if (App.Vm.Player is { } yp) { try { yp.SetProperty("ytdl-format", s.YtdlFormat); } catch (Mpv.MpvException) { } }
+        }
         s.Subtitles = CollectSubtitleStyle();
         s.SubtitleLanguages = SubLanguagesBox.Text.Trim();
         if (App.Vm.Player is { } sp) s.Subtitles.Apply(sp);
