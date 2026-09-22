@@ -1,5 +1,8 @@
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media;
 using Nami.Services;
 using Windows.System;
 
@@ -22,6 +25,94 @@ public sealed partial class Preferences : ContentDialog
         MpvConfBox.Text = ReadOrEmpty(MpvConfPath);
         InputConfBox.Text = ReadOrEmpty(InputConfPath);
         UpdateAssocStatus();
+        LoadSubtitleStyle(s.Subtitles);
+        SubLanguagesBox.Text = s.SubtitleLanguages;
+    }
+
+    // ---- subtitle style ----------------------------------------------------------------
+
+    private static readonly string[] BorderStyles = ["outline-and-shadow", "opaque-box", "background-box"];
+    private static readonly string[] AssOverrides = ["no", "yes", "scale", "force", "strip"];
+    private string _subColor = "#FFFFFFFF", _subOutline = "#FF000000", _subBack = "#00000000";
+
+    private void LoadSubtitleStyle(SubtitleStyle st)
+    {
+        var fonts = SubtitleStyle.SystemFonts();
+        fonts.Insert(0, "(既定)");
+        SubFontCombo.ItemsSource = fonts;
+        SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? "(既定)" : st.Font;
+        SubSizeSlider.Value = st.Size;
+        SubBoldCheck.IsChecked = st.Bold;
+        SubItalicCheck.IsChecked = st.Italic;
+        SubBorderStyleCombo.SelectedIndex = Math.Max(0, Array.IndexOf(BorderStyles, st.BorderStyle));
+        SubOutlineSlider.Value = st.OutlineSize;
+        SubShadowSlider.Value = st.ShadowOffset;
+        SubCodepageCombo.ItemsSource = SubtitleStyle.Codepages;
+        SubCodepageCombo.SelectedIndex = Math.Max(0, Array.IndexOf(SubtitleStyle.Codepages, st.Codepage));
+        SubAssOverrideCombo.SelectedIndex = Math.Max(0, Array.IndexOf(AssOverrides, st.AssOverride));
+        _subColor = st.Color; _subOutline = st.OutlineColor; _subBack = st.BackColor;
+        PaintColorButtons();
+    }
+
+    private void PaintColorButtons()
+    {
+        SubColorButton.Background = new SolidColorBrush(ParseColor(_subColor));
+        SubOutlineColorButton.Background = new SolidColorBrush(ParseColor(_subOutline));
+        SubBackColorButton.Background = new SolidColorBrush(ParseColor(_subBack));
+    }
+
+    private static Windows.UI.Color ParseColor(string s)
+    {
+        try
+        {
+            s = s.TrimStart('#');
+            if (s.Length == 6) s = "FF" + s;
+            uint v = Convert.ToUInt32(s, 16);
+            return Windows.UI.Color.FromArgb((byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v);
+        }
+        catch { return Colors.White; }
+    }
+
+    private static string FormatColor(Windows.UI.Color c) => $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    private void SubColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || b.Tag is not string which) return;
+        string current = which switch { "text" => _subColor, "outline" => _subOutline, _ => _subBack };
+        var picker = new ColorPicker { IsAlphaEnabled = true, IsMoreButtonVisible = true, ColorSpectrumShape = ColorSpectrumShape.Ring, Color = ParseColor(current), Width = 300 };
+        picker.ColorChanged += (_, args) =>
+        {
+            string v = FormatColor(args.NewColor);
+            switch (which) { case "text": _subColor = v; break; case "outline": _subOutline = v; break; default: _subBack = v; break; }
+            PaintColorButtons();
+        };
+        var fly = new Flyout { Content = picker };
+        fly.ShowAt(b);
+    }
+
+    private void SubStyleReset_Click(object sender, RoutedEventArgs e) => LoadSubtitleStyle(new SubtitleStyle());
+
+    private SubtitleStyle CollectSubtitleStyle()
+    {
+        var old = App.Settings.Subtitles;
+        string font = SubFontCombo.Text?.Trim() ?? "";
+        return new SubtitleStyle
+        {
+            Font = font == "(既定)" ? "" : font,
+            Size = Math.Round(SubSizeSlider.Value),
+            Bold = SubBoldCheck.IsChecked == true,
+            Italic = SubItalicCheck.IsChecked == true,
+            BorderStyle = BorderStyles[Math.Max(0, SubBorderStyleCombo.SelectedIndex)],
+            OutlineSize = SubOutlineSlider.Value,
+            ShadowOffset = SubShadowSlider.Value,
+            Codepage = SubtitleStyle.Codepages[Math.Max(0, SubCodepageCombo.SelectedIndex)],
+            AssOverride = AssOverrides[Math.Max(0, SubAssOverrideCombo.SelectedIndex)],
+            Color = _subColor,
+            OutlineColor = _subOutline,
+            BackColor = _subBack,
+            Position = old.Position,
+            Scale = old.Scale,
+        };
     }
 
     private static string ReadOrEmpty(string path)
@@ -66,6 +157,9 @@ public sealed partial class Preferences : ContentDialog
         s.ResumePlayback = ResumeSwitch.IsOn;
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
         s.KeepHistory = HistorySwitch.IsOn;
+        s.Subtitles = CollectSubtitleStyle();
+        s.SubtitleLanguages = SubLanguagesBox.Text.Trim();
+        if (App.Vm.Player is { } sp) s.Subtitles.Apply(sp);
         if (App.Vm.Player is { } pl)
         {
             try

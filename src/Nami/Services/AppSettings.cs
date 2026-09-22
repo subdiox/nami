@@ -23,6 +23,8 @@ public sealed class AppSettings
     public bool ResumePlayback { get; set; } = true;
     public bool AutoLoadFolder { get; set; } = true;
     public bool KeepHistory { get; set; } = true;
+    public string SubtitleLanguages { get; set; } = "ja,en";
+    public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nami");
@@ -61,4 +63,5 @@ public sealed class AppSettings
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AppSettings))]
+[JsonSerializable(typeof(SubtitleStyle))]
 internal partial class SettingsJsonContext : JsonSerializerContext;

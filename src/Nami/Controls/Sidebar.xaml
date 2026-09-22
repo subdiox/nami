@@ -168,6 +168,8 @@
                         <ListView x:Name="SubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SubTrackList_ItemClick" />
                         <HyperlinkButton Content="字幕をオフ" Padding="0" Click="SubOff_Click" />
                         <HyperlinkButton Content="字幕ファイルを追加…" Padding="0" Click="AddSub_Click" />
+                        <HyperlinkButton Content="オンライン字幕を検索…" Padding="0" Click="SearchOnlineSub_Click" AutomationProperties.Name="オンライン字幕を検索" />
+                        <HyperlinkButton Content="字幕の見た目を設定…" Padding="0" Click="SubStyle_Click" />
 
                         <TextBlock Style="{StaticResource SectionHeader}" Text="第 2 字幕" />
                         <ListView x:Name="SecondarySubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SecondarySubTrackList_ItemClick" />

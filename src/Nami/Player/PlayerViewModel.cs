@@ -101,6 +101,7 @@ public sealed partial class PlayerViewModel : ObservableObject
 
         // Restore persisted state.
         var s = App.Settings;
+        s.Subtitles.Apply(player);
         if (s.RememberVolume)
         {
             Try(() => player.SetProperty("volume", s.Volume));

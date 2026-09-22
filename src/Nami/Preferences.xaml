@@ -21,6 +21,50 @@
             <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="同じフォルダーのファイルを自動的にプレイリストへ追加する" />
             <ToggleSwitch x:Name="HistorySwitch" Header="再生履歴を記録する" />
 
+            <TextBlock Style="{StaticResource SectionHeader}" Text="字幕の見た目" />
+            <Grid ColumnSpacing="8" RowSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="フォント" IsEditable="True" HorizontalAlignment="Stretch" />
+                <Slider x:Name="SubSizeSlider" Grid.Row="0" Grid.Column="1" Header="サイズ" Minimum="16" Maximum="100" StepFrequency="1" />
+                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                    <CheckBox x:Name="SubBoldCheck" Content="太字" />
+                    <CheckBox x:Name="SubItalicCheck" Content="斜体" />
+                </StackPanel>
+                <ComboBox x:Name="SubBorderStyleCombo" Grid.Row="1" Grid.Column="1" Header="縁取りの種類" HorizontalAlignment="Stretch">
+                    <x:String>縁取りと影</x:String>
+                    <x:String>不透明の箱</x:String>
+                    <x:String>背景の箱</x:String>
+                </ComboBox>
+                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SubColorButton" Content="文字色" Click="SubColor_Click" Tag="text" />
+                    <Button x:Name="SubOutlineColorButton" Content="縁の色" Click="SubColor_Click" Tag="outline" />
+                    <Button x:Name="SubBackColorButton" Content="背景色" Click="SubColor_Click" Tag="back" />
+                </StackPanel>
+                <Slider x:Name="SubOutlineSlider" Grid.Row="2" Grid.Column="1" Header="縁の太さ" Minimum="0" Maximum="10" StepFrequency="0.5" />
+                <Slider x:Name="SubShadowSlider" Grid.Row="3" Grid.Column="0" Header="影のオフセット" Minimum="0" Maximum="10" StepFrequency="0.5" />
+                <ComboBox x:Name="SubCodepageCombo" Grid.Row="3" Grid.Column="1" Header="文字エンコーディング" HorizontalAlignment="Stretch" />
+                <ComboBox x:Name="SubAssOverrideCombo" Grid.Row="4" Grid.Column="0" Header="ASS 字幕のスタイル" HorizontalAlignment="Stretch">
+                    <x:String>字幕ファイルのスタイルを使う</x:String>
+                    <x:String>この設定で上書きする（yes）</x:String>
+                    <x:String>サイズのみ合わせる（scale）</x:String>
+                    <x:String>強制的に上書き（force）</x:String>
+                    <x:String>装飾を取り除く（strip）</x:String>
+                </ComboBox>
+                <HyperlinkButton Grid.Row="4" Grid.Column="1" Content="既定に戻す" Click="SubStyleReset_Click" VerticalAlignment="Bottom" />
+            </Grid>
+            <TextBlock x:Name="SubLangHeader" Text="オンライン字幕の言語（カンマ区切り）" FontSize="12" Margin="0,8,0,0" />
+            <TextBox x:Name="SubLanguagesBox" />
+
             <TextBlock Style="{StaticResource SectionHeader}" Text="Windows との連携" />
             <TextBlock x:Name="AssocStatus" TextWrapping="Wrap" FontSize="12" />
             <StackPanel Orientation="Horizontal" Spacing="8">

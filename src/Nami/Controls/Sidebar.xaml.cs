@@ -291,6 +291,19 @@ public sealed partial class Sidebar : UserControl
         if (file is not null) Vm.AddSubtitle(file);
     }
 
+    private async void SearchOnlineSub_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Window is null) return;
+        var dlg = new OnlineSubtitlesDialog(Vm.FilePath, Vm.MediaTitle) { XamlRoot = XamlRoot };
+        await dlg.ShowAsync();
+    }
+
+    private async void SubStyle_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Window is null) return;
+        await App.Window.ShowPreferencesAsync();
+    }
+
     private void SubDelaySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (_syncing) return;
