@@ -69,7 +69,9 @@ public sealed partial class MainPage : Page
         Root.PointerMoved += OnPointerMoved;
         Root.PointerPressed += OnPointerPressed;
         Root.PointerReleased += OnPointerReleased;
-        Root.PointerExited += (_, _) => { _pointerInside = false; _leftDown = false; };
+        Root.PointerExited += (_, _) => { _pointerInside = false; if (!_dragging) _leftDown = false; };
+        Root.PointerCaptureLost += (_, e) => EndDrag(e.Pointer);
+        Root.PointerCanceled += (_, e) => EndDrag(e.Pointer);
         Root.PointerEntered += (_, _) => _pointerInside = true;
         Root.PointerWheelChanged += OnPointerWheel;
         Root.RightTapped += OnRightTapped;
@@ -249,22 +251,35 @@ public sealed partial class MainPage : Page
 
     // ---- pointer ------------------------------------------------------------------------
 
+    // Window drag: the pointer is captured and the window follows the cursor's screen-space
+    // delta directly (like IINA), instead of handing off to the Win32 caption-drag loop.
+    private Windows.Graphics.PointInt32 _dragWindowOrigin;
+    private System.Drawing.Point _dragCursorOrigin;
+    private const double DragThreshold = 3;
+
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
         _pointerInside = true;
         ShowOverlay();
 
-        if (_leftDown && !_dragging && !Vm.Fullscreen && Window is { } w)
+        if (!_leftDown || Vm.Fullscreen || Window is not { } w) return;
+        var p = e.GetCurrentPoint(Root).Position;
+
+        if (!_dragging)
         {
-            var p = e.GetCurrentPoint(Root).Position;
-            if (Math.Abs(p.X - _pressPoint.X) > 4 || Math.Abs(p.Y - _pressPoint.Y) > 4)
-            {
-                _dragging = true;
-                _clickTimer.Stop();
-                WindowInterop.BeginWindowDrag(w.Hwnd);
-                _leftDown = false;
-            }
+            if (Math.Abs(p.X - _pressPoint.X) <= DragThreshold && Math.Abs(p.Y - _pressPoint.Y) <= DragThreshold) return;
+            if (w.IsMaximized) { _leftDown = false; return; }   // Windows does not drag maximized windows either
+            _dragging = true;
+            _clickTimer.Stop();
+            _dragWindowOrigin = w.AppWindow.Position;
+            _dragCursorOrigin = WindowInterop.CursorPosition;
+            Root.CapturePointer(e.Pointer);
         }
+
+        var cur = WindowInterop.CursorPosition;
+        w.AppWindow.Move(new Windows.Graphics.PointInt32(
+            _dragWindowOrigin.X + (cur.X - _dragCursorOrigin.X),
+            _dragWindowOrigin.Y + (cur.Y - _dragCursorOrigin.Y)));
     }
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -286,7 +301,15 @@ public sealed partial class MainPage : Page
 
     private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
     {
+        EndDrag(e.Pointer);
+    }
+
+    private void EndDrag(Microsoft.UI.Xaml.Input.Pointer? pointer)
+    {
         _leftDown = false;
+        if (!_dragging) return;
+        _dragging = false;
+        if (pointer is not null) Root.ReleasePointerCapture(pointer);
     }
 
     private void OnVideoTapped(object sender, TappedRoutedEventArgs e)

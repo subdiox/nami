@@ -14,6 +14,16 @@ internal static class WindowInterop
     }
 
     public static TimeSpan DoubleClickTime => TimeSpan.FromMilliseconds(PInvoke.GetDoubleClickTime());
+
+    /// <summary>Cursor position in physical screen pixels (same space as AppWindow.Position).</summary>
+    public static System.Drawing.Point CursorPosition
+    {
+        get
+        {
+            PInvoke.GetCursorPos(out var p);
+            return p;
+        }
+    }
 }
 
 /// <summary>

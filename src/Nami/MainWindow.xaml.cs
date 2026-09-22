@@ -127,6 +127,7 @@ public sealed partial class MainWindow : Window
     // ---- fullscreen / compact -----------------------------------------------------------
 
     public bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+    public bool IsMaximized => _presenter.State == OverlappedPresenterState.Maximized;
 
     private void ApplyFullscreen(bool on)
     {

@@ -11,6 +11,7 @@ DXGI_OUTPUT_DESC1
 DefSubclassProc
 DisplayConfigGetDeviceInfo
 GetClientRect
+GetCursorPos
 GetDisplayConfigBufferSizes
 GetDoubleClickTime
 GetDpiForWindow
