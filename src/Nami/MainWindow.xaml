@@ -17,7 +17,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition x:Name="CaptionSpacer" Width="140" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Rectangle Grid.ColumnSpan="3" IsHitTestVisible="False">
@@ -47,6 +47,23 @@
                 </Button>
                 <Button Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="Playlist" AutomationProperties.Name="Playlist">
                     <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
+                </Button>
+            </StackPanel>
+
+            <!-- Caption buttons drawn by us (the system title bar is off) so they fade together with the HUD. -->
+            <StackPanel x:Name="CaptionButtons" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Height="32">
+                <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" Click="MinimizeButton_Click" ToolTipService.ToolTip="Minimize" AutomationProperties.Name="Minimize">
+                    <FontIcon Style="{StaticResource CaptionIcon}" Glyph="&#xE921;" />
+                </Button>
+                <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" Click="MaximizeButton_Click" ToolTipService.ToolTip="Maximize" AutomationProperties.Name="Maximize">
+                    <FontIcon x:Name="MaximizeIcon" Style="{StaticResource CaptionIcon}" Glyph="&#xE922;" />
+                </Button>
+                <Button x:Name="CloseButton" Style="{StaticResource CaptionButton}" Click="CloseButton_Click" ToolTipService.ToolTip="Close" AutomationProperties.Name="Close">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#C42B1C" />
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#B32A1B" />
+                    </Button.Resources>
+                    <FontIcon Style="{StaticResource CaptionIcon}" Glyph="&#xE8BB;" />
                 </Button>
             </StackPanel>
         </Grid>

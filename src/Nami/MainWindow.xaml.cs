@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.UI;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Nami.Player;
@@ -17,6 +18,7 @@ public sealed partial class MainWindow : Window
     public Interop.DisplayInfo? LastDisplay { get; private set; }
     public bool IsHdrPassthrough { get; private set; }
     private readonly OverlappedPresenter _presenter;
+    private readonly InputNonClientPointerSource _nonClient;
     private bool _fitOnNextVideoSize;
     private bool _compact;
     private RectInt32? _restoreBounds;
@@ -36,22 +38,19 @@ public sealed partial class MainWindow : Window
         _presenter = OverlappedPresenter.Create();
         AppWindow.SetPresenter(_presenter);
 
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(DragRegion);
+        // No system title bar at all (IINA hides its title bar with the HUD; the system caption
+        // buttons cannot fade, so we draw our own). Resize borders stay. Dragging, double-click to
+        // maximize and Snap Layouts come from the non-client regions set in UpdateNonClientRegions.
+        _presenter.SetBorderAndTitleBar(true, false);
         AppWindow.SetIcon("Assets/AppIcon.ico");
         AppWindow.ResizeClient(new SizeInt32(1280, 720));
 
-        if (AppWindow.TitleBar is { } tb)
-        {
-            tb.ButtonBackgroundColor = Colors.Transparent;
-            tb.ButtonInactiveBackgroundColor = Colors.Transparent;
-            tb.ButtonForegroundColor = Colors.White;
-            tb.ButtonInactiveForegroundColor = Color(0x99, 0xFF, 0xFF, 0xFF);
-            tb.ButtonHoverBackgroundColor = Color(0x33, 0xFF, 0xFF, 0xFF);
-            tb.ButtonHoverForegroundColor = Colors.White;
-            tb.ButtonPressedBackgroundColor = Color(0x55, 0xFF, 0xFF, 0xFF);
-            tb.ButtonPressedForegroundColor = Colors.White;
-        }
+        _nonClient = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
+        _nonClient.PointerEntered += OnNonClientPointer;
+        _nonClient.PointerMoved += OnNonClientPointer;
+        _nonClient.PointerExited += (_, e) => { if (e.RegionKind == NonClientRegionKind.Maximize) SetMaximizeHover(false); };
+        TitleOverlay.SizeChanged += (_, _) => UpdateNonClientRegions();
+        TitleOverlay.Loaded += (_, _) => UpdateNonClientRegions();
 
         Vm.PropertyChanged += OnVmChanged;
         Vm.FileLoaded += () => _fitOnNextVideoSize = _services.Settings.ResizeWindowToVideo;
@@ -84,6 +83,59 @@ public sealed partial class MainWindow : Window
         Main.Loaded += (_, _) => Services.L.Localize(TitleOverlay);
         _aspectLock = new Interop.AspectRatioLock(Hwnd);
         Closed += (_, _) => { _aspectLock?.Dispose(); _aspectLock = null; };
+    }
+
+    // ---- custom title bar -----------------------------------------------------------------
+
+    /// <summary>
+    /// Tell the system which parts of our XAML title bar act as the caption (drag / double-click /
+    /// Aero Snap) and as the maximize button (Snap Layouts flyout). Cleared in fullscreen and mini mode.
+    /// </summary>
+    private void UpdateNonClientRegions()
+    {
+        if (IsFullScreen || _compact || TitleOverlay.Visibility == Visibility.Collapsed || DragRegion.ActualWidth <= 0)
+        {
+            _nonClient.ClearAllRegionRects();
+            return;
+        }
+        _nonClient.SetRegionRects(NonClientRegionKind.Caption, [ElementRect(DragRegion)]);
+        _nonClient.SetRegionRects(NonClientRegionKind.Maximize, MaximizeButton.Visibility == Visibility.Visible ? [ElementRect(MaximizeButton)] : []);
+    }
+
+    private RectInt32 ElementRect(FrameworkElement e)
+    {
+        double scale = Content.XamlRoot?.RasterizationScale ?? Scale;
+        var p = e.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, 0));
+        return new RectInt32((int)Math.Round(p.X * scale), (int)Math.Round(p.Y * scale),
+            (int)Math.Round(e.ActualWidth * scale), (int)Math.Round(e.ActualHeight * scale));
+    }
+
+    private void OnNonClientPointer(InputNonClientPointerSource sender, NonClientPointerEventArgs e)
+    {
+        // The caption regions are non-client, so XAML never sees the pointer there: show the HUD
+        // ourselves and mirror the hover state onto the maximize button.
+        Main.ShowOverlay();
+        SetMaximizeHover(e.RegionKind == NonClientRegionKind.Maximize);
+    }
+
+    private void SetMaximizeHover(bool on) =>
+        MaximizeButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(on ? Color(0x33, 0xFF, 0xFF, 0xFF) : Colors.Transparent);
+
+    private void SyncMaximizeGlyph()
+    {
+        bool max = _presenter.State == OverlappedPresenterState.Maximized;
+        MaximizeIcon.Glyph = max ? "\uE923" : "\uE922";
+        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(MaximizeButton, L.T(max ? "Restore" : "Maximize"));
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => _presenter.Minimize();
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    public void ToggleMaximize()
+    {
+        if (_presenter.State == OverlappedPresenterState.Maximized) _presenter.Restore();
+        else if (_presenter.IsMaximizable) _presenter.Maximize();
     }
 
     private static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
@@ -143,13 +195,14 @@ public sealed partial class MainWindow : Window
         {
             if (_compact) ToggleCompactMode();
             AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-            CaptionSpacer.Width = new GridLength(8);
+            CaptionButtons.Visibility = Visibility.Collapsed;
         }
         else
         {
             AppWindow.SetPresenter(_presenter);
-            CaptionSpacer.Width = new GridLength(140);
+            CaptionButtons.Visibility = Visibility.Visible;
         }
+        UpdateNonClientRegions();
     }
 
     private RectInt32? _musicRestoreBounds;
@@ -219,7 +272,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            _presenter.SetBorderAndTitleBar(true, true);
+            _presenter.SetBorderAndTitleBar(true, false);
             _presenter.IsAlwaysOnTop = Vm.OnTop;
             _presenter.IsMaximizable = true;
             _presenter.IsMinimizable = true;
@@ -228,6 +281,7 @@ public sealed partial class MainWindow : Window
             if (_restoreBounds is { } r) AppWindow.MoveAndResize(r);
             if (_aspectLock is not null) _aspectLock.Aspect = Vm.VideoSize.IsValid ? Vm.VideoSize.Aspect : 0;
         }
+        UpdateNonClientRegions();
     }
 
     public bool IsCompact => _compact;
@@ -284,6 +338,7 @@ public sealed partial class MainWindow : Window
 
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
+        if (args.DidSizeChange || args.DidPresenterChange) SyncMaximizeGlyph();
         if (!args.DidPositionChange) return;
         // Re-evaluate HDR when the window lands on another monitor.
         var info = Interop.DisplayInfo.Query(Hwnd);

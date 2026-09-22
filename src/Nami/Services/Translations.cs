@@ -173,7 +173,7 @@ internal static class Translations
         ["Quick settings"] = "クイック設定",
         ["Recent files"] = "最近使ったファイル",
         ["Register as a media app"] = "メディアアプリとして登録",
-        ["Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. To make it the default, choose it in Windows Settings."] = "登録するとエクスプローラーの「プログラムから開く」と Windows の「既定のアプリ」に Nami が表示され、namiplayer:// リンクも開けるようになります。既定にするには Windows の設定から選んでください。",
+        ["Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. Windows does not let apps make themselves the default: use the link above to assign video and audio types to Nami in Settings."] = "登録するとエクスプローラーの「プログラムから開く」と Windows の「既定のアプリ」に Nami が表示され、namiplayer:// リンクも開けるようになります。Windows ではアプリが自分を既定にすることはできないため、上のリンクから設定で動画・音声の種類を Nami に割り当ててください。",
         ["Registration failed: "] = "登録に失敗しました: ",
         ["Remember volume"] = "音量を記憶する",
         ["Remove all"] = "すべて削除",
@@ -296,6 +296,10 @@ internal static class Translations
         ["Interface"] = "インターフェース",
         ["Controller (OSC)"] = "コントローラー (OSC)",
         ["Online subtitles"] = "オンライン字幕",
+        ["Minimize"] = "最小化",
+        ["Maximize"] = "最大化",
+        ["Restore"] = "元のサイズに戻す",
+        ["Set as default player…"] = "既定のプレイヤーに設定…",
         ["Japanese"] = "日本語",
     };
 }

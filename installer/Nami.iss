@@ -68,9 +68,16 @@ Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
+[CustomMessages]
+english.SetDefault=Choose %1 as the default player in Windows Settings
+japanese.SetDefault=Windows の設定で %1 を既定のプレイヤーに選ぶ
+
 [Run]
 ; Registers HKCU file associations / namiplayer:// (the app exits right away for this switch).
 Filename: "{app}\{#AppExe}"; Parameters: "--register"; Tasks: associate; Flags: runhidden waituntilterminated
+; Windows never lets an app take a default silently; the closest thing is opening the app's own
+; "Default apps" page, where each video/audio type can be assigned to Nami with one click.
+Filename: "ms-settings:defaultapps?registeredAppUser={#AppName}"; Description: "{cm:SetDefault,{#AppName}}"; Tasks: associate; Flags: shellexec nowait postinstall skipifsilent
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]

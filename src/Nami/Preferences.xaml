@@ -170,10 +170,10 @@
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Button x:Name="RegisterButton" Content="{l:Tr Text='Register as a media app'}" Click="Register_Click" />
                             <Button x:Name="UnregisterButton" Content="{l:Tr Text='Unregister'}" Click="Unregister_Click" />
-                            <HyperlinkButton Content="{l:Tr Text='Open default apps settings'}" NavigateUri="ms-settings:defaultapps" />
+                            <HyperlinkButton Content="{l:Tr Text='Set as default player…'}" NavigateUri="ms-settings:defaultapps?registeredAppUser=Nami" />
                         </StackPanel>
                         <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
-                                   Text="{l:Tr Text='Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. To make it the default, choose it in Windows Settings.'}" />
+                                   Text="{l:Tr Text='Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. Windows does not let apps make themselves the default: use the link above to assign video and audio types to Nami in Settings.'}" />
                         <TextBlock Text="{l:Tr Text='Open from the browser (bookmarklet)'}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
                         <TextBox x:Name="BookmarkletBox" IsReadOnly="True" FontSize="11" FontFamily="Cascadia Mono, Consolas" TextWrapping="Wrap"
                                  Text="javascript:location.href='namiplayer://open?url='+encodeURIComponent(location.href)" />

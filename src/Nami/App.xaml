@@ -30,6 +30,24 @@
                 <Setter Property="UseSystemFocusVisuals" Value="False" />
             </Style>
 
+            <!-- Windows caption buttons (46x32, square, red close hover), drawn in XAML. -->
+            <Style x:Key="CaptionButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{StaticResource OverlayTextBrush}" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Width" Value="46" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="AllowFocusOnInteraction" Value="False" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+            </Style>
+            <Style x:Key="CaptionIcon" TargetType="FontIcon">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            </Style>
+
             <Style x:Key="OscIcon" TargetType="FontIcon">
                 <Setter Property="FontSize" Value="16" />
                 <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
