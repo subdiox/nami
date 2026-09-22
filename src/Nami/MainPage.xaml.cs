@@ -20,12 +20,18 @@ public sealed partial class MainPage : Page
     public PlayerViewModel Vm { get; }
     private CursorHider? _cursorHider;
 
+    // Focus diagnostics (cheap; helps pin down "keys stopped working" reports).
+    private static void OnAnyGotFocus(object? sender, FocusManagerGotFocusEventArgs e)
+        => App.Log($"focus -> {e.NewFocusedElement?.GetType().Name ?? "null"}");
+    private static void OnAnyLostFocus(object? sender, FocusManagerLostFocusEventArgs e)
+        => App.Log($"focus lost from {e.OldFocusedElement?.GetType().Name ?? "null"}");
+
     /// <summary>Hide / show the mouse cursor over the player (IINA hides it together with the HUD).</summary>
     public void SetCursorHidden(bool hide)
     {
         if (hide)
         {
-            if (!IsCursorOverPlayer() || Window is not { } w) return;
+            if (!IsCursorOverPlayer() || Window is not { } w) { App.Log("cursor: hide skipped (not over player)"); return; }
             _cursorHider ??= new CursorHider(w.Hwnd);
             _cursorHider.Hide();
         }
@@ -86,7 +92,14 @@ public sealed partial class MainPage : Page
         };
 
         Loaded += OnLoaded;
-        Unloaded += (_, _) => { Vm.PropertyChanged -= OnVmChanged; _cursorHider?.Dispose(); _cursorHider = null; };
+        Unloaded += (_, _) =>
+        {
+            Vm.PropertyChanged -= OnVmChanged;
+            FocusManager.GotFocus -= OnAnyGotFocus;
+            FocusManager.LostFocus -= OnAnyLostFocus;
+            _cursorHider?.Dispose();
+            _cursorHider = null;
+        };
 
         // Pointer input on the video surface
         Root.PointerMoved += OnPointerMoved;
@@ -140,6 +153,8 @@ public sealed partial class MainPage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        FocusManager.GotFocus += OnAnyGotFocus;
+        FocusManager.LostFocus += OnAnyLostFocus;
         Focus(FocusState.Programmatic);
         Vm.PropertyChanged += OnVmChanged;
         Vm.Error += msg => Osd.Show(new OsdMessage(OsdMessage.IconInfo, L.T("Error"), msg, Seconds: 4));
@@ -494,6 +509,7 @@ public sealed partial class MainPage : Page
     {
         // Let text boxes and the sidebar handle their own keys.
         var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        App.Log($"key: {e.Key} focused={focused?.GetType().Name ?? "null"}");
         if (focused is TextBox or NumberBox or AutoSuggestBox || IsInside(focused, Sidebar)) return;
 
         var mods = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);

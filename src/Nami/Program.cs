@@ -23,8 +23,12 @@ public static class Program
         var main = AppInstance.FindOrRegisterForKey(InstanceKey);
         if (!main.IsCurrent)
         {
-            RedirectActivation(main, activation);
-            return 0;
+            if (RedirectActivation(main, activation)) return 0;
+            // The registered instance did not answer (it probably crashed): take over instead of
+            // hanging around as an invisible process that would absorb every later launch.
+            try { main.UnregisterKey(); } catch { }
+            main = AppInstance.FindOrRegisterForKey(InstanceKey);
+            if (!main.IsCurrent) return 0;
         }
 
         try
@@ -48,14 +52,21 @@ public static class Program
     /// RedirectActivationToAsync must be awaited without blocking the STA message pump,
     /// so wait on a Win32 event with CoWaitForMultipleObjects (per the Windows App SDK docs).
     /// </summary>
-    private static unsafe void RedirectActivation(AppInstance target, AppActivationArguments args)
+    private static unsafe bool RedirectActivation(AppInstance target, AppActivationArguments args)
     {
         using var done = PInvoke.CreateEvent((Windows.Win32.Security.SECURITY_ATTRIBUTES?)null, true, false, (string?)null);
+        bool ok = false;
         var op = target.RedirectActivationToAsync(args);
-        op.Completed = (_, _) => PInvoke.SetEvent(done);
+        op.Completed = (o, _) => { ok = o.Status == Windows.Foundation.AsyncStatus.Completed; PInvoke.SetEvent(done); };
 
         HANDLE h = (HANDLE)done.DangerousGetHandle();
         uint index;
-        PInvoke.CoWaitForMultipleObjects(0 /* CWMO_DEFAULT */, PInvoke.INFINITE, new ReadOnlySpan<HANDLE>(&h, 1), out index);
+        var hr = PInvoke.CoWaitForMultipleObjects(0 /* CWMO_DEFAULT */, 10_000, new ReadOnlySpan<HANDLE>(&h, 1), out index);
+        if (hr.Failed || !ok)
+        {
+            try { File.AppendAllText(App.LogPath, $"[{DateTime.Now:HH:mm:ss.fff}] redirect to running instance failed (hr=0x{(uint)hr.Value:X8}, ok={ok}); starting standalone{Environment.NewLine}"); } catch { }
+            return false;
+        }
+        return true;
     }
 }

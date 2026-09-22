@@ -35,16 +35,20 @@ internal sealed unsafe class CursorHider : IDisposable
         // Belt and braces: the per-thread display counter survives XAML's own SetCursor calls,
         // SetCursor(null) takes effect without waiting for a mouse move, and the WM_SETCURSOR
         // subclass keeps it hidden on later cursor updates.
-        PInvoke.ShowCursor(false);
+        int count = PInvoke.ShowCursor(false);
         PInvoke.SetCursor(default);
+        var info = new Windows.Win32.UI.WindowsAndMessaging.CURSORINFO { cbSize = (uint)sizeof(Windows.Win32.UI.WindowsAndMessaging.CURSORINFO) };
+        PInvoke.GetCursorInfo(ref info);
+        App.Log($"cursor: hidden (count {count}, site {(_installed ? "subclassed" : "none")}, os flags {(uint)info.flags}, hcursor {(nint)info.hCursor:X})");
     }
 
     public void Show()
     {
         if (!Hidden) return;
         Hidden = false;
-        PInvoke.ShowCursor(true);
+        int count = PInvoke.ShowCursor(true);
         PInvoke.SetCursor(PInvoke.LoadCursor(default, PInvoke.IDC_ARROW));
+        App.Log($"cursor: shown (count {count})");
     }
 
     public void Dispose()

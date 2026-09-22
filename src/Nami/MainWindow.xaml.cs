@@ -77,6 +77,7 @@ public sealed partial class MainWindow : Window
         Vm.Shutdown += Close;
         Activated += (_, e) =>
         {
+            App.Log($"window: {e.WindowActivationState}");
             if (e.WindowActivationState == WindowActivationState.Deactivated) Main.SetCursorHidden(false);
             else Main.FocusVideo();
         };
