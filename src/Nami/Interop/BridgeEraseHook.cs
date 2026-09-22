@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Nami.Interop;
 
@@ -16,6 +17,7 @@ internal sealed unsafe class BridgeEraseHook : IDisposable
 {
     private const nuint SubclassId = 0x4E44;
     private readonly HWND _bridge;
+    private readonly HWND _top;
     private GCHandle _self;
     private bool _installed;
 
@@ -25,10 +27,28 @@ internal sealed unsafe class BridgeEraseHook : IDisposable
 
     public BridgeEraseHook(nint topLevel)
     {
-        _bridge = FindChild((HWND)topLevel, "Microsoft.UI.Content.DesktopChildSiteBridge");
+        _top = (HWND)topLevel;
+        _bridge = FindChild(_top, "Microsoft.UI.Content.DesktopChildSiteBridge");
         if (_bridge == default) { App.Log("erase hook: bridge window not found"); return; }
         _self = GCHandle.Alloc(this, GCHandleType.Weak);
         _installed = PInvoke.SetWindowSubclass(_bridge, &Proc, SubclassId, (nuint)GCHandle.ToIntPtr(_self));
+    }
+
+    /// <summary>
+    /// Keep the island over the whole client area. WinUI places it 1 px below the top edge of a
+    /// non-maximized window (room for the top resize border), which in full screen would leave a
+    /// 1 px line of the window background on the top edge of the screen.
+    /// </summary>
+    public bool FillParent
+    {
+        get;
+        set
+        {
+            field = value;
+            if (value && _bridge != default)
+                PInvoke.SetWindowPos(_bridge, HWND.Null, 0, 0, 0, 0,
+                    SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);   // adjusted by the hook
+        }
     }
 
     /// <summary>Use this frame (bgr0 rows, top-down) for erases; null goes back to black.</summary>
@@ -70,6 +90,17 @@ internal sealed unsafe class BridgeEraseHook : IDisposable
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static LRESULT Proc(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam, nuint id, nuint refData)
     {
+        if (msg == PInvoke.WM_WINDOWPOSCHANGING && GCHandle.FromIntPtr((nint)refData).Target is BridgeEraseHook { FillParent: true } fill)
+        {
+            var wp = (WINDOWPOS*)(nint)lParam.Value;
+            RECT client;
+            if (PInvoke.GetClientRect(fill._top, &client))
+            {
+                wp->x = 0; wp->y = 0; wp->cx = client.right; wp->cy = client.bottom;
+                wp->flags &= ~(SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE);
+            }
+            return PInvoke.DefSubclassProc(hwnd, msg, wParam, lParam);
+        }
         if (msg == PInvoke.WM_ERASEBKGND && GCHandle.FromIntPtr((nint)refData).Target is BridgeEraseHook self)
         {
             var hdc = (HDC)(nint)wParam.Value;

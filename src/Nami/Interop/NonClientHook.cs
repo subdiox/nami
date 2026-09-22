@@ -25,6 +25,8 @@ internal sealed unsafe class NonClientHook : IDisposable
         public required Action<int, int> OnVideoRightClick { get; init; }
         public required Action OnVideoMiddleClick { get; init; }
         public required Func<bool> IsCursorHidden { get; init; }
+        /// <summary>Full screen: the client area is the whole window (no frame at all).</summary>
+        public required Func<bool> IsFullScreen { get; init; }
         /// <summary>WM_ENTERSIZEMOVE (true) / WM_EXITSIZEMOVE (false).</summary>
         public required Action<bool> OnSizeMove { get; init; }
         /// <summary>Files dropped from Explorer onto the window (the caption area has no XAML drop target).</summary>
@@ -102,6 +104,10 @@ internal sealed unsafe class NonClientHook : IDisposable
                 return (LRESULT)0;
             }
 
+            case PInvoke.WM_NCCALCSIZE when wParam != 0 && cb.IsFullScreen():
+                // The overlapped presenter keeps WS_DLGFRAME even without border and title bar;
+                // claim the frame for the client so the video reaches the screen edges.
+                return (LRESULT)0;
             case PInvoke.WM_ENTERSIZEMOVE:
                 cb.OnSizeMove(true);
                 break;
