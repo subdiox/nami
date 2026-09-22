@@ -291,6 +291,7 @@ internal static class Translations
         ["Do nothing"] = "何もしない",
         ["Pause / resume"] = "再生 / 一時停止",
         ["Show / hide the controller"] = "コントローラーを表示 / 非表示",
+        ["Back to the player window"] = "プレイヤーウィンドウに戻る",
         ["Japanese"] = "日本語",
     };
 }

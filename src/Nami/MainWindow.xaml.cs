@@ -66,7 +66,7 @@ public sealed partial class MainWindow : Window
         Vm.PlaybackRestart += () =>
         {
             // Video parameters are final once the first frame is out; fit the window now.
-            if (_fitOnNextVideoSize && Vm.VideoSize.IsValid && !Vm.MusicMode)
+            if (_fitOnNextVideoSize && Vm.VideoSize.IsValid && !Vm.MusicMode && !_compact)
             {
                 _fitOnNextVideoSize = false;
                 FitToVideo((int)Vm.VideoSize.Width, (int)Vm.VideoSize.Height);
@@ -111,6 +111,14 @@ public sealed partial class MainWindow : Window
             {
                 var vs = Vm.VideoSize;
                 if (_aspectLock is not null) _aspectLock.Aspect = vs.Aspect;
+                if (vs.IsValid && _compact)
+                {
+                    // Mini player: keep the width, follow the new aspect (window == client, no borders).
+                    var size = AppWindow.Size;
+                    int h = (int)Math.Round(size.Width / vs.Aspect);
+                    if (Math.Abs(h - size.Height) > 1) AppWindow.Resize(new SizeInt32(size.Width, h));
+                    break;
+                }
                 if (vs.IsValid && !_fitOnNextVideoSize && !IsFullScreen && !_compact && !Vm.MusicMode
                     && _presenter.State != OverlappedPresenterState.Maximized)
                 {
@@ -181,10 +189,14 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>IINA's PiP stand-in: a small, borderless, always-on-top window.</summary>
+    private const int MiniWidthDip = 400;
+    private const int MiniMarginDip = 24;
+
+    /// <summary>IINA's PiP stand-in: a small, borderless, always-on-top window showing only the video.</summary>
     public void ToggleCompactMode()
     {
         if (IsFullScreen) Vm.SetFullscreen(false);
+        if (Vm.MusicMode) SetMusicMode(false);
         _compact = !_compact;
         if (_compact)
         {
@@ -192,22 +204,34 @@ public sealed partial class MainWindow : Window
             _presenter.SetBorderAndTitleBar(false, false);
             _presenter.IsAlwaysOnTop = true;
             _presenter.IsResizable = true;
+            _presenter.IsMaximizable = false;
+            _presenter.IsMinimizable = false;
             TitleOverlay.Visibility = Visibility.Collapsed;
+            Main.SetMiniMode(true);
 
-            double aspect = Vm.VideoWidth > 0 && Vm.VideoHeight > 0 ? (double)Vm.VideoWidth / Vm.VideoHeight : 16.0 / 9;
-            int w = (int)(480 * Scale);
-            int h = (int)(w / aspect);
+            double aspect = Vm.VideoSize.IsValid ? Vm.VideoSize.Aspect : 16.0 / 9;
+            if (_aspectLock is not null) _aspectLock.Aspect = aspect;
+            int w = (int)Math.Round(MiniWidthDip * Scale);
+            int h = (int)Math.Round(w / aspect);
+            int margin = (int)Math.Round(MiniMarginDip * Scale);
             var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
-            AppWindow.MoveAndResize(new RectInt32(area.X + area.Width - w - 24, area.Y + area.Height - h - 24, w, h));
+            // Borderless: the window rectangle is the client rectangle, so this is exactly the video size.
+            AppWindow.MoveAndResize(new RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
         }
         else
         {
             _presenter.SetBorderAndTitleBar(true, true);
             _presenter.IsAlwaysOnTop = Vm.OnTop;
+            _presenter.IsMaximizable = true;
+            _presenter.IsMinimizable = true;
             TitleOverlay.Visibility = Visibility.Visible;
+            Main.SetMiniMode(false);
             if (_restoreBounds is { } r) AppWindow.MoveAndResize(r);
+            if (_aspectLock is not null) _aspectLock.Aspect = Vm.VideoSize.IsValid ? Vm.VideoSize.Aspect : 0;
         }
     }
+
+    public bool IsCompact => _compact;
 
     private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)Hwnd) / 96.0;
 

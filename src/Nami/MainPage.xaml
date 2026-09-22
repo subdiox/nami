@@ -41,6 +41,8 @@
 
         <controls:MusicPanel x:Name="Music" VerticalAlignment="Bottom" Visibility="Collapsed" />
 
+        <controls:MiniOverlay x:Name="Mini" Visibility="Collapsed" />
+
         <controls:Sidebar x:Name="Sidebar" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="Collapsed">
             <controls:Sidebar.RenderTransform>
                 <TranslateTransform x:Name="SidebarTransform" X="360" />

@@ -44,6 +44,9 @@ public sealed partial class MainPage : Page
         Vm.Osd = new OsdController(Vm, Osd.Show);
         Music.Vm = Vm;
         Sidebar.Bind(Vm);
+        Mini.Vm = Vm;
+        Mini.ExitRequested += () => Window?.ToggleCompactMode();
+        Mini.CloseRequested += () => Window?.Close();
 
         _hideTimer = DispatcherQueue.CreateTimer();
         _hideTimer.Interval = HideDelay;
@@ -78,7 +81,7 @@ public sealed partial class MainPage : Page
         Surface.Tapped += OnVideoTapped;
         Surface.DoubleTapped += OnVideoDoubleTapped;
 
-        foreach (var c in new UIElement[] { Osc, Sidebar })
+        foreach (var c in new UIElement[] { Osc, Sidebar, Mini })
         {
             c.PointerEntered += (_, _) => { _pointerOverControls = true; ShowOverlay(); };
             c.PointerExited += (_, _) => { _pointerOverControls = false; RestartHideTimer(); };
@@ -147,6 +150,22 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private bool _mini;
+
+    /// <summary>Mini player: no OSC, title bar or sidebar; a small hover-only overlay instead.</summary>
+    public void SetMiniMode(bool on)
+    {
+        _mini = on;
+        Vm.CloseSidebar();
+        Mini.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        Osc.Visibility = on || Vm.MusicMode ? Visibility.Collapsed : Visibility.Visible;
+        BottomShade.Visibility = on || Vm.MusicMode || Vm.Services.Settings.OscLayout != Services.OscLayout.Floating ? Visibility.Collapsed : Visibility.Visible;
+        // Smaller OSD in the small window.
+        var osd = Vm.Services.Settings.Osd;
+        Osd.Configure(on ? new OsdSettings { Enabled = osd.Enabled, Position = osd.Position, Scale = OsdScale.Small, DurationSeconds = osd.DurationSeconds } : osd);
+        ShowOverlay();
+    }
+
     /// <summary>Music mode swaps the OSC for the music panel; the video area shows the cover art.</summary>
     public void SetMusicMode(bool on)
     {
@@ -170,6 +189,7 @@ public sealed partial class MainPage : Page
             _overlayVisible = true;
             Fade(Osc, 1);
             Fade(BottomShade, 1);
+            Fade(Mini, 1);
             Window?.SetTitleOverlayVisible(true);
         }
         RestartHideTimer();
@@ -187,6 +207,7 @@ public sealed partial class MainPage : Page
         _overlayVisible = false;
         Fade(Osc, 0);
         Fade(BottomShade, 0);
+        Fade(Mini, 0);
         Window?.SetTitleOverlayVisible(false);
     }
 
@@ -197,6 +218,7 @@ public sealed partial class MainPage : Page
         _overlayVisible = false;
         Fade(Osc, 0);
         Fade(BottomShade, 0);
+        Fade(Mini, 0);
         Window?.SetTitleOverlayVisible(false);
         if (_pointerInside) _cursor.Hide();
     }
@@ -325,7 +347,8 @@ public sealed partial class MainPage : Page
     private void OnVideoDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
         _clickTimer.Stop();
-        Vm.ToggleFullscreen();
+        if (_mini) Window?.ToggleCompactMode();   // double-click leaves the mini player
+        else Vm.ToggleFullscreen();
     }
 
     private void OnPointerWheel(object sender, PointerRoutedEventArgs e)
