@@ -87,6 +87,8 @@ public sealed partial class MainPage : Page
         Music.Vm = Vm;
         Sidebar.Bind(Vm);
         Mini.Vm = Vm;
+        // Subscribed here, not in OnLoaded: files from the command line are opened before the page loads.
+        Vm.YtDlpNeeded += (url, append) => _ = PromptYtDlpAsync(url, append);
         Mini.ExitRequested += () => Window?.ToggleCompactMode();
         Mini.CloseRequested += () => Window?.Close();
 
@@ -159,6 +161,53 @@ public sealed partial class MainPage : Page
         dialog.XamlRoot = XamlRoot;
         await dialog.ShowAsync();
         FocusVideo();
+    }
+
+    /// <summary>yt-dlp is missing for a streaming-site URL: offer the download, then open the URL.</summary>
+    private async Task PromptYtDlpAsync(string url, bool append)
+    {
+        if (!IsLoaded)
+        {
+            // Startup: wait for the page (dialogs need a XamlRoot).
+            var loaded = new TaskCompletionSource();
+            RoutedEventHandler? once = null;
+            once = (_, _) => { Loaded -= once; loaded.TrySetResult(); };
+            Loaded += once;
+            await loaded.Task;
+        }
+        var text = new TextBlock { Text = L.T("Playing this kind of URL requires yt-dlp. Download it and mpv will use it automatically."), TextWrapping = TextWrapping.Wrap };
+        var progress = new ProgressBar { Minimum = 0, Maximum = 100, Margin = new Thickness(0, 12, 0, 0), Visibility = Visibility.Collapsed };
+        var dialog = new ContentDialog
+        {
+            Title = L.T("yt-dlp is required"),
+            Content = new StackPanel { Children = { text, progress } },
+            PrimaryButtonText = L.T("Download"),
+            CloseButtonText = L.T("Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+            RequestedTheme = ElementTheme.Dark,
+        };
+        bool installed = false;
+        dialog.PrimaryButtonClick += async (d, e) =>
+        {
+            var deferral = e.GetDeferral();
+            d.IsPrimaryButtonEnabled = false;
+            progress.Visibility = Visibility.Visible;
+            try
+            {
+                await YtDlp.InstallOrUpdateAsync(new Progress<double>(v => progress.Value = v * 100), CancellationToken.None);
+                installed = true;
+            }
+            catch (Exception ex)
+            {
+                text.Text = L.T("Download failed: ") + ex.Message;
+                progress.Visibility = Visibility.Collapsed;
+                d.IsPrimaryButtonEnabled = true;
+                e.Cancel = true;
+            }
+            finally { deferral.Complete(); }
+        };
+        await ShowDialogAsync(dialog);
+        if (installed) Vm.Open(url, append);
     }
 
     /// <summary>False while another window (preferences, another player) is the active one.</summary>

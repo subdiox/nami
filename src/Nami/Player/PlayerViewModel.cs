@@ -500,8 +500,20 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private static string Inv(double v) => v.ToString(CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// A streaming-site URL was opened while yt-dlp is not installed (whatever the route: command
+    /// line, drop, namiplayer://, history). The page offers the download and then calls
+    /// <see cref="Open"/> again.
+    /// </summary>
+    public event Action<string, bool>? YtDlpNeeded;
+
     public void Open(string pathOrUrl, bool append = false)
     {
+        if (YtDlp.LooksLikeStreamingSite(pathOrUrl) && !YtDlp.IsInstalled && YtDlpNeeded is not null)
+        {
+            YtDlpNeeded(pathOrUrl, append);
+            return;
+        }
         if (!append) _autoLoadedFolder = null;
         Run(p => p.LoadFile(pathOrUrl, append));
     }

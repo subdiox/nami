@@ -111,6 +111,9 @@ public sealed unsafe class MpvPlayer : IDisposable
         // yt-dlp: mpv's ytdl_hook looks in the config directory, where we drop yt-dlp.exe.
         Option("ytdl", "yes");
         Option("ytdl-format", settings.YtdlFormat);
+        // Only ever run our own copy: without this, ytdl_hook falls back to any yt-dlp / youtube-dl on
+        // PATH, and a stale one fails on YouTube with a misleading "requested format is not available".
+        Option("script-opts", "ytdl_hook-ytdl_path=" + Nami.Services.YtDlp.ExePath);
 
         // "info" so screenshot confirmations ("[screenshot] Screenshot: 'path'") reach us.
         MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "info"), "request_log_messages");

@@ -71,6 +71,7 @@ internal static class Translations
         ["Download / update yt-dlp"] = "yt-dlp をダウンロード / 更新",
         ["Download and use"] = "ダウンロードして使う",
         ["Download failed: "] = "ダウンロードに失敗しました: ",
+        ["yt-dlp is required"] = "yt-dlp が必要です",
         ["download quota exceeded"] = "ダウンロード上限に達しました",
         ["Download yt-dlp"] = "yt-dlp をダウンロード",
         ["Drop a video here"] = "ここに動画をドロップ",
