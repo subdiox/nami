@@ -28,6 +28,17 @@
                 <TextBlock x:Name="Detail" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
                 <ProgressBar x:Name="Bar" Minimum="0" Maximum="1" MinHeight="3" Height="3" Width="180" HorizontalAlignment="Left"
                              Foreground="{StaticResource AccentBrush}" Background="#33FFFFFF" Visibility="Collapsed" />
+                <!-- Screenshot preview (IINA 1.1+): the captured image with Delete / Reveal / Edit -->
+                <StackPanel x:Name="ShotPanel" Spacing="8" Visibility="Collapsed" Margin="0,4,0,0">
+                    <Border CornerRadius="4" BorderThickness="1" BorderBrush="#66FFFFFF" HorizontalAlignment="Left">
+                        <Image x:Name="ShotImage" Width="240" Stretch="Uniform" />
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button x:Name="ShotDelete" Click="ShotDelete_Click" Padding="10,4" FontSize="12" />
+                        <Button x:Name="ShotReveal" Click="ShotReveal_Click" Padding="10,4" FontSize="12" />
+                        <Button x:Name="ShotEdit" Click="ShotEdit_Click" Padding="10,4" FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Border>

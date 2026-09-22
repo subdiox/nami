@@ -40,7 +40,7 @@ public sealed class OsdController : IDisposable
         vm.PlaybackRestart += OnPlaybackRestart;
         vm.SeekStarted += () => _seekPending = true;
         vm.ClientMessage += OnClientMessage;
-        vm.ScreenshotSaved += _ => Show(new OsdMessage(OsdMessage.IconScreenshot, L.T("Screenshot captured")));
+        vm.ScreenshotSaved += path => Show(new OsdMessage(OsdMessage.IconScreenshot, L.T("Screenshot Captured"), Seconds: 6, ImagePath: path));
         vm.OsdRequested += Show;
     }
 
@@ -168,7 +168,7 @@ public sealed class OsdController : IDisposable
                 break;
 
             case nameof(PlayerViewModel.Rotate):
-                if (_vm.Rotate != _rotate) { _rotate = _vm.Rotate; if (Armed) Show(new OsdMessage(OsdMessage.IconRotate, L.F("Rotation: {0}°", _rotate))); }
+                if (_vm.Rotate != _rotate) { _rotate = _vm.Rotate; if (Armed) Show(new OsdMessage(OsdMessage.IconRotate, L.F("Rotate: {0}°", _rotate))); }
                 break;
             case nameof(PlayerViewModel.Aspect):
                 if (_vm.Aspect != _aspect) { _aspect = _vm.Aspect; if (Armed) Show(new OsdMessage(OsdMessage.IconAspect, Line(L.T("Aspect ratio"), _aspect is "no" or "-1" or "-1.000000" ? L.T("Auto") : _aspect))); }
@@ -198,7 +198,7 @@ public sealed class OsdController : IDisposable
                 {
                     _loopFile = _vm.LoopFile; _loopPlaylist = _vm.LoopPlaylist;
                     if (Armed) Show(new OsdMessage(_loopFile ? OsdMessage.IconLoopOne : OsdMessage.IconLoop,
-                        (_loopFile ? Line(L.T("Loop file"), L.T("On")) : _loopPlaylist ? Line(L.T("Loop playlist"), L.T("On")) : Line(L.T("Loop"), L.T("Off")))));
+                        (_loopFile ? L.T("Loop Single File") : _loopPlaylist ? L.T("Loop Playlist") : L.T("Disable Looping"))));
                 }
                 break;
 
@@ -208,9 +208,9 @@ public sealed class OsdController : IDisposable
                 {
                     _abA = _vm.AbLoopA; _abB = _vm.AbLoopB;
                     if (!Armed) break;
-                    if (double.IsNaN(_abA) && double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), L.T("Cleared"))));
-                    else if (double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), "A")));
-                    else Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), "B")));
+                    if (double.IsNaN(_abA) && double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, L.T("AB-Loop: Cleared")));
+                    else if (double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, L.T("AB-Loop: A")));
+                    else Show(new OsdMessage(OsdMessage.IconLoop, L.T("AB-Loop: B")));
                 }
                 break;
 

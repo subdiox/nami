@@ -1,7 +1,7 @@
 namespace Nami.Player;
 
 /// <summary>One on-screen notification, IINA style: icon, text, optional second line and bar.</summary>
-public sealed record OsdMessage(string Icon, string Text, string? Detail = null, double? Progress = null, double? Seconds = null)
+public sealed record OsdMessage(string Icon, string Text, string? Detail = null, double? Progress = null, double? Seconds = null, string? ImagePath = null)
 {
     // Segoe Fluent Icons glyphs used by the OSD
     public const string IconPlay = "";

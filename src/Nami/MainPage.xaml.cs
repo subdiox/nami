@@ -139,6 +139,7 @@ public sealed partial class MainPage : Page
 
         Osc.PipRequested += () => Window?.ToggleCompactMode();
         Osc.MenuOpenChanged += SetMenuOpen;
+        Osd.InteractiveChanged += () => Window?.RequestRegionUpdate();
         Osc.MusicModeRequested += () => Window?.SetMusicMode(true);
         ApplyOscLayout(Vm.Services.Settings.OscLayout);
 
@@ -440,6 +441,7 @@ public sealed partial class MainPage : Page
     {
         foreach (var el in new FrameworkElement[] { Osc, Sidebar, Music, Mini })
             if (el.Visibility == Visibility.Visible && el.IsHitTestVisible && el.ActualWidth > 0) yield return el;
+        if (Osd.IsInteractive && Osd.ActualWidth > 0) yield return Osd;
     }
 
     public bool CursorHidden => _cursorHidden;

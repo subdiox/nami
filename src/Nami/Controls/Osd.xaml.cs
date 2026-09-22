@@ -17,9 +17,20 @@ public sealed partial class Osd : UserControl
     private Storyboard? _fade;
     private OsdSettings _settings = new();
 
+    private string? _shotPath;
+
+    /// <summary>True while the screenshot preview (with its buttons) is on screen.</summary>
+    public bool IsInteractive => _shotPath is not null && Visibility == Visibility.Visible;
+
+    /// <summary>Raised when the OSD becomes / stops being clickable (the caption regions must follow).</summary>
+    public event Action? InteractiveChanged;
+
     public Osd()
     {
         InitializeComponent();
+        ShotDelete.Content = L.T("Delete");
+        ShotReveal.Content = L.T("Show in Explorer");
+        ShotEdit.Content = L.T("Edit");
         _hideTimer = DispatcherQueue.CreateTimer();
         _hideTimer.IsRepeating = false;
         _hideTimer.Tick += (_, _) => Hide();
@@ -53,6 +64,26 @@ public sealed partial class Osd : UserControl
         }
         else Bar.Visibility = Visibility.Collapsed;
 
+        bool wasInteractive = IsInteractive;
+        _shotPath = m.ImagePath;
+        if (_shotPath is not null)
+        {
+            try
+            {
+                var bmp = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage { DecodePixelWidth = 480 };
+                bmp.UriSource = new Uri(_shotPath);
+                ShotImage.Source = bmp;
+            }
+            catch { ShotImage.Source = null; }
+            ShotPanel.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            ShotPanel.Visibility = Visibility.Collapsed;
+            ShotImage.Source = null;
+        }
+        IsHitTestVisible = _shotPath is not null;
+
         // Updating a visible message must not restart the fade-in: stopping the storyboard resets
         // Opacity to its base value (0) for a frame, which reads as flicker while scrubbing.
         if (Visibility == Visibility.Visible && Opacity >= 0.99)
@@ -69,12 +100,43 @@ public sealed partial class Osd : UserControl
         _hideTimer.Stop();
         _hideTimer.Interval = TimeSpan.FromSeconds(Math.Max(0.3, m.Seconds ?? _settings.DurationSeconds));
         _hideTimer.Start();
+        if (wasInteractive != IsInteractive) InteractiveChanged?.Invoke();
     }
 
     public void Hide()
     {
         _hideTimer.Stop();
+        bool wasInteractive = IsInteractive;
+        _shotPath = null;
+        IsHitTestVisible = false;
         Fade(0, 260, collapseWhenDone: true);
+        if (wasInteractive) InteractiveChanged?.Invoke();
+    }
+
+    private void ShotDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_shotPath is { } p) { try { File.Delete(p); } catch (Exception ex) { App.Log("screenshot delete: " + ex.Message); } }
+        Hide();
+    }
+
+    private void ShotReveal_Click(object sender, RoutedEventArgs e)
+    {
+        if (_shotPath is { } p)
+        {
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{p}\"") { UseShellExecute = false }); }
+            catch (Exception ex) { App.Log("screenshot reveal: " + ex.Message); }
+        }
+        Hide();
+    }
+
+    private async void ShotEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_shotPath is { } p)
+        {
+            try { await Windows.System.Launcher.LaunchFileAsync(await Windows.Storage.StorageFile.GetFileFromPathAsync(p)); }
+            catch (Exception ex) { App.Log("screenshot edit: " + ex.Message); }
+        }
+        Hide();
     }
 
     private void Fade(double to, int ms, bool collapseWhenDone = false)
