@@ -37,7 +37,10 @@ The installer is per-user by default, registers file associations and `namiplaye
 `Nami.exe --register`, and unregisters them on uninstall. User data in `%LOCALAPPDATA%\Nami` is kept.
 
 CI: `.github/workflows/build.yml` builds, publishes and packages on every push; pushing a tag like
-`v0.1.0` also creates a GitHub release with the installer and a portable zip.
+`v0.1.0` also creates a GitHub release with the installer and a portable zip. When a release is
+published, `.github/workflows/winget.yml` submits the installer to microsoft/winget-pkgs as
+`subdiox.Nami` (needs the repository to be public, a `WINGET_TOKEN` secret with the `public_repo`
+scope, and a fork of winget-pkgs). Once merged: `winget install subdiox.Nami`.
 
 ## Features
 

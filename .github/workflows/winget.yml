@@ -1,0 +1,31 @@
+name: winget
+
+# When a GitHub release is published (by the Build workflow on a v* tag), generate the
+# winget manifests for the installer and open a pull request against microsoft/winget-pkgs.
+#
+# Requirements (one-time):
+#   - the repository must be public so the release asset URL is downloadable anonymously
+#   - a classic personal access token with the "public_repo" scope stored as the WINGET_TOKEN secret
+#   - a fork of microsoft/winget-pkgs under the token owner's account
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.1.0)"
+        required: true
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: Publish to winget-pkgs
+        uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: subdiox.Nami
+          release-tag: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+          installers-regex: 'Nami-Setup-.*\.exe$'
+          max-versions-to-keep: 5
+          token: ${{ secrets.WINGET_TOKEN }}
