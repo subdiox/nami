@@ -139,6 +139,7 @@ public sealed partial class MainPage : Page
     /// <summary>Give keyboard focus back to the player (after dialogs, flyouts, window activation).</summary>
     public void FocusVideo()
     {
+        if (!IsLoaded || XamlRoot is null) return;   // Activated fires before the page is loaded
         var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
         if (focused is null || (!IsInside(focused, Sidebar) && focused is not TextBox and not NumberBox and not AutoSuggestBox))
             Focus(FocusState.Programmatic);
