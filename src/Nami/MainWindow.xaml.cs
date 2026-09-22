@@ -91,6 +91,13 @@ public sealed partial class MainWindow : Window
 
         Main.VideoView.PlayerCreated += _ => ApplyHdr();
         Main.Loaded += (_, _) => Services.L.Localize(TitleOverlay);
+        // Fallback: if XAML focus is outside the page (or on nothing), key events still reach the
+        // window root; route them to the player so shortcuts never silently die.
+        RootGrid.AddHandler(UIElement.KeyDownEvent, new Microsoft.UI.Xaml.Input.KeyEventHandler((_, e) =>
+        {
+            var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Content.XamlRoot) as DependencyObject;
+            if (focused is null || !IsInside(focused, Main)) { App.Log($"key (window fallback): {e.Key}"); Main.HandleKey(e); }
+        }), true);
         _aspectLock = new Interop.AspectRatioLock(Hwnd);
         Closed += (_, _) => { _aspectLock?.Dispose(); _aspectLock = null; };
     }
@@ -147,6 +154,13 @@ public sealed partial class MainWindow : Window
     }
 
     private static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
+
+    private static bool IsInside(DependencyObject? d, DependencyObject root)
+    {
+        for (; d is not null; d = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(d))
+            if (d == root) return true;
+        return false;
+    }
 
     // ---- view model -> window ----------------------------------------------------------
 

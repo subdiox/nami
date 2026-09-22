@@ -47,3 +47,9 @@ WMSZ_TOPLEFT
 WMSZ_TOPRIGHT
 WM_SIZING
 GetCursorInfo
+CreateCursor
+DestroyCursor
+GetModuleHandle
+RoGetActivationFactory
+WindowsCreateString
+WindowsDeleteString

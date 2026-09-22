@@ -18,20 +18,16 @@ namespace Nami;
 public sealed partial class MainPage : Page
 {
     public PlayerViewModel Vm { get; }
-    private static readonly Microsoft.UI.Input.InputCursor? HiddenCursor = CreateHiddenCursor();
+    private static readonly Microsoft.UI.Input.InputCursor? HiddenCursor = EmptyCursor.Create();
     private static readonly Microsoft.UI.Input.InputCursor ArrowCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
     private bool _cursorHidden;
 
-    private static Microsoft.UI.Input.InputCursor? CreateHiddenCursor()
-    {
-        // A "custom" cursor with resource id 0 is the documented way to get a blank cursor.
-        try { return Microsoft.UI.Input.InputCursor.CreateFromCoreCursor(new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Custom, 0)); }
-        catch (Exception ex) { App.Log("cursor: blank cursor unavailable: " + ex.Message); return null; }
-    }
-
     // Focus diagnostics (cheap; helps pin down "keys stopped working" reports).
-    private static void OnAnyGotFocus(object? sender, FocusManagerGotFocusEventArgs e)
-        => App.Log($"focus -> {Describe(e.NewFocusedElement)}");
+    private void OnAnyGotFocus(object? sender, FocusManagerGotFocusEventArgs e)
+    {
+        App.Log($"focus -> {Describe(e.NewFocusedElement)}");
+        if (e.NewFocusedElement is null) FocusVideo();
+    }
 
     private static string Describe(object? o)
     {
@@ -54,6 +50,8 @@ public sealed partial class MainPage : Page
         if (_cursorHidden == hide || HiddenCursor is null) return;
         if (hide && !IsCursorOverPlayer()) { App.Log("cursor: hide skipped (not over player)"); return; }
         _cursorHidden = hide;
+        // The pointer is over Surface (the input layer above the video); set it there and on the page.
+        Surface.SetCursor(hide ? HiddenCursor : null);
         ProtectedCursor = hide ? HiddenCursor : ArrowCursor;
         App.Log($"cursor: {(hide ? "hidden" : "shown")} ({WindowInterop.CursorState()})");
     }
@@ -527,8 +525,12 @@ public sealed partial class MainPage : Page
 
     // ---- keyboard ---------------------------------------------------------------------
 
-    private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e) => HandleKey(e);
+
+    /// <summary>Player shortcuts; also called by the window when focus is outside this page.</summary>
+    public void HandleKey(KeyRoutedEventArgs e)
     {
+        if (e.Handled) return;
         // Let text boxes and the sidebar handle their own keys.
         var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
         App.Log($"key: {e.Key} focused={focused?.GetType().Name ?? "null"}");
