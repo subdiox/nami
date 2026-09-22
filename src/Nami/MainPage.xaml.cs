@@ -127,6 +127,7 @@ public sealed partial class MainPage : Page
     public void ApplyOscLayout(Services.OscLayout layout)
     {
         Osc.Layout = layout;
+        Osc.ApplyToolbar(Vm.Services.Settings.OscToolbar);
         switch (layout)
         {
             case Services.OscLayout.Floating:

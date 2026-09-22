@@ -21,6 +21,16 @@ public sealed partial class Osc : UserControl
 
     private Services.OscLayout _layout = Services.OscLayout.Floating;
 
+    /// <summary>Show only the toolbar buttons the user picked.</summary>
+    public void ApplyToolbar(Services.OscToolbarItems items)
+    {
+        SettingsButton.Visibility = items.HasFlag(Services.OscToolbarItems.Settings) ? Visibility.Visible : Visibility.Collapsed;
+        PlaylistButton.Visibility = items.HasFlag(Services.OscToolbarItems.Playlist) ? Visibility.Visible : Visibility.Collapsed;
+        MusicModeButton.Visibility = items.HasFlag(Services.OscToolbarItems.MusicMode) ? Visibility.Visible : Visibility.Collapsed;
+        PipButton.Visibility = items.HasFlag(Services.OscToolbarItems.MiniPlayer) ? Visibility.Visible : Visibility.Collapsed;
+        FullscreenButton.Visibility = items.HasFlag(Services.OscToolbarItems.Fullscreen) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     /// <summary>Floating (rounded panel, two rows) or a full-width bar (one row).</summary>
     public Services.OscLayout Layout
     {

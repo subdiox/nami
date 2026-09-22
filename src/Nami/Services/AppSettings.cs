@@ -10,6 +10,17 @@ public enum OscLayout
     Top,
 }
 
+[Flags]
+public enum OscToolbarItems
+{
+    None = 0,
+    Settings = 1,
+    Playlist = 2,
+    MusicMode = 4,
+    MiniPlayer = 8,
+    Fullscreen = 16,
+}
+
 public enum SingleClickAction { None, PauseResume, ToggleOsc }
 
 public enum OsdPosition { TopLeft, TopRight, BottomLeft, BottomRight }
@@ -46,6 +57,8 @@ public sealed class AppSettings
     public bool SeekThumbnails { get; set; } = true;
     public string YtdlFormat { get; set; } = "bestvideo[height<=?1080]+bestaudio/best";
     public OscLayout OscLayout { get; set; } = OscLayout.Floating;
+    /// <summary>Buttons on the right of the OSC (IINA: "OSC toolbar items"). Sidebar toggles live in the title bar by default.</summary>
+    public OscToolbarItems OscToolbar { get; set; } = OscToolbarItems.MusicMode | OscToolbarItems.MiniPlayer | OscToolbarItems.Fullscreen;
     public bool AutoMusicMode { get; set; } = true;
     public string ScreenshotDirectory { get; set; } = "";
     public string ScreenshotFormat { get; set; } = "png";

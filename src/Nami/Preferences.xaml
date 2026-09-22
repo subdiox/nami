@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentDialog
+<Window
     x:Class="Nami.Preferences"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,126 +7,205 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="{l:Tr Text='Preferences'}"
-    PrimaryButtonText="{l:Tr Text='Save'}"
-    CloseButtonText="{l:Tr Text='Close'}"
-    DefaultButton="Primary"
-    PrimaryButtonClick="OnSave">
+    Title="{l:Tr Text='Preferences'}">
 
-    <ScrollViewer MaxHeight="560" Width="560">
-        <StackPanel Spacing="8">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='General'}" Margin="0,0,0,6" />
-            <ComboBox x:Name="LanguageCombo" Header="{l:Tr Text='Language (takes effect after restart)'}" HorizontalAlignment="Stretch" />
-            <ToggleSwitch x:Name="ResizeSwitch" Header="{l:Tr Text='Resize the window to the video when a file is opened'}" />
-            <ToggleSwitch x:Name="RememberVolumeSwitch" Header="{l:Tr Text='Remember volume'}" />
-            <ToggleSwitch x:Name="NewWindowSwitch" Header="{l:Tr Text='Open files from Explorer in a new window'}" />
-            <ComboBox x:Name="SingleClickCombo" Header="{l:Tr Text='Single click on the video'}" HorizontalAlignment="Stretch" />
-            <ToggleSwitch x:Name="ResumeSwitch" Header="{l:Tr Text='Resume from the last playback position'}" />
-            <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="{l:Tr Text='Automatically add files from the same folder to the playlist'}" />
-            <ToggleSwitch x:Name="HistorySwitch" Header="{l:Tr Text='Keep playback history'}" />
-            <ToggleSwitch x:Name="ThumbnailSwitch" Header="{l:Tr Text='Show thumbnails on the seek bar (generated in the background)'}" />
-            <ToggleSwitch x:Name="AutoMusicSwitch" Header="{l:Tr Text='Switch to music mode automatically for audio files'}" />
-            <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='Controller (OSC) layout'}" HorizontalAlignment="Stretch" />
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='On-screen display'}" />
-            <ToggleSwitch x:Name="OsdSwitch" Header="{l:Tr Text='Show on-screen messages (volume, seek, track changes…)'}" />
-            <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <ComboBox x:Name="OsdPositionCombo" Grid.Column="0" Header="{l:Tr Text='Position'}" HorizontalAlignment="Stretch" />
-                <ComboBox x:Name="OsdScaleCombo" Grid.Column="1" Header="{l:Tr Text='Size'}" HorizontalAlignment="Stretch" />
-                <Slider x:Name="OsdDurationSlider" Grid.Column="2" Header="{l:Tr Text='Duration (seconds)'}" Minimum="0.5" Maximum="5" StepFrequency="0.5" />
-            </Grid>
+    <Grid x:Name="RootGrid" RequestedTheme="Dark">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle appearance'}" />
-            <Grid ColumnSpacing="8" RowSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='Font'}" IsEditable="True" HorizontalAlignment="Stretch" />
-                <Slider x:Name="SubSizeSlider" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='Size'}" Minimum="16" Maximum="100" StepFrequency="1" />
-                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                    <CheckBox x:Name="SubBoldCheck" Content="{l:Tr Text='Bold'}" />
-                    <CheckBox x:Name="SubItalicCheck" Content="{l:Tr Text='Italic'}" />
-                </StackPanel>
-                <ComboBox x:Name="SubBorderStyleCombo" Grid.Row="1" Grid.Column="1" Header="{l:Tr Text='Border style'}" HorizontalAlignment="Stretch" />
-                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="SubColorButton" Content="{l:Tr Text='Text color'}" Click="SubColor_Click" Tag="text" />
-                    <Button x:Name="SubOutlineColorButton" Content="{l:Tr Text='Outline color'}" Click="SubColor_Click" Tag="outline" />
-                    <Button x:Name="SubBackColorButton" Content="{l:Tr Text='Background color'}" Click="SubColor_Click" Tag="back" />
-                </StackPanel>
-                <Slider x:Name="SubOutlineSlider" Grid.Row="2" Grid.Column="1" Header="{l:Tr Text='Outline width'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
-                <Slider x:Name="SubShadowSlider" Grid.Row="3" Grid.Column="0" Header="{l:Tr Text='Shadow offset'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
-                <ComboBox x:Name="SubCodepageCombo" Grid.Row="3" Grid.Column="1" Header="{l:Tr Text='Text encoding'}" HorizontalAlignment="Stretch" />
-                <ComboBox x:Name="SubAssOverrideCombo" Grid.Row="4" Grid.Column="0" Header="{l:Tr Text='ASS subtitle styles'}" HorizontalAlignment="Stretch" />
-                <HyperlinkButton Grid.Row="4" Grid.Column="1" Content="{l:Tr Text='Restore defaults'}" Click="SubStyleReset_Click" VerticalAlignment="Bottom" />
-            </Grid>
-            <TextBlock x:Name="SubLangHeader" Text="{l:Tr Text='Online subtitle languages (comma-separated)'}" FontSize="12" Margin="0,8,0,0" />
-            <TextBox x:Name="SubLanguagesBox" />
+        <Border x:Name="TitleBarArea" Grid.Row="0" Height="32">
+            <TextBlock Text="{l:Tr Text='Preferences'}" FontSize="12" VerticalAlignment="Center" Margin="16,0" />
+        </Border>
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Screenshot'}" />
-            <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="120" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='Folder (empty = Pictures)'}" />
-                <Button Grid.Column="1" Content="{l:Tr Text='Browse…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
-                <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="2" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">
-                    <x:String>png</x:String>
-                    <x:String>jpg</x:String>
-                    <x:String>webp</x:String>
-                    <x:String>jxl</x:String>
-                </ComboBox>
-            </Grid>
+        <NavigationView x:Name="Nav" Grid.Row="1" PaneDisplayMode="Left" IsBackButtonVisible="Collapsed" IsSettingsVisible="False"
+                        OpenPaneLength="210" IsPaneToggleButtonVisible="False" SelectionChanged="Nav_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="{l:Tr Text='General'}" Tag="general">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE713;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="{l:Tr Text='Interface'}" Tag="ui">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE7FC;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="{l:Tr Text='Subtitles'}" Tag="subtitles">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE7F0;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="{l:Tr Text='Screenshots'}" Tag="screenshots">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE722;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="{l:Tr Text='Online video (yt-dlp)'}" Tag="online">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE774;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="{l:Tr Text='Windows integration'}" Tag="windows">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE770;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="{l:Tr Text='mpv configuration'}" Tag="mpv">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE943;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Online video (yt-dlp)'}" />
-            <TextBlock x:Name="YtDlpStatus" FontSize="12" TextWrapping="Wrap" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="YtDlpInstallButton" Content="{l:Tr Text='Download / update yt-dlp'}" Click="YtDlpInstall_Click" />
-                <ProgressBar x:Name="YtDlpProgress" Width="160" VerticalAlignment="Center" Visibility="Collapsed" />
+            <ScrollViewer Padding="28,8,28,24" VerticalScrollBarVisibility="Auto">
+                <Grid MaxWidth="720" HorizontalAlignment="Left">
+
+                    <!-- General -->
+                    <StackPanel x:Name="GeneralPanel" Spacing="10">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='General'}" Margin="0,0,0,6" />
+                        <ComboBox x:Name="LanguageCombo" Header="{l:Tr Text='Language (takes effect after restart)'}" MinWidth="260" />
+                        <ToggleSwitch x:Name="ResizeSwitch" Header="{l:Tr Text='Resize the window to the video when a file is opened'}" />
+                        <ToggleSwitch x:Name="RememberVolumeSwitch" Header="{l:Tr Text='Remember volume'}" />
+                        <ToggleSwitch x:Name="NewWindowSwitch" Header="{l:Tr Text='Open files from Explorer in a new window'}" />
+                        <ComboBox x:Name="SingleClickCombo" Header="{l:Tr Text='Single click on the video'}" MinWidth="260" />
+                        <ToggleSwitch x:Name="ResumeSwitch" Header="{l:Tr Text='Resume from the last playback position'}" />
+                        <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="{l:Tr Text='Automatically add files from the same folder to the playlist'}" />
+                        <ToggleSwitch x:Name="HistorySwitch" Header="{l:Tr Text='Keep playback history'}" />
+                        <ToggleSwitch x:Name="ThumbnailSwitch" Header="{l:Tr Text='Show thumbnails on the seek bar (generated in the background)'}" />
+                        <ToggleSwitch x:Name="AutoMusicSwitch" Header="{l:Tr Text='Switch to music mode automatically for audio files'}" />
+                    </StackPanel>
+
+                    <!-- Interface -->
+                    <StackPanel x:Name="UiPanel" Spacing="10" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Controller (OSC)'}" Margin="0,0,0,6" />
+                        <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='Controller (OSC) layout'}" MinWidth="260" />
+                        <TextBlock Text="{l:Tr Text='Controller toolbar buttons'}" FontSize="12" Margin="0,8,0,0" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <CheckBox x:Name="TbSettings" Content="{l:Tr Text='Quick settings'}" MinWidth="0" />
+                            <CheckBox x:Name="TbPlaylist" Content="{l:Tr Text='Playlist'}" MinWidth="0" />
+                            <CheckBox x:Name="TbMusic" Content="{l:Tr Text='Music mode'}" MinWidth="0" />
+                            <CheckBox x:Name="TbMini" Content="{l:Tr Text='Mini player'}" MinWidth="0" />
+                            <CheckBox x:Name="TbFullscreen" Content="{l:Tr Text='Full screen'}" MinWidth="0" />
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='On-screen display'}" />
+                        <ToggleSwitch x:Name="OsdSwitch" Header="{l:Tr Text='Show on-screen messages (volume, seek, track changes…)'}" />
+                        <Grid ColumnSpacing="12" Width="600" HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="OsdPositionCombo" Grid.Column="0" Header="{l:Tr Text='Position'}" HorizontalAlignment="Stretch" />
+                            <ComboBox x:Name="OsdScaleCombo" Grid.Column="1" Header="{l:Tr Text='Size'}" HorizontalAlignment="Stretch" />
+                            <Slider x:Name="OsdDurationSlider" Grid.Column="2" Header="{l:Tr Text='Duration (seconds)'}" Minimum="0.5" Maximum="5" StepFrequency="0.5" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Subtitles -->
+                    <StackPanel x:Name="SubtitlesPanel" Spacing="10" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle appearance'}" Margin="0,0,0,6" />
+                        <Grid ColumnSpacing="12" RowSpacing="10" Width="600" HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='Font'}" IsEditable="True" HorizontalAlignment="Stretch" />
+                            <Slider x:Name="SubSizeSlider" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='Size'}" Minimum="16" Maximum="100" StepFrequency="1" />
+                            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                                <CheckBox x:Name="SubBoldCheck" Content="{l:Tr Text='Bold'}" />
+                                <CheckBox x:Name="SubItalicCheck" Content="{l:Tr Text='Italic'}" />
+                            </StackPanel>
+                            <ComboBox x:Name="SubBorderStyleCombo" Grid.Row="1" Grid.Column="1" Header="{l:Tr Text='Border style'}" HorizontalAlignment="Stretch" />
+                            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="SubColorButton" Content="{l:Tr Text='Text color'}" Click="SubColor_Click" Tag="text" />
+                                <Button x:Name="SubOutlineColorButton" Content="{l:Tr Text='Outline color'}" Click="SubColor_Click" Tag="outline" />
+                                <Button x:Name="SubBackColorButton" Content="{l:Tr Text='Background color'}" Click="SubColor_Click" Tag="back" />
+                            </StackPanel>
+                            <Slider x:Name="SubOutlineSlider" Grid.Row="2" Grid.Column="1" Header="{l:Tr Text='Outline width'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
+                            <Slider x:Name="SubShadowSlider" Grid.Row="3" Grid.Column="0" Header="{l:Tr Text='Shadow offset'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
+                            <ComboBox x:Name="SubCodepageCombo" Grid.Row="3" Grid.Column="1" Header="{l:Tr Text='Text encoding'}" HorizontalAlignment="Stretch" />
+                            <ComboBox x:Name="SubAssOverrideCombo" Grid.Row="4" Grid.Column="0" Header="{l:Tr Text='ASS subtitle styles'}" HorizontalAlignment="Stretch" />
+                            <HyperlinkButton Grid.Row="4" Grid.Column="1" Content="{l:Tr Text='Restore defaults'}" Click="SubStyleReset_Click" VerticalAlignment="Bottom" />
+                        </Grid>
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Online subtitles'}" />
+                        <TextBox x:Name="SubLanguagesBox" Header="{l:Tr Text='Online subtitle languages (comma-separated)'}" Width="300" HorizontalAlignment="Left" />
+                    </StackPanel>
+
+                    <!-- Screenshots -->
+                    <StackPanel x:Name="ScreenshotsPanel" Spacing="10" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Screenshots'}" Margin="0,0,0,6" />
+                        <Grid ColumnSpacing="8" Width="600" HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='Folder (empty = Pictures)'}" />
+                            <Button Grid.Column="1" Content="{l:Tr Text='Browse…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
+                            <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="2" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">
+                                <x:String>png</x:String>
+                                <x:String>jpg</x:String>
+                                <x:String>webp</x:String>
+                                <x:String>jxl</x:String>
+                            </ComboBox>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Online video -->
+                    <StackPanel x:Name="OnlinePanel" Spacing="10" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Online video (yt-dlp)'}" Margin="0,0,0,6" />
+                        <TextBlock x:Name="YtDlpStatus" FontSize="12" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="YtDlpInstallButton" Content="{l:Tr Text='Download / update yt-dlp'}" Click="YtDlpInstall_Click" />
+                            <ProgressBar x:Name="YtDlpProgress" Width="160" VerticalAlignment="Center" Visibility="Collapsed" />
+                        </StackPanel>
+                        <ComboBox x:Name="YtdlFormatCombo" Header="{l:Tr Text='Quality'}" MinWidth="260" />
+                    </StackPanel>
+
+                    <!-- Windows integration -->
+                    <StackPanel x:Name="WindowsPanel" Spacing="10" Visibility="Collapsed" Width="600" HorizontalAlignment="Left">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Windows integration'}" Margin="0,0,0,6" />
+                        <TextBlock x:Name="AssocStatus" TextWrapping="Wrap" FontSize="12" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="RegisterButton" Content="{l:Tr Text='Register as a media app'}" Click="Register_Click" />
+                            <Button x:Name="UnregisterButton" Content="{l:Tr Text='Unregister'}" Click="Unregister_Click" />
+                            <HyperlinkButton Content="{l:Tr Text='Open default apps settings'}" NavigateUri="ms-settings:defaultapps" />
+                        </StackPanel>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
+                                   Text="{l:Tr Text='Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. To make it the default, choose it in Windows Settings.'}" />
+                        <TextBlock Text="{l:Tr Text='Open from the browser (bookmarklet)'}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
+                        <TextBox x:Name="BookmarkletBox" IsReadOnly="True" FontSize="11" FontFamily="Cascadia Mono, Consolas" TextWrapping="Wrap"
+                                 Text="javascript:location.href='namiplayer://open?url='+encodeURIComponent(location.href)" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
+                                   Text="{l:Tr Text='Save the line above as a bookmark URL to open the current page in Nami (sites supported by yt-dlp).'}" />
+                    </StackPanel>
+
+                    <!-- mpv -->
+                    <StackPanel x:Name="MpvPanel" Spacing="10" Visibility="Collapsed" Width="640" HorizontalAlignment="Left">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='mpv configuration'}" Margin="0,0,0,6" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
+                                   Text="{l:Tr Text='Edit mpv.conf and input.conf here. Changes to mpv.conf are applied immediately where possible and fully on the next start.'}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="{l:Tr Text='Customize key bindings…'}" Click="KeyBindings_Click" />
+                            <HyperlinkButton x:Name="OpenConfigFolder" Content="{l:Tr Text='Open configuration folder'}" Click="OpenConfigFolder_Click" />
+                        </StackPanel>
+                        <TextBlock Text="mpv.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+                        <TextBox x:Name="MpvConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="200"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
+                        <TextBlock Text="input.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+                        <TextBox x:Name="InputConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="160"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </NavigationView>
+
+        <Border Grid.Row="2" Padding="16,10" BorderThickness="0,1,0,0" BorderBrush="{StaticResource PanelBorderBrush}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button x:Name="SaveButton" Content="{l:Tr Text='Save'}" Style="{StaticResource AccentButtonStyle}" MinWidth="96" Click="Save_Click" />
+                <Button Content="{l:Tr Text='Close'}" MinWidth="96" Click="Close_Click" />
             </StackPanel>
-            <ComboBox x:Name="YtdlFormatCombo" Header="{l:Tr Text='Quality'}" HorizontalAlignment="Stretch" />
-
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Windows integration'}" />
-            <TextBlock x:Name="AssocStatus" TextWrapping="Wrap" FontSize="12" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="RegisterButton" Content="{l:Tr Text='Register as a media app'}" Click="Register_Click" />
-                <Button x:Name="UnregisterButton" Content="{l:Tr Text='Unregister'}" Click="Unregister_Click" />
-                <HyperlinkButton Content="{l:Tr Text='Open default apps settings'}" NavigateUri="ms-settings:defaultapps" />
-            </StackPanel>
-            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
-                       Text="{l:Tr Text='Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. To make it the default, choose it in Windows Settings.'}" />
-            <TextBlock Text="{l:Tr Text='Open from the browser (bookmarklet)'}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <TextBox x:Name="BookmarkletBox" IsReadOnly="True" FontSize="11" FontFamily="Cascadia Mono, Consolas" TextWrapping="Wrap"
-                     Text="javascript:location.href='namiplayer://open?url='+encodeURIComponent(location.href)" />
-            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
-                       Text="{l:Tr Text='Save the line above as a bookmark URL to open the current page in Nami (sites supported by yt-dlp).'}" />
-
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='mpv configuration'}" />
-            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}">
-                <Run Text="{l:Tr Text='Edit mpv.conf and input.conf here. Changes to mpv.conf are applied immediately where possible and fully on the next start.'}" />
-            </TextBlock>
-            <HyperlinkButton x:Name="OpenConfigFolder" Content="{l:Tr Text='Open configuration folder'}" Click="OpenConfigFolder_Click" Padding="0" />
-            <TextBlock Text="mpv.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
-            <TextBox x:Name="MpvConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="180"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
-            <Button Content="{l:Tr Text='Customize key bindings…'}" Click="KeyBindings_Click" Margin="0,8,0,0" />
-            <TextBlock Text="input.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
-            <TextBox x:Name="InputConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="140"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
-        </StackPanel>
-    </ScrollViewer>
-</ContentDialog>
+        </Border>
+    </Grid>
+</Window>

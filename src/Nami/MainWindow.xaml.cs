@@ -20,7 +20,6 @@ public sealed partial class MainWindow : Window
     private bool _fitOnNextVideoSize;
     private bool _compact;
     private RectInt32? _restoreBounds;
-    private Preferences? _preferencesDialog;
 
     public nint Hwnd { get; }
     public MainPage Page => Main;
@@ -319,13 +318,13 @@ public sealed partial class MainWindow : Window
         Activate();
     }
 
-    public async Task ShowPreferencesAsync()
+    public Task ShowPreferencesAsync(string? section = null)
     {
-        if (_preferencesDialog is not null) return;
-        _preferencesDialog = new Preferences(Vm) { XamlRoot = Content.XamlRoot };
-        try { await _preferencesDialog.ShowAsync(); }
-        finally { _preferencesDialog = null; }
+        _services.Windows.ShowPreferences(Vm, section);
+        return Task.CompletedTask;
     }
+
+    private void PreferencesButton_Click(object sender, RoutedEventArgs e) => _services.Windows.ShowPreferences(Vm);
 
     private void PinButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleOnTop();
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Settings);

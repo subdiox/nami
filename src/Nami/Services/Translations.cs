@@ -292,6 +292,10 @@ internal static class Translations
         ["Pause / resume"] = "再生 / 一時停止",
         ["Show / hide the controller"] = "コントローラーを表示 / 非表示",
         ["Back to the player window"] = "プレイヤーウィンドウに戻る",
+        ["Controller toolbar buttons"] = "コントローラーのツールバーに表示するボタン",
+        ["Interface"] = "インターフェース",
+        ["Controller (OSC)"] = "コントローラー (OSC)",
+        ["Online subtitles"] = "オンライン字幕",
         ["Japanese"] = "日本語",
     };
 }

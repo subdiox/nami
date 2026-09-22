@@ -8,7 +8,7 @@ using Windows.System;
 
 namespace Nami;
 
-public sealed partial class Preferences : ContentDialog
+public sealed partial class Preferences : Window
 {
     private static string MpvConfPath => Path.Combine(AppSettings.MpvConfigDirectory, "mpv.conf");
     private static string InputConfPath => Path.Combine(AppSettings.MpvConfigDirectory, "input.conf");
@@ -19,6 +19,18 @@ public sealed partial class Preferences : ContentDialog
     {
         _vm = vm;
         InitializeComponent();
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(TitleBarArea);
+        AppWindow.SetIcon("Assets/AppIcon.ico");
+        var size = new Windows.Graphics.SizeInt32((int)(900 * Scale), (int)(640 * Scale));
+        AppWindow.ResizeClient(size);
+        if (_vm.Window is { } owner)
+        {
+            // Centered over the player window that opened it.
+            var o = owner.AppWindow;
+            AppWindow.Move(new Windows.Graphics.PointInt32(o.Position.X + (o.Size.Width - AppWindow.Size.Width) / 2, o.Position.Y + (o.Size.Height - AppWindow.Size.Height) / 2));
+        }
+        Nav.SelectedItem = Nav.MenuItems[0];
         OscLayoutCombo.ItemsSource = new List<object> {L.T("Floating (default)"), L.T("Bottom bar"), L.T("Top bar")};
         SubBorderStyleCombo.ItemsSource = new List<object> {L.T("Outline and shadow"), L.T("Opaque box"), L.T("Background box")};
         SubAssOverrideCombo.ItemsSource = new List<object> {L.T("Use the styles from the subtitle file"), L.T("Override with these settings (yes)"), L.T("Match size only (scale)"), L.T("Force override (force)"), L.T("Strip styling (strip)")};
@@ -43,6 +55,11 @@ public sealed partial class Preferences : ContentDialog
         ThumbnailSwitch.IsOn = s.SeekThumbnails;
         AutoMusicSwitch.IsOn = s.AutoMusicMode;
         OscLayoutCombo.SelectedIndex = (int)s.OscLayout;
+        TbSettings.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.Settings);
+        TbPlaylist.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.Playlist);
+        TbMusic.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.MusicMode);
+        TbMini.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.MiniPlayer);
+        TbFullscreen.IsChecked = s.OscToolbar.HasFlag(OscToolbarItems.Fullscreen);
         MpvConfBox.Text = ReadOrEmpty(MpvConfPath);
         InputConfBox.Text = ReadOrEmpty(InputConfPath);
         UpdateAssocStatus();
@@ -57,12 +74,34 @@ public sealed partial class Preferences : ContentDialog
         if (ScreenshotFormatCombo.SelectedIndex < 0) ScreenshotFormatCombo.SelectedIndex = 0;
     }
 
+    private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
+
+    /// <summary>Jump to a section ("general", "ui", "subtitles", "screenshots", "online", "windows", "mpv").</summary>
+    public void ShowSection(string tag)
+    {
+        foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
+            if ((item.Tag as string) == tag) { Nav.SelectedItem = item; break; }
+    }
+
+    private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        string tag = (args.SelectedItem as NavigationViewItem)?.Tag as string ?? "general";
+        GeneralPanel.Visibility = tag == "general" ? Visibility.Visible : Visibility.Collapsed;
+        UiPanel.Visibility = tag == "ui" ? Visibility.Visible : Visibility.Collapsed;
+        SubtitlesPanel.Visibility = tag == "subtitles" ? Visibility.Visible : Visibility.Collapsed;
+        ScreenshotsPanel.Visibility = tag == "screenshots" ? Visibility.Visible : Visibility.Collapsed;
+        OnlinePanel.Visibility = tag == "online" ? Visibility.Visible : Visibility.Collapsed;
+        WindowsPanel.Visibility = tag == "windows" ? Visibility.Visible : Visibility.Collapsed;
+        MpvPanel.Visibility = tag == "mpv" ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
     private async void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
     {
-        if (_vm.Window is null) return;
         var picker = new Windows.Storage.Pickers.FolderPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary };
         picker.FileTypeFilter.Add("*");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(_vm.Window));
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
         var folder = await picker.PickSingleFolderAsync();
         if (folder is not null) ScreenshotDirBox.Text = folder.Path;
     }
@@ -206,11 +245,8 @@ public sealed partial class Preferences : ContentDialog
 
     private async void KeyBindings_Click(object sender, RoutedEventArgs e)
     {
-        // ContentDialogs cannot stack; close this one, show the editor, then reopen preferences.
-        Hide();
-        var dlg = new KeyBindingsDialog(_vm) { XamlRoot = XamlRoot };
+        var dlg = new KeyBindingsDialog(_vm) { XamlRoot = Content.XamlRoot };
         await dlg.ShowAsync();
-        if (_vm.Window is { } w) _ = w.ShowPreferencesAsync();
     }
 
     private async void OpenConfigFolder_Click(object sender, RoutedEventArgs e)
@@ -219,7 +255,7 @@ public sealed partial class Preferences : ContentDialog
         await Launcher.LaunchFolderPathAsync(AppSettings.MpvConfigDirectory);
     }
 
-    private void OnSave(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void Save_Click(object sender, RoutedEventArgs e)
     {
         var s = _vm.Services.Settings;
         s.Osd = new OsdSettings
@@ -253,6 +289,11 @@ public sealed partial class Preferences : ContentDialog
             catch (Mpv.MpvException) { }
         }
         s.OscLayout = (OscLayout)Math.Max(0, OscLayoutCombo.SelectedIndex);
+        s.OscToolbar = (TbSettings.IsChecked == true ? OscToolbarItems.Settings : 0)
+            | (TbPlaylist.IsChecked == true ? OscToolbarItems.Playlist : 0)
+            | (TbMusic.IsChecked == true ? OscToolbarItems.MusicMode : 0)
+            | (TbMini.IsChecked == true ? OscToolbarItems.MiniPlayer : 0)
+            | (TbFullscreen.IsChecked == true ? OscToolbarItems.Fullscreen : 0);
         foreach (var w in _vm.Services.Windows.All) w.Page.ApplyOscLayout(s.OscLayout);
         if (YtdlFormatCombo.SelectedIndex >= 0)
         {

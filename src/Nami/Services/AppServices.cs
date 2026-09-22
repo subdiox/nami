@@ -58,6 +58,20 @@ public sealed class WindowManager
         return window;
     }
 
+    private Preferences? _preferences;
+
+    /// <summary>Show the (single) preferences window, optionally at a section.</summary>
+    public void ShowPreferences(Player.PlayerViewModel vm, string? section = null)
+    {
+        if (_preferences is null)
+        {
+            _preferences = new Preferences(vm);
+            _preferences.Closed += (_, _) => _preferences = null;
+        }
+        if (section is not null) _preferences.ShowSection(section);
+        _preferences.Activate();
+    }
+
     /// <summary>All live mpv cores (one per window that has finished loading).</summary>
     public IEnumerable<Mpv.MpvPlayer> Players => _windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>();
 }

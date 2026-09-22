@@ -421,7 +421,7 @@ public sealed partial class Sidebar : UserControl
 
     private async void SubStyle_Click(object sender, RoutedEventArgs e)
     {
-        if (Vm.Window is { } w) await w.ShowPreferencesAsync();
+        if (Vm.Window is { } w) await w.ShowPreferencesAsync("subtitles");
     }
 
     private void SubDelaySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
