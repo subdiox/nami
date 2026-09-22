@@ -136,15 +136,18 @@
                     <!-- Screenshots -->
                     <StackPanel x:Name="ScreenshotsPanel" Spacing="10" Visibility="Collapsed">
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Screenshots'}" Margin="0,0,0,6" />
-                        <Grid ColumnSpacing="8" Width="600" HorizontalAlignment="Left">
+                        <Grid ColumnSpacing="8" Width="640" HorizontalAlignment="Left">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="110" />
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='Folder (empty = Pictures)'}" />
-                            <Button Grid.Column="1" Content="{l:Tr Text='Browse…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
-                            <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="2" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">
+                            <!-- Read-only: the path is chosen with the folder picker, never typed. -->
+                            <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='Folder'}" IsReadOnly="True" IsSpellCheckEnabled="False" />
+                            <Button Grid.Column="1" Content="{l:Tr Text='Change…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
+                            <Button x:Name="ScreenshotDirResetButton" Grid.Column="2" Content="{l:Tr Text='Use Pictures'}" VerticalAlignment="Bottom" Click="ResetScreenshotDir_Click" />
+                            <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="3" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">
                                 <x:String>png</x:String>
                                 <x:String>jpg</x:String>
                                 <x:String>webp</x:String>

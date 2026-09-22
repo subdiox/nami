@@ -78,7 +78,7 @@ public sealed partial class Preferences : Window
         int fi = Array.FindIndex(YtDlp.Formats, f => f.value == s.YtdlFormat);
         YtdlFormatCombo.SelectedIndex = fi < 0 ? 3 : fi;
         _ = RefreshYtDlpStatusAsync();
-        ScreenshotDirBox.Text = s.ScreenshotDirectory;
+        ShowScreenshotDir(s.ScreenshotDirectory);
         ScreenshotFormatCombo.SelectedItem = s.ScreenshotFormat;
         if (ScreenshotFormatCombo.SelectedIndex < 0) ScreenshotFormatCombo.SelectedIndex = 0;
     }
@@ -112,8 +112,22 @@ public sealed partial class Preferences : Window
         picker.FileTypeFilter.Add("*");
         WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
         var folder = await picker.PickSingleFolderAsync();
-        if (folder is not null) ScreenshotDirBox.Text = folder.Path;
+        if (folder is not null) ShowScreenshotDir(folder.Path);
     }
+
+    private static string DefaultScreenshotDir => Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+    private string _screenshotDir = "";
+
+    /// <summary>Always shows the effective folder; "" (the default) means the Pictures library.</summary>
+    private void ShowScreenshotDir(string dir)
+    {
+        bool isDefault = string.IsNullOrWhiteSpace(dir) || string.Equals(Path.GetFullPath(dir).TrimEnd('\\'), DefaultScreenshotDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+        _screenshotDir = isDefault ? "" : dir;
+        ScreenshotDirBox.Text = isDefault ? DefaultScreenshotDir : dir;
+        ScreenshotDirResetButton.IsEnabled = !isDefault;
+    }
+
+    private void ResetScreenshotDir_Click(object sender, RoutedEventArgs e) => ShowScreenshotDir("");
 
     private async Task RefreshYtDlpStatusAsync()
     {
@@ -291,7 +305,7 @@ public sealed partial class Preferences : Window
         s.KeepHistory = HistorySwitch.IsOn;
         s.SeekThumbnails = ThumbnailSwitch.IsOn;
         s.AutoMusicMode = AutoMusicSwitch.IsOn;
-        s.ScreenshotDirectory = ScreenshotDirBox.Text.Trim();
+        s.ScreenshotDirectory = _screenshotDir;
         s.ScreenshotFormat = ScreenshotFormatCombo.SelectedItem as string ?? "png";
         foreach (var shp in _vm.Services.Windows.Players)
         {

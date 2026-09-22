@@ -308,6 +308,9 @@ internal static class Translations
         ["Play / Pause (Space)"] = "再生 / 一時停止 (Space)",
         ["More options"] = "その他のオプション",
         ["Exit full screen (F11)"] = "全画面を終了 (F11)",
+        ["Folder"] = "フォルダー",
+        ["Change…"] = "変更…",
+        ["Use Pictures"] = "ピクチャに戻す",
         ["Japanese"] = "日本語",
     };
 }
