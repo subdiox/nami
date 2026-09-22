@@ -22,10 +22,9 @@ public sealed partial class MainPage : Page
     private static readonly Microsoft.UI.Input.InputCursor ArrowCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
     private bool _cursorHidden;
 
-    // Focus diagnostics (cheap; helps pin down "keys stopped working" reports).
+    // Focus never stays on nothing while this window is active (keys would otherwise stop reaching the page).
     private void OnAnyGotFocus(object? sender, FocusManagerGotFocusEventArgs e)
     {
-        App.Log($"focus -> {Describe(e.NewFocusedElement)}");
         if (e.NewFocusedElement is null) FocusVideo();
     }
 
@@ -41,20 +40,18 @@ public sealed partial class MainPage : Page
         }
         return string.Join(" < ", parts);
     }
-    private static void OnAnyLostFocus(object? sender, FocusManagerLostFocusEventArgs e)
-        => App.Log($"focus lost from {e.OldFocusedElement?.GetType().Name ?? "null"}");
+    private static void OnAnyLostFocus(object? sender, FocusManagerLostFocusEventArgs e) { }
 
     /// <summary>Hide / show the mouse cursor over the player (IINA hides it together with the HUD).</summary>
     public void SetCursorHidden(bool hide)
     {
         if (_cursorHidden == hide || HiddenCursor is null) return;
-        if (hide && !IsCursorOverPlayer()) { App.Log("cursor: hide skipped (not over player)"); return; }
+        if (hide && !IsCursorOverPlayer()) return;
         _cursorHidden = hide;
         // The pointer is over Surface (the input layer above the video); set it there and on the page.
         Surface.SetCursor(hide ? HiddenCursor : null);
         ProtectedCursor = hide ? HiddenCursor : ArrowCursor;
         WindowInterop.RefreshCursor();
-        App.Log($"cursor: {(hide ? "hidden" : "shown")} ({WindowInterop.CursorState()})");
     }
 
     private bool IsCursorOverPlayer()
@@ -606,7 +603,6 @@ public sealed partial class MainPage : Page
         if (e.Handled) return;
         // Let text boxes and the sidebar handle their own keys.
         var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
-        App.Log($"key: {e.Key} focused={focused?.GetType().Name ?? "null"}");
         if (focused is TextBox or NumberBox or AutoSuggestBox || IsInside(focused, Sidebar)) return;
 
         var mods = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);

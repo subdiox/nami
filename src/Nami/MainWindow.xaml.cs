@@ -118,7 +118,6 @@ public sealed partial class MainWindow : Window
         Vm.Shutdown += Close;
         Activated += (_, e) =>
         {
-            App.Log($"window: {e.WindowActivationState}");
             Main.WindowActive = e.WindowActivationState != WindowActivationState.Deactivated;
             if (!Main.WindowActive) Main.SetCursorHidden(false);
             else Main.FocusVideo();
@@ -138,7 +137,7 @@ public sealed partial class MainWindow : Window
         RootGrid.AddHandler(UIElement.KeyDownEvent, new Microsoft.UI.Xaml.Input.KeyEventHandler((_, e) =>
         {
             var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Content.XamlRoot) as DependencyObject;
-            if (focused is null || !IsInside(focused, Main)) { App.Log($"key (window fallback): {e.Key}"); Main.HandleKey(e); }
+            if (focused is null || !IsInside(focused, Main)) Main.HandleKey(e);
         }), true);
         _aspectLock = new Interop.AspectRatioLock(Hwnd);
         Closed += (_, _) => { _aspectLock?.Dispose(); _aspectLock = null; };
