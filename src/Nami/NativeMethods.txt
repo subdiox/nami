@@ -54,3 +54,7 @@ RoGetActivationFactory
 WindowsCreateString
 WindowsDeleteString
 SetWindowLongPtr
+WM_NCLBUTTONDOWN
+WM_NCLBUTTONUP
+WM_NCLBUTTONDBLCLK
+HTMAXBUTTON

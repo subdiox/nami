@@ -19,6 +19,7 @@ public sealed partial class MainWindow : Window
     public bool IsHdrPassthrough { get; private set; }
     private readonly OverlappedPresenter _presenter;
     private readonly InputNonClientPointerSource _nonClient;
+    private Interop.CaptionButtonHook? _captionHook;
     private bool _fitOnNextVideoSize;
     private bool _compact;
     private RectInt32? _restoreBounds;
@@ -49,10 +50,17 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon("Assets/AppIcon.ico");
         AppWindow.ResizeClient(new SizeInt32(1280, 720));
 
-        // The caption region is non-client, so XAML never sees the pointer there: show the HUD ourselves.
+        // The caption regions are non-client, so XAML never sees the pointer there: show the HUD
+        // ourselves and mirror the hover state onto the maximize button.
         _nonClient = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
-        _nonClient.PointerEntered += (_, _) => Main.ShowOverlay();
-        _nonClient.PointerMoved += (_, _) => Main.ShowOverlay();
+        _nonClient.PointerEntered += OnNonClientPointer;
+        _nonClient.PointerMoved += OnNonClientPointer;
+        _nonClient.PointerExited += (_, e) => { if (e.RegionKind == NonClientRegionKind.Maximize) SetMaximizeHover(false); };
+        TitleOverlay.SizeChanged += (_, _) => UpdateNonClientRegions();
+        TitleOverlay.Loaded += (_, _) => UpdateNonClientRegions();
+        // Snap Layouts on hover (system maximize button) + our own click (full screen).
+        _captionHook = new Interop.CaptionButtonHook(Hwnd, () => DispatcherQueue.TryEnqueue(() => { App.Log("caption: maximize button -> full screen"); Vm.ToggleFullscreen(); }));
+        Closed += (_, _) => { _captionHook?.Dispose(); _captionHook = null; };
 
         Vm.PropertyChanged += OnVmChanged;
         Vm.FileLoaded += () => _fitOnNextVideoSize = _services.Settings.ResizeWindowToVideo;
@@ -101,6 +109,36 @@ public sealed partial class MainWindow : Window
     }
 
     // ---- custom title bar -----------------------------------------------------------------
+
+    /// <summary>
+    /// Marks our maximize button as the system maximize button so Windows 11 shows the Snap Layouts
+    /// flyout on hover; the click is intercepted by CaptionButtonHook. Cleared in full screen and
+    /// mini mode, where the XAML Click handler takes over.
+    /// </summary>
+    private void UpdateNonClientRegions()
+    {
+        bool active = !IsFullScreen && !_compact && TitleOverlay.Visibility == Visibility.Visible
+                      && CaptionButtons.Visibility == Visibility.Visible && MaximizeButton.ActualWidth > 0;
+        if (active) _nonClient.SetRegionRects(NonClientRegionKind.Maximize, [ElementRect(MaximizeButton)]);
+        else _nonClient.ClearRegionRects(NonClientRegionKind.Maximize);
+    }
+
+    private RectInt32 ElementRect(FrameworkElement e)
+    {
+        double scale = Content.XamlRoot?.RasterizationScale ?? Scale;
+        var p = e.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, 0));
+        return new RectInt32((int)Math.Round(p.X * scale), (int)Math.Round(p.Y * scale),
+            (int)Math.Round(e.ActualWidth * scale), (int)Math.Round(e.ActualHeight * scale));
+    }
+
+    private void OnNonClientPointer(InputNonClientPointerSource sender, NonClientPointerEventArgs e)
+    {
+        Main.ShowOverlay();
+        SetMaximizeHover(e.RegionKind == NonClientRegionKind.Maximize);
+    }
+
+    private void SetMaximizeHover(bool on) =>
+        MaximizeButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(on ? Color(0x33, 0xFF, 0xFF, 0xFF) : Colors.Transparent);
 
     /// <summary>The middle caption button is IINA's zoom button: it enters / leaves full screen.</summary>
     private void SyncMaximizeGlyph()
@@ -188,6 +226,7 @@ public sealed partial class MainWindow : Window
         }
         // Caption buttons stay in full screen too (they fade with the HUD); the middle one exits full screen.
         SyncMaximizeGlyph();
+        UpdateNonClientRegions();
     }
 
     private RectInt32? _musicRestoreBounds;
@@ -270,6 +309,7 @@ public sealed partial class MainWindow : Window
             if (_restoreBounds is { } r) AppWindow.MoveAndResize(r);
             if (_aspectLock is not null) _aspectLock.Aspect = Vm.VideoSize.IsValid ? Vm.VideoSize.Aspect : 0;
         }
+        UpdateNonClientRegions();
     }
 
     public bool IsCompact => _compact;
