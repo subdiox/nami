@@ -113,18 +113,6 @@ public sealed partial class MainPage : Page
         DragOver += OnDragOver;
         Drop += OnDrop;
         PreviewKeyDown += OnPreviewKeyDown;
-
-        // Keyboard shortcuts only work while focus is somewhere inside this page. Flyouts and dialogs
-        // sometimes hand focus back to nothing when they close; catch that and take it ourselves.
-        FocusManager.LosingFocus += OnGlobalLosingFocus;
-        Unloaded += (_, _) => FocusManager.LosingFocus -= OnGlobalLosingFocus;
-    }
-
-    private void OnGlobalLosingFocus(object? sender, LosingFocusEventArgs e)
-    {
-        if (e.NewFocusedElement is not null || !IsLoaded || XamlRoot is null) return;
-        if (e.OldFocusedElement is UIElement old && old.XamlRoot != XamlRoot) return;   // another window
-        e.TrySetNewFocusedElement(this);
     }
 
     private async Task ShowDialogAsync(ContentDialog dialog)
@@ -138,9 +126,16 @@ public sealed partial class MainPage : Page
     public void FocusVideo()
     {
         if (!IsLoaded || XamlRoot is null) return;   // Activated fires before the page is loaded
-        var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
-        if (focused is null || (!IsInside(focused, Sidebar) && focused is not TextBox and not NumberBox and not AutoSuggestBox))
-            Focus(FocusState.Programmatic);
+        // Deferred: let XAML finish its own focus restoration (window activation, popup close) first,
+        // then take focus only if it ended up nowhere. Interfering mid-transition can leave the XAML
+        // focus and the Win32 keyboard focus disagreeing, which kills every key.
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!IsLoaded || XamlRoot is null) return;
+            var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+            if (focused is null || (!IsInside(focused, Sidebar) && focused is not TextBox and not NumberBox and not AutoSuggestBox))
+                Focus(FocusState.Programmatic);
+        });
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
