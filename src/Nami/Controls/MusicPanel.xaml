@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Nami.Controls.MusicPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    RequestedTheme="Dark"
+    Height="150">
+
+    <Border Background="#F0161618" Padding="16,10,16,8">
+        <Grid RowSpacing="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <StackPanel Spacing="1" Margin="0,0,72,0">
+                    <TextBlock x:Name="TitleText" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OverlayTextBrush}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="ArtistText" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2">
+                    <Button x:Name="PlaylistButton" Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="プレイリスト" AutomationProperties.Name="プレイリスト">
+                        <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
+                    </Button>
+                    <Button x:Name="ExitButton" Style="{StaticResource OscButton}" Click="ExitButton_Click" ToolTipService.ToolTip="ミュージックモードを終了" AutomationProperties.Name="ミュージックモードを終了">
+                        <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8A7;" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <Slider x:Name="SeekSlider" Grid.Row="1" Style="{StaticResource OscSlider}" Minimum="0" Maximum="1" StepFrequency="0.001" ValueChanged="SeekSlider_ValueChanged" />
+
+            <Grid Grid.Row="2">
+                <TextBlock x:Name="TimeText" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" HorizontalAlignment="Left" />
+                <TextBlock x:Name="DurationText" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" HorizontalAlignment="Right" />
+            </Grid>
+
+            <Grid Grid.Row="3">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+                    <Button Style="{StaticResource OscButton}" Click="Prev_Click" ToolTipService.ToolTip="前へ" AutomationProperties.Name="前へ">
+                        <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE892;" />
+                    </Button>
+                    <Button x:Name="PlayButton" Style="{StaticResource OscButton}" Width="40" Height="36" Click="Play_Click" ToolTipService.ToolTip="再生 / 一時停止" AutomationProperties.Name="再生 / 一時停止">
+                        <FontIcon x:Name="PlayIcon" Style="{StaticResource OscIcon}" FontSize="24" Glyph="&#xE768;" />
+                    </Button>
+                    <Button Style="{StaticResource OscButton}" Click="Next_Click" ToolTipService.ToolTip="次へ" AutomationProperties.Name="次へ">
+                        <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE893;" />
+                    </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2">
+                    <Button Style="{StaticResource OscButton}" Click="Shuffle_Click" ToolTipService.ToolTip="シャッフル" AutomationProperties.Name="シャッフル">
+                        <FontIcon x:Name="ShuffleIcon" Style="{StaticResource OscIcon}" Glyph="&#xE8B1;" />
+                    </Button>
+                    <Button Style="{StaticResource OscButton}" Click="Loop_Click" ToolTipService.ToolTip="リピート" AutomationProperties.Name="リピート">
+                        <FontIcon x:Name="LoopIcon" Style="{StaticResource OscIcon}" Glyph="&#xE8EE;" />
+                    </Button>
+                    <Button Style="{StaticResource OscButton}" Click="Mute_Click" ToolTipService.ToolTip="ミュート" AutomationProperties.Name="ミュート">
+                        <FontIcon x:Name="VolumeIcon" Style="{StaticResource OscIcon}" Glyph="&#xE767;" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

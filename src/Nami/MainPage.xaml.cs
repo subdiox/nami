@@ -67,6 +67,8 @@ public sealed partial class MainPage : Page
         }
 
         Osc.PipRequested += () => App.Window?.ToggleCompactMode();
+        Osc.MusicModeRequested += () => App.Window?.SetMusicMode(true);
+        ApplyOscLayout(App.Settings.OscLayout);
 
         DragOver += OnDragOver;
         Drop += OnDrop;
@@ -99,6 +101,42 @@ public sealed partial class MainPage : Page
         }
     }
 
+    public void ApplyOscLayout(Services.OscLayout layout)
+    {
+        Osc.Layout = layout;
+        switch (layout)
+        {
+            case Services.OscLayout.Floating:
+                Osc.HorizontalAlignment = HorizontalAlignment.Center;
+                Osc.VerticalAlignment = VerticalAlignment.Bottom;
+                Osc.Margin = new Thickness(0, 0, 0, 28);
+                BottomShade.Visibility = Visibility.Visible;
+                break;
+            case Services.OscLayout.Bottom:
+                Osc.HorizontalAlignment = HorizontalAlignment.Stretch;
+                Osc.VerticalAlignment = VerticalAlignment.Bottom;
+                Osc.Margin = new Thickness(0);
+                BottomShade.Visibility = Visibility.Collapsed;
+                break;
+            case Services.OscLayout.Top:
+                Osc.HorizontalAlignment = HorizontalAlignment.Stretch;
+                Osc.VerticalAlignment = VerticalAlignment.Top;
+                Osc.Margin = new Thickness(0, 44, 0, 0);
+                BottomShade.Visibility = Visibility.Collapsed;
+                break;
+        }
+    }
+
+    /// <summary>Music mode swaps the OSC for the music panel; the video area shows the cover art.</summary>
+    public void SetMusicMode(bool on)
+    {
+        Music.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        Osc.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
+        BottomShade.Visibility = on || App.Settings.OscLayout != Services.OscLayout.Floating ? Visibility.Collapsed : Visibility.Visible;
+        Video.Margin = on ? new Thickness(0, 0, 0, Music.Height) : new Thickness(0);
+        if (on) ShowOverlay();
+    }
+
     private void UpdateEmptyState()
         => EmptyState.Visibility = Vm.Idle && string.IsNullOrEmpty(Vm.FilePath) ? Visibility.Visible : Visibility.Collapsed;
 
@@ -125,7 +163,7 @@ public sealed partial class MainPage : Page
 
     private void TryHideOverlay()
     {
-        if (_pointerOverControls || Vm.Paused || Vm.Idle) return;
+        if (_pointerOverControls || Vm.Paused || Vm.Idle || Vm.MusicMode) return;
         if (!_overlayVisible) return;
         _overlayVisible = false;
         Fade(Osc, 0);

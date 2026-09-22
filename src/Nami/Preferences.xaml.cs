@@ -23,6 +23,8 @@ public sealed partial class Preferences : ContentDialog
         AutoLoadFolderSwitch.IsOn = s.AutoLoadFolder;
         HistorySwitch.IsOn = s.KeepHistory;
         ThumbnailSwitch.IsOn = s.SeekThumbnails;
+        AutoMusicSwitch.IsOn = s.AutoMusicMode;
+        OscLayoutCombo.SelectedIndex = (int)s.OscLayout;
         MpvConfBox.Text = ReadOrEmpty(MpvConfPath);
         InputConfBox.Text = ReadOrEmpty(InputConfPath);
         UpdateAssocStatus();
@@ -186,6 +188,9 @@ public sealed partial class Preferences : ContentDialog
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
         s.KeepHistory = HistorySwitch.IsOn;
         s.SeekThumbnails = ThumbnailSwitch.IsOn;
+        s.AutoMusicMode = AutoMusicSwitch.IsOn;
+        s.OscLayout = (OscLayout)Math.Max(0, OscLayoutCombo.SelectedIndex);
+        App.Window?.Page.ApplyOscLayout(s.OscLayout);
         if (YtdlFormatCombo.SelectedIndex >= 0)
         {
             s.YtdlFormat = YtDlp.Formats[YtdlFormatCombo.SelectedIndex].value;

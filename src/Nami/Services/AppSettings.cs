@@ -3,6 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace Nami.Services;
 
+public enum OscLayout
+{
+    Floating,
+    Bottom,
+    Top,
+}
+
 public enum HdrMode
 {
     /// <summary>Pass HDR through when the display is in HDR mode, otherwise tone-map to SDR.</summary>
@@ -26,6 +33,8 @@ public sealed class AppSettings
     public string SubtitleLanguages { get; set; } = "ja,en";
     public bool SeekThumbnails { get; set; } = true;
     public string YtdlFormat { get; set; } = "bestvideo[height<=?1080]+bestaudio/best";
+    public OscLayout OscLayout { get; set; } = OscLayout.Floating;
+    public bool AutoMusicMode { get; set; } = true;
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =

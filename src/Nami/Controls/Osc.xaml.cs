@@ -17,6 +17,59 @@ public sealed partial class Osc : UserControl
     private bool _showRemaining;
 
     public event Action? PipRequested;
+    public event Action? MusicModeRequested;
+
+    private Services.OscLayout _layout = Services.OscLayout.Floating;
+
+    /// <summary>Floating (rounded panel, two rows) or a full-width bar (one row).</summary>
+    public Services.OscLayout Layout
+    {
+        get => _layout;
+        set
+        {
+            if (_layout == value) return;
+            _layout = value;
+            ApplyLayout();
+        }
+    }
+
+    private void Detach(FrameworkElement el)
+    {
+        // Parent may be null before the control is in a live tree, so try every container.
+        FloatingRow1.Children.Remove(el);
+        FloatingRow2.Children.Remove(el);
+        BarRow.Children.Remove(el);
+    }
+
+    private void ApplyLayout()
+    {
+        foreach (var el in new FrameworkElement[] { VolumePanel, CenterPanel, ToolbarPanel, TimeText, SeekSlider, DurationButton })
+            Detach(el);
+
+        if (_layout == Services.OscLayout.Floating)
+        {
+            FloatingRow1.Children.Add(VolumePanel); Grid.SetColumn(VolumePanel, 0);
+            FloatingRow1.Children.Add(CenterPanel); Grid.SetColumn(CenterPanel, 1);
+            FloatingRow1.Children.Add(ToolbarPanel); Grid.SetColumn(ToolbarPanel, 2);
+            FloatingRow2.Children.Add(TimeText); Grid.SetColumn(TimeText, 0);
+            FloatingRow2.Children.Add(SeekSlider); Grid.SetColumn(SeekSlider, 1);
+            FloatingRow2.Children.Add(DurationButton); Grid.SetColumn(DurationButton, 2);
+            FloatingRoot.Visibility = Visibility.Visible;
+            BarRoot.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            BarRow.Children.Add(CenterPanel); Grid.SetColumn(CenterPanel, 0);
+            BarRow.Children.Add(TimeText); Grid.SetColumn(TimeText, 1);
+            BarRow.Children.Add(SeekSlider); Grid.SetColumn(SeekSlider, 2);
+            BarRow.Children.Add(DurationButton); Grid.SetColumn(DurationButton, 3);
+            BarRow.Children.Add(VolumePanel); Grid.SetColumn(VolumePanel, 4);
+            BarRow.Children.Add(ToolbarPanel); Grid.SetColumn(ToolbarPanel, 5);
+            BarRoot.BorderThickness = _layout == Services.OscLayout.Top ? new Thickness(0, 0, 0, 1) : new Thickness(0, 1, 0, 0);
+            FloatingRoot.Visibility = Visibility.Collapsed;
+            BarRoot.Visibility = Visibility.Visible;
+        }
+    }
 
     public Osc()
     {
@@ -104,6 +157,7 @@ public sealed partial class Osc : UserControl
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Settings);
     private void PlaylistButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Playlist);
     private void PipButton_Click(object sender, RoutedEventArgs e) => PipRequested?.Invoke();
+    private void MusicModeButton_Click(object sender, RoutedEventArgs e) => MusicModeRequested?.Invoke();
     private void FullscreenButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleFullscreen();
 
     private void DurationButton_Click(object sender, RoutedEventArgs e)

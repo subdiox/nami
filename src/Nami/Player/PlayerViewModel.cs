@@ -59,6 +59,15 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial string HwdecCurrent { get; set; } = "";
     [ObservableProperty] public partial long PlaylistPos { get; set; } = -1;
     [ObservableProperty] public partial long PlaylistCount { get; set; }
+    [ObservableProperty] public partial string MetaTitle { get; set; } = "";
+    [ObservableProperty] public partial string MetaArtist { get; set; } = "";
+    [ObservableProperty] public partial string MetaAlbum { get; set; } = "";
+    [ObservableProperty] public partial bool Shuffle { get; set; }
+    [ObservableProperty] public partial bool LoopFile { get; set; }
+    [ObservableProperty] public partial bool LoopPlaylist { get; set; }
+    /// <summary>True when the current file has no real video (audio only, or cover art only).</summary>
+    [ObservableProperty] public partial bool IsAudioOnly { get; set; }
+    [ObservableProperty] public partial bool MusicMode { get; set; }
 
     public ObservableCollection<TrackInfo> VideoTracks { get; } = [];
     public ObservableCollection<TrackInfo> AudioTracks { get; } = [];
@@ -184,6 +193,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         ("secondary-sid", MpvFormat.String), ("hwdec-current", MpvFormat.String),
         ("playlist-pos", MpvFormat.Int64), ("playlist-count", MpvFormat.Int64),
         ("track-list", MpvFormat.Node), ("playlist", MpvFormat.Node), ("chapter-list", MpvFormat.Node),
+        ("metadata", MpvFormat.Node), ("shuffle", MpvFormat.Flag), ("loop-file", MpvFormat.String), ("loop-playlist", MpvFormat.String),
     ];
 
     private void OnMpvProperty(string name, object? value)
@@ -262,6 +272,17 @@ public sealed partial class PlayerViewModel : ObservableObject
             case "track-list": UpdateTracks(value as List<object?>); break;
             case "playlist": UpdatePlaylist(value as List<object?>); break;
             case "chapter-list": UpdateChapters(value as List<object?>); break;
+            case "metadata":
+            {
+                var d = value as Dictionary<string, object?>;
+                MetaTitle = MetaValue(d, "title");
+                MetaArtist = MetaValue(d, "artist", "album_artist");
+                MetaAlbum = MetaValue(d, "album");
+                break;
+            }
+            case "shuffle": Shuffle = value is true; break;
+            case "loop-file": LoopFile = value is string lf && lf != "no"; break;
+            case "loop-playlist": LoopPlaylist = value is string lp && lp != "no"; break;
         }
     }
 
@@ -276,6 +297,16 @@ public sealed partial class PlayerViewModel : ObservableObject
     }
 
     // ---- node parsing -------------------------------------------------------------
+
+    private static string MetaValue(Dictionary<string, object?>? d, params string[] keys)
+    {
+        if (d is null) return "";
+        foreach (var k in keys)
+            foreach (var kv in d)
+                if (string.Equals(kv.Key, k, StringComparison.OrdinalIgnoreCase) && kv.Value is string s && s.Length > 0)
+                    return s;
+        return "";
+    }
 
     private static string? Str(Dictionary<string, object?> d, string k) => d.TryGetValue(k, out var v) ? v as string : null;
     private static long Long(Dictionary<string, object?> d, string k) => d.TryGetValue(k, out var v) && v is long l ? l : 0;
@@ -293,7 +324,7 @@ public sealed partial class PlayerViewModel : ObservableObject
             {
                 if (item is not Dictionary<string, object?> d) continue;
                 var t = new TrackInfo(Long(d, "id"), Str(d, "type") ?? "", Str(d, "title"), Str(d, "lang"),
-                    Flag(d, "selected"), Flag(d, "external"), Str(d, "codec"), Flag(d, "default"));
+                    Flag(d, "selected"), Flag(d, "external"), Str(d, "codec"), Flag(d, "default"), Flag(d, "albumart"));
                 switch (t.Type)
                 {
                     case "video": video.Add(t); break;
@@ -305,6 +336,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         Replace(VideoTracks, video);
         Replace(AudioTracks, audio);
         Replace(SubTracks, sub);
+        IsAudioOnly = audio.Count > 0 && video.All(t => t.AlbumArt);
     }
 
     private void UpdatePlaylist(List<object?>? list)
@@ -419,6 +451,22 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (Paused) Play();
         ShowText($"再生速度 {Fmt.Speed(next)}");
     }
+
+    public void ToggleShuffle() => Run(p =>
+    {
+        bool on = !Shuffle;
+        p.SetProperty("shuffle", on);
+        p.TryCommand(on ? "playlist-shuffle" : "playlist-unshuffle");
+        ShowText(on ? "シャッフル: オン" : "シャッフル: オフ");
+    });
+
+    /// <summary>off → playlist → file → off</summary>
+    public void CycleLoop() => Run(p =>
+    {
+        if (!LoopPlaylist && !LoopFile) { p.SetProperty("loop-playlist", "inf"); ShowText("リピート: プレイリスト"); }
+        else if (LoopPlaylist) { p.SetProperty("loop-playlist", "no"); p.SetProperty("loop-file", "inf"); ShowText("リピート: 1 曲"); }
+        else { p.SetProperty("loop-file", "no"); ShowText("リピート: オフ"); }
+    });
 
     public void ToggleSidebar(SidebarKind kind) => Sidebar = Sidebar == kind ? SidebarKind.None : kind;
     public void CloseSidebar() => Sidebar = SidebarKind.None;

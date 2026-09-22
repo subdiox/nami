@@ -1,6 +1,6 @@
 namespace Nami.Player;
 
-public sealed record TrackInfo(long Id, string Type, string? Title, string? Lang, bool Selected, bool External, string? Codec, bool Default)
+public sealed record TrackInfo(long Id, string Type, string? Title, string? Lang, bool Selected, bool External, string? Codec, bool Default, bool AlbumArt = false)
 {
     public string Display
     {

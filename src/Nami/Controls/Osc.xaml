@@ -10,32 +10,32 @@
     IsTabStop="False">
 
     <Grid>
-        <!-- Hover time tooltip above the seek bar -->
+        <!-- Hover time / thumbnail tooltip above the seek bar -->
         <Border x:Name="SeekTip" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,-30,0,0"
-                Background="#E6202020" CornerRadius="6" Padding="4" Visibility="Collapsed" IsHitTestVisible="False">
+                Background="#E6202020" CornerRadius="6" Padding="4" Visibility="Collapsed" IsHitTestVisible="False" Canvas.ZIndex="10">
             <StackPanel Spacing="3">
                 <Image x:Name="SeekThumb" Width="160" Stretch="Uniform" Visibility="Collapsed" />
                 <TextBlock x:Name="SeekTipText" FontSize="11" Foreground="White" HorizontalAlignment="Center" />
             </StackPanel>
         </Border>
 
-        <Border x:Name="Panel" Width="480" Padding="14,8,14,8" CornerRadius="12"
+        <!-- Floating layout (IINA default): two rows in a rounded panel -->
+        <Border x:Name="FloatingRoot" Width="480" Padding="14,8,14,8" CornerRadius="12"
                 Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1">
-            <Grid RowSpacing="0">
+            <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Row 1: volume | ⏪ ▶ ⏩ | toolbar -->
-                <Grid Grid.Row="0" Height="40">
+                <Grid x:Name="FloatingRow1" Grid.Row="0" Height="40">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="2" VerticalAlignment="Center">
+                    <StackPanel x:Name="VolumePanel" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="2" VerticalAlignment="Center">
                         <Button x:Name="MuteButton" Style="{StaticResource OscButton}" Click="MuteButton_Click" ToolTipService.ToolTip="ミュート" AutomationProperties.Name="ミュート">
                             <FontIcon x:Name="VolumeIcon" Style="{StaticResource OscIcon}" Glyph="&#xE767;" />
                         </Button>
@@ -43,7 +43,7 @@
                                 ValueChanged="VolumeSlider_ValueChanged" VerticalAlignment="Center" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" VerticalAlignment="Center">
+                    <StackPanel x:Name="CenterPanel" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" VerticalAlignment="Center">
                         <Button x:Name="LeftArrowButton" Style="{StaticResource OscButton}" Click="LeftArrowButton_Click" ToolTipService.ToolTip="遅く" AutomationProperties.Name="遅く">
                             <TextBlock Text="&#x23EA;" FontFamily="Segoe UI Symbol" FontSize="18" />
                         </Button>
@@ -55,12 +55,15 @@
                         </Button>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" VerticalAlignment="Center">
+                    <StackPanel x:Name="ToolbarPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" VerticalAlignment="Center">
                         <Button x:Name="SettingsButton" Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="クイック設定" AutomationProperties.Name="クイック設定">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE9E9;" />
                         </Button>
                         <Button x:Name="PlaylistButton" Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="プレイリスト" AutomationProperties.Name="プレイリスト">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
+                        </Button>
+                        <Button x:Name="MusicModeButton" Style="{StaticResource OscButton}" Click="MusicModeButton_Click" ToolTipService.ToolTip="ミュージックモード" AutomationProperties.Name="ミュージックモード">
+                            <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8D6;" />
                         </Button>
                         <Button x:Name="PipButton" Style="{StaticResource OscButton}" Click="PipButton_Click" ToolTipService.ToolTip="ミニプレイヤー" AutomationProperties.Name="ミニプレイヤー">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xEE49;" />
@@ -71,8 +74,7 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Row 2: time | seek | duration -->
-                <Grid Grid.Row="1" ColumnSpacing="10" Height="28">
+                <Grid x:Name="FloatingRow2" Grid.Row="1" ColumnSpacing="10" Height="28">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -88,6 +90,21 @@
                         <TextBlock x:Name="DurationText" Text="00:00" FontSize="12" Foreground="{StaticResource OverlayTextBrush}" MinWidth="40" FontFamily="Segoe UI Variable Text" />
                     </Button>
                 </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Bar layout (IINA "bottom" / "top"): one full-width row; controls are moved here in code -->
+        <Border x:Name="BarRoot" Visibility="Collapsed" Padding="16,6" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,1,0,0">
+            <Grid x:Name="BarRow" ColumnSpacing="12" Height="40">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
             </Grid>
         </Border>
     </Grid>

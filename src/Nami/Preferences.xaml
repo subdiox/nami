@@ -21,6 +21,12 @@
             <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="同じフォルダーのファイルを自動的にプレイリストへ追加する" />
             <ToggleSwitch x:Name="HistorySwitch" Header="再生履歴を記録する" />
             <ToggleSwitch x:Name="ThumbnailSwitch" Header="シークバーにサムネイルを表示する（バックグラウンドで生成）" />
+            <ToggleSwitch x:Name="AutoMusicSwitch" Header="音声ファイルを開いたら自動的にミュージックモードにする" />
+            <ComboBox x:Name="OscLayoutCombo" Header="コントローラー (OSC) の配置" HorizontalAlignment="Stretch">
+                <x:String>フローティング（既定）</x:String>
+                <x:String>下部バー</x:String>
+                <x:String>上部バー</x:String>
+            </ComboBox>
 
             <TextBlock Style="{StaticResource SectionHeader}" Text="字幕の見た目" />
             <Grid ColumnSpacing="8" RowSpacing="8">

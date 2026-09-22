@@ -46,10 +46,17 @@ public sealed partial class MainWindow : Window
 
         Vm.PropertyChanged += OnVmChanged;
         Vm.FileLoaded += () => _fitOnNextVideoSize = App.Settings.ResizeWindowToVideo;
+        Vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(PlayerViewModel.IsAudioOnly) || !App.Settings.AutoMusicMode) return;
+            // Audio file → music mode; video file → back to the normal window.
+            if (Vm.IsAudioOnly && !Vm.MusicMode) SetMusicMode(true);
+            else if (!Vm.IsAudioOnly && Vm.MusicMode && Vm.VideoTracks.Count > 0) SetMusicMode(false);
+        };
         Vm.PlaybackRestart += () =>
         {
             // Video parameters are final once the first frame is out; fit the window now.
-            if (_fitOnNextVideoSize && Vm.VideoSize.IsValid)
+            if (_fitOnNextVideoSize && Vm.VideoSize.IsValid && !Vm.MusicMode)
             {
                 _fitOnNextVideoSize = false;
                 FitToVideo((int)Vm.VideoSize.Width, (int)Vm.VideoSize.Height);
@@ -93,7 +100,7 @@ public sealed partial class MainWindow : Window
             {
                 var vs = Vm.VideoSize;
                 Interop.AspectRatioLock.SetAspect(vs.Aspect);
-                if (vs.IsValid && !_fitOnNextVideoSize && !IsFullScreen && !_compact
+                if (vs.IsValid && !_fitOnNextVideoSize && !IsFullScreen && !_compact && !Vm.MusicMode
                     && _presenter.State != OverlappedPresenterState.Maximized)
                 {
                     // Aspect changed after the initial fit (rotation / override): keep the width, fix the height.
@@ -126,6 +133,42 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private RectInt32? _musicRestoreBounds;
+    private const int MusicWidthDip = 320;
+    private const int MusicPanelHeightDip = 150;
+
+    /// <summary>IINA music mode: a narrow window with cover art on top and transport controls below.</summary>
+    public void SetMusicMode(bool on)
+    {
+        if (Vm.MusicMode == on) return;
+        if (on && IsFullScreen) Vm.SetFullscreen(false);
+        if (on && _compact) ToggleCompactMode();
+        Vm.MusicMode = on;
+        Main.SetMusicMode(on);
+        if (on)
+        {
+            _musicRestoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+            Interop.AspectRatioLock.SetAspect(0);
+            int w = (int)(MusicWidthDip * Scale);
+            int h = (int)((MusicWidthDip + MusicPanelHeightDip) * Scale);
+            _presenter.IsResizable = false;
+            _presenter.IsMaximizable = false;
+            ResizeClientExact(w, h);
+        }
+        else
+        {
+            _presenter.IsResizable = true;
+            _presenter.IsMaximizable = true;
+            if (_musicRestoreBounds is { } r) AppWindow.MoveAndResize(r);
+            if (Vm.VideoSize.IsValid)
+            {
+                Interop.AspectRatioLock.SetAspect(Vm.VideoSize.Aspect);
+                _fitOnNextVideoSize = false;
+                FitToVideo((int)Vm.VideoSize.Width, (int)Vm.VideoSize.Height);
+            }
+        }
+    }
+
     /// <summary>IINA's PiP stand-in: a small, borderless, always-on-top window.</summary>
     public void ToggleCompactMode()
     {
@@ -154,7 +197,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private double Scale => Main.XamlRoot?.RasterizationScale ?? 1.0;
+    private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)Hwnd) / 96.0;
 
     /// <summary>Resize the window so the client area matches the video aspect (IINA does this on open).</summary>
     private void FitToVideo(int videoW, int videoH)
