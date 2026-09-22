@@ -31,6 +31,8 @@ public sealed unsafe class MpvPlayer : IDisposable
     public event Action? PlaybackRestart;
     public event Action<MpvEndFile>? EndFile;
     public event Action? Shutdown;
+    /// <summary>Raised on the event thread when a hook fires; the handler runs before mpv continues.</summary>
+    public event Action<string>? Hook;
 
     public MpvPlayer(DispatcherQueue ui, int initialWidth, int initialHeight, string configDir)
     {
@@ -81,10 +83,23 @@ public sealed unsafe class MpvPlayer : IDisposable
 
         Option("audio-client-name", "Nami");
 
+        // Resume where we left off (IINA: "resume last playback position").
+        Option("save-position-on-quit", App.Settings.ResumePlayback ? "yes" : "no");
+        Option("resume-playback", App.Settings.ResumePlayback ? "yes" : "no");
+        Option("watch-later-dir", Path.Combine(configDir, "watch_later"));
+        Option("watch-later-options", "start");
+
+        // Windows media keys / system media transport controls (off by default in libmpv).
+        Option("media-controls", "yes");
+
+        // yt-dlp: mpv's ytdl_hook looks in the config directory, where we drop yt-dlp.exe.
+        Option("ytdl", "yes");
+
         MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "warn"), "request_log_messages");
         MpvException.ThrowIfError(LibMpv.mpv_initialize(_handle), "mpv_initialize");
 
         Observe("display-swapchain", MpvFormat.Int64);
+        MpvException.ThrowIfError(LibMpv.mpv_hook_add(_handle, 1, "on_unload", 0), "hook on_unload");
 
         _eventThread = new Thread(EventLoop) { Name = "mpv events", IsBackground = true };
         _eventThread.Start();
@@ -250,6 +265,16 @@ public sealed unsafe class MpvPlayer : IDisposable
                 case MpvEventId.PlaybackRestart:
                     Post(() => PlaybackRestart?.Invoke());
                     break;
+
+                case MpvEventId.Hook:
+                {
+                    var h = (MpvEventHook*)ev->Data;
+                    string name = LibMpv.Utf8(h->Name);
+                    ulong id = h->Id;
+                    try { Hook?.Invoke(name); }
+                    finally { LibMpv.mpv_hook_continue(_handle, id); }
+                    break;
+                }
 
                 case MpvEventId.EndFile:
                 {

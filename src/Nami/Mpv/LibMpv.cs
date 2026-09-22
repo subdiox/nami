@@ -87,6 +87,13 @@ internal struct MpvEventEndFile
 }
 
 [StructLayout(LayoutKind.Sequential)]
+internal unsafe struct MpvEventHook
+{
+    public byte* Name;
+    public ulong Id;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 internal unsafe struct MpvNode
 {
     // union { char* string; int flag; int64 int64; double double_; mpv_node_list* list; mpv_byte_array* ba; }
@@ -163,6 +170,11 @@ internal static unsafe partial class LibMpv
     public static partial int mpv_request_log_messages(nint ctx, string minLevel);
 
     [LibraryImport(Lib)] public static partial int mpv_request_event(nint ctx, MpvEventId eventId, int enable);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int mpv_hook_add(nint ctx, ulong replyUserdata, string name, int priority);
+
+    [LibraryImport(Lib)] public static partial int mpv_hook_continue(nint ctx, ulong id);
     [LibraryImport(Lib)] public static partial MpvEvent* mpv_wait_event(nint ctx, double timeout);
     [LibraryImport(Lib)] public static partial void mpv_wakeup(nint ctx);
 

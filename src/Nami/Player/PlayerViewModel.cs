@@ -14,6 +14,7 @@ public sealed partial class PlayerViewModel : ObservableObject
 {
     private MpvPlayer? _player;
     private readonly Queue<Action<MpvPlayer>> _pending = new();
+    private int _posTick;
 
     public MpvPlayer? Player => _player;
     public bool IsAttached => _player is not null;
@@ -70,6 +71,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial int SettingsTab { get; set; }
     [ObservableProperty] public partial int PlaylistTab { get; set; }
 
+    public History History { get; } = History.Load();
+    private string? _autoLoadedFolder;
+
     public event Action? FileLoaded;
     public event Action? PlaybackRestart;
     public event Action<string>? Error;
@@ -81,8 +85,14 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         _player = player;
         player.PropertyChanged += OnMpvProperty;
-        player.FileLoaded += () => FileLoaded?.Invoke();
+        player.FileLoaded += OnFileLoaded;
         player.PlaybackRestart += () => PlaybackRestart?.Invoke();
+        player.Hook += name =>
+        {
+            // Runs on the mpv event thread, before the file is unloaded.
+            if (name == "on_unload" && App.Settings.ResumePlayback)
+                player.TryCommand("write-watch-later-config");
+        };
         player.EndFile += e => { if (e.IsError) Error?.Invoke(LibMpv.ErrorString(e.ErrorCode)); };
         player.Shutdown += () => Shutdown?.Invoke();
 
@@ -99,6 +109,47 @@ public sealed partial class PlayerViewModel : ObservableObject
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
         OnPropertyChanged(nameof(IsAttached));
+    }
+
+    private void OnFileLoaded()
+    {
+        string? path = _player?.GetString("path");
+        if (!string.IsNullOrEmpty(path))
+        {
+            if (App.Settings.KeepHistory)
+                History.Touch(path, _player?.GetString("media-title") ?? "", _player?.GetDouble("duration") ?? 0);
+            AutoLoadFolder(path);
+        }
+        FileLoaded?.Invoke();
+    }
+
+    /// <summary>IINA: when a single local file is opened, queue the rest of its folder.</summary>
+    private void AutoLoadFolder(string path)
+    {
+        if (!App.Settings.AutoLoadFolder || _player is null) return;
+        if (path.Contains("://") || !File.Exists(path)) return;
+        if ((_player.GetInt64("playlist-count") ?? 0) != 1) return;
+        string? dir = Path.GetDirectoryName(path);
+        if (dir is null || string.Equals(dir, _autoLoadedFolder, StringComparison.OrdinalIgnoreCase)) return;
+        _autoLoadedFolder = dir;
+
+        var siblings = FolderPlaylist.Siblings(path);
+        int index = siblings.FindIndex(f => string.Equals(f, path, StringComparison.OrdinalIgnoreCase));
+        if (siblings.Count <= 1 || index < 0) return;
+        foreach (var f in siblings)
+        {
+            if (string.Equals(f, path, StringComparison.OrdinalIgnoreCase)) continue;
+            _player.TryCommand("loadfile", f, "append");
+        }
+        // The current file is at index 0; move it to its natural position.
+        if (index > 0) _player.TryCommand("playlist-move", "0", (index + 1).ToString());
+    }
+
+    /// <summary>Called periodically / on unload so the history remembers where we were.</summary>
+    public void RecordPosition()
+    {
+        if (!App.Settings.KeepHistory || string.IsNullOrEmpty(FilePath)) return;
+        History.UpdatePosition(FilePath, TimePos, Duration);
     }
 
     private static readonly (string, MpvFormat)[] ObservedProperties =
@@ -125,7 +176,10 @@ public sealed partial class PlayerViewModel : ObservableObject
         {
             case "pause": Paused = value is true; break;
             case "idle-active": Idle = value is true; break;
-            case "time-pos": TimePos = value as double? ?? 0; break;
+            case "time-pos":
+                TimePos = value as double? ?? 0;
+                if ((++_posTick & 31) == 0) RecordPosition();   // roughly every few seconds
+                break;
             case "duration": Duration = value as double? ?? 0; break;
             case "demuxer-cache-duration": CacheDuration = value as double? ?? 0; break;
             case "seeking": Seeking = value is true; break;
@@ -288,7 +342,11 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private static string Inv(double v) => v.ToString(CultureInfo.InvariantCulture);
 
-    public void Open(string pathOrUrl, bool append = false) => Run(p => p.LoadFile(pathOrUrl, append));
+    public void Open(string pathOrUrl, bool append = false)
+    {
+        if (!append) _autoLoadedFolder = null;
+        Run(p => p.LoadFile(pathOrUrl, append));
+    }
     public void OpenMany(IEnumerable<string> paths, bool append = false)
     {
         bool first = !append;

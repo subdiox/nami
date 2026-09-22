@@ -271,6 +271,11 @@ public sealed partial class MainPage : Page
         menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? "再生" : "一時停止", Command = new Cmd(Vm.TogglePause) });
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = "ファイルを開く…", Command = new Cmd(OpenFiles) });
+        var recent = new MenuFlyoutSubItem { Text = "最近使ったファイル" };
+        foreach (var h in Vm.History.Entries.Take(12))
+            recent.Items.Add(new MenuFlyoutItem { Text = h.Display, Command = new Cmd(() => Vm.Open(h.Path)) });
+        recent.IsEnabled = recent.Items.Count > 0;
+        menu.Items.Add(recent);
         menu.Items.Add(new MenuFlyoutItem { Text = "字幕ファイルを追加…", Command = new Cmd(async () =>
         {
             var f = await Controls.Sidebar.PickFilesAsync([".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);

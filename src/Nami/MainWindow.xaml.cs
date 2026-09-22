@@ -57,7 +57,12 @@ public sealed partial class MainWindow : Window
         };
         Vm.Shutdown += Close;
         AppWindow.Changed += OnAppWindowChanged;
-        Closed += (_, _) => Vm.PropertyChanged -= OnVmChanged;
+        Closed += (_, _) =>
+        {
+            Vm.PropertyChanged -= OnVmChanged;
+            Vm.RecordPosition();
+            Vm.History.Save();
+        };
 
         Main.VideoView.PlayerCreated += _ => ApplyHdr();
         Interop.AspectRatioLock.Install(Hwnd);

@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:player="using:Nami.Player"
+    xmlns:services="using:Nami.Services"
     mc:Ignorable="d"
     RequestedTheme="Dark"
     Width="360">
@@ -38,6 +39,14 @@
             </Grid>
         </DataTemplate>
 
+        <DataTemplate x:Key="HistoryTemplate" x:DataType="services:HistoryEntry">
+            <StackPanel Padding="0,6" Spacing="3">
+                <TextBlock Text="{x:Bind Display}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{x:Bind Subtitle}" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" />
+                <ProgressBar Value="{x:Bind Progress}" Maximum="1" MinHeight="2" Height="2" Foreground="{StaticResource AccentBrush}" Background="#22FFFFFF" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="ChapterTemplate" x:DataType="player:ChapterInfo">
             <Grid ColumnSpacing="10" Padding="0,6">
                 <Grid.ColumnDefinitions>
@@ -64,6 +73,7 @@
                     <SelectorBarItem x:Name="TabSub" Text="字幕" Tag="sub" />
                     <SelectorBarItem x:Name="TabPlaylist" Text="プレイリスト" Tag="playlist" />
                     <SelectorBarItem x:Name="TabChapters" Text="チャプター" Tag="chapters" />
+                    <SelectorBarItem x:Name="TabHistory" Text="履歴" Tag="history" />
                 </SelectorBar>
             </Grid>
 
@@ -207,6 +217,27 @@
                             </ListView.ContextFlyout>
                         </ListView>
                         <TextBlock x:Name="PlaylistEmptyText" Text="ここにファイルをドロップするか、＋ で追加" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- ===================== History ===================== -->
+                    <StackPanel x:Name="HistoryPanel" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,8,0,4">
+                            <Button Style="{StaticResource OscButton}" Click="ClearHistory_Click" ToolTipService.ToolTip="履歴を消去" AutomationProperties.Name="履歴を消去">
+                                <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE74D;" />
+                            </Button>
+                            <TextBlock x:Name="HistoryCountText" Style="{StaticResource SidebarLabel}" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <ListView x:Name="HistoryList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource HistoryTemplate}"
+                                  ItemClick="HistoryList_ItemClick" SelectionMode="Single" RightTapped="HistoryList_RightTapped">
+                            <ListView.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="再生" Click="HistoryPlay_Click" />
+                                    <MenuFlyoutItem Text="プレイリストに追加" Click="HistoryAppend_Click" />
+                                    <MenuFlyoutItem Text="履歴から削除" Click="HistoryRemove_Click" />
+                                </MenuFlyout>
+                            </ListView.ContextFlyout>
+                        </ListView>
+                        <TextBlock x:Name="HistoryEmptyText" Text="再生履歴はまだありません" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <!-- ===================== Chapters ===================== -->

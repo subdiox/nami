@@ -20,6 +20,9 @@ public sealed class AppSettings
     public HdrMode HdrMode { get; set; } = HdrMode.Auto;
     public bool RememberVolume { get; set; } = true;
     public bool ResizeWindowToVideo { get; set; } = true;
+    public bool ResumePlayback { get; set; } = true;
+    public bool AutoLoadFolder { get; set; } = true;
+    public bool KeepHistory { get; set; } = true;
 
     public static string Directory { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nami");

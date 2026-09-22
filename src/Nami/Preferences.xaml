@@ -17,6 +17,9 @@
             <TextBlock Style="{StaticResource SectionHeader}" Text="一般" Margin="0,0,0,6" />
             <ToggleSwitch x:Name="ResizeSwitch" Header="ファイルを開いたとき動画のサイズに合わせてウィンドウを調整する" />
             <ToggleSwitch x:Name="RememberVolumeSwitch" Header="音量を記憶する" />
+            <ToggleSwitch x:Name="ResumeSwitch" Header="前回の再生位置から再開する" />
+            <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="同じフォルダーのファイルを自動的にプレイリストへ追加する" />
+            <ToggleSwitch x:Name="HistorySwitch" Header="再生履歴を記録する" />
 
             <TextBlock Style="{StaticResource SectionHeader}" Text="Windows との連携" />
             <TextBlock x:Name="AssocStatus" TextWrapping="Wrap" FontSize="12" />

@@ -16,6 +16,9 @@ public sealed partial class Preferences : ContentDialog
         var s = App.Settings;
         ResizeSwitch.IsOn = s.ResizeWindowToVideo;
         RememberVolumeSwitch.IsOn = s.RememberVolume;
+        ResumeSwitch.IsOn = s.ResumePlayback;
+        AutoLoadFolderSwitch.IsOn = s.AutoLoadFolder;
+        HistorySwitch.IsOn = s.KeepHistory;
         MpvConfBox.Text = ReadOrEmpty(MpvConfPath);
         InputConfBox.Text = ReadOrEmpty(InputConfPath);
         UpdateAssocStatus();
@@ -60,6 +63,18 @@ public sealed partial class Preferences : ContentDialog
         var s = App.Settings;
         s.ResizeWindowToVideo = ResizeSwitch.IsOn;
         s.RememberVolume = RememberVolumeSwitch.IsOn;
+        s.ResumePlayback = ResumeSwitch.IsOn;
+        s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
+        s.KeepHistory = HistorySwitch.IsOn;
+        if (App.Vm.Player is { } pl)
+        {
+            try
+            {
+                pl.SetProperty("save-position-on-quit", s.ResumePlayback);
+                pl.SetProperty("resume-playback", s.ResumePlayback);
+            }
+            catch (Mpv.MpvException) { }
+        }
         s.Save();
 
         Directory.CreateDirectory(AppSettings.MpvConfigDirectory);

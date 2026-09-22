@@ -30,12 +30,14 @@ public sealed partial class Sidebar : UserControl
         SecondarySubTrackList.ItemsSource = Vm.SubTracks;
         PlaylistList.ItemsSource = Vm.Playlist;
         ChapterList.ItemsSource = Vm.Chapters;
+        HistoryList.ItemsSource = Vm.History.Entries;
 
         Loaded += (_, _) =>
         {
             Vm.PropertyChanged += OnVmChanged;
             Vm.Playlist.CollectionChanged += OnListsChanged;
             Vm.Chapters.CollectionChanged += OnListsChanged;
+            Vm.History.Entries.CollectionChanged += OnListsChanged;
             SyncAll();
         };
         Unloaded += (_, _) =>
@@ -43,6 +45,7 @@ public sealed partial class Sidebar : UserControl
             Vm.PropertyChanged -= OnVmChanged;
             Vm.Playlist.CollectionChanged -= OnListsChanged;
             Vm.Chapters.CollectionChanged -= OnListsChanged;
+            Vm.History.Entries.CollectionChanged -= OnListsChanged;
         };
     }
 
@@ -54,11 +57,11 @@ public sealed partial class Sidebar : UserControl
         bool settings = kind == SidebarKind.Settings;
         foreach (var item in new[] { TabVideo, TabAudio, TabSub })
             item.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var item in new[] { TabPlaylist, TabChapters })
+        foreach (var item in new[] { TabPlaylist, TabChapters, TabHistory })
             item.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
         Tabs.SelectedItem = settings
             ? new[] { TabVideo, TabAudio, TabSub }[Math.Clamp(Vm.SettingsTab, 0, 2)]
-            : new[] { TabPlaylist, TabChapters }[Math.Clamp(Vm.PlaylistTab, 0, 1)];
+            : new[] { TabPlaylist, TabChapters, TabHistory }[Math.Clamp(Vm.PlaylistTab, 0, 2)];
         UpdatePanels();
     }
 
@@ -66,7 +69,7 @@ public sealed partial class Sidebar : UserControl
     {
         if (sender.SelectedItem is null) return;
         if (_kind == SidebarKind.Settings) Vm.SettingsTab = Array.IndexOf(new[] { TabVideo, TabAudio, TabSub }, sender.SelectedItem);
-        else if (_kind == SidebarKind.Playlist) Vm.PlaylistTab = Array.IndexOf(new[] { TabPlaylist, TabChapters }, sender.SelectedItem);
+        else if (_kind == SidebarKind.Playlist) Vm.PlaylistTab = Array.IndexOf(new[] { TabPlaylist, TabChapters, TabHistory }, sender.SelectedItem);
         UpdatePanels();
     }
 
@@ -78,6 +81,7 @@ public sealed partial class Sidebar : UserControl
         SubPanel.Visibility = tag == "sub" ? Visibility.Visible : Visibility.Collapsed;
         PlaylistPanel.Visibility = tag == "playlist" ? Visibility.Visible : Visibility.Collapsed;
         ChaptersPanel.Visibility = tag == "chapters" ? Visibility.Visible : Visibility.Collapsed;
+        HistoryPanel.Visibility = tag == "history" ? Visibility.Visible : Visibility.Collapsed;
         if (tag == "video") RefreshHdrInfo();
     }
 
@@ -88,6 +92,8 @@ public sealed partial class Sidebar : UserControl
         PlaylistEmptyText.Visibility = Vm.Playlist.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ChaptersEmptyText.Visibility = Vm.Chapters.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         PlaylistCountText.Text = Vm.Playlist.Count == 0 ? "" : $"{Vm.Playlist.Count} 項目";
+        HistoryEmptyText.Visibility = Vm.History.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        HistoryCountText.Text = Vm.History.Entries.Count == 0 ? "" : $"{Vm.History.Entries.Count} 件";
     }
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
@@ -356,6 +362,35 @@ public sealed partial class Sidebar : UserControl
     }
 
     private void ClearPlaylist_Click(object sender, RoutedEventArgs e) => Vm.PlaylistClear();
+
+    // ---- history ---------------------------------------------------------------------
+
+    private void HistoryList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is HistoryEntry h) Vm.Open(h.Path);
+    }
+
+    private void HistoryList_RightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is HistoryEntry h) HistoryList.SelectedItem = h;
+    }
+
+    private void HistoryPlay_Click(object sender, RoutedEventArgs e)
+    {
+        if (HistoryList.SelectedItem is HistoryEntry h) Vm.Open(h.Path);
+    }
+
+    private void HistoryAppend_Click(object sender, RoutedEventArgs e)
+    {
+        if (HistoryList.SelectedItem is HistoryEntry h) Vm.Open(h.Path, append: true);
+    }
+
+    private void HistoryRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if (HistoryList.SelectedItem is HistoryEntry h) Vm.History.Remove(h);
+    }
+
+    private void ClearHistory_Click(object sender, RoutedEventArgs e) => Vm.History.Clear();
 
     private void ChapterList_ItemClick(object sender, ItemClickEventArgs e)
     {
