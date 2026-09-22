@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentDialog
+    x:Class="Nami.Preferences"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="環境設定"
+    PrimaryButtonText="保存"
+    CloseButtonText="閉じる"
+    DefaultButton="Primary"
+    PrimaryButtonClick="OnSave">
+
+    <ScrollViewer MaxHeight="560" Width="560">
+        <StackPanel Spacing="8">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="一般" Margin="0,0,0,6" />
+            <ToggleSwitch x:Name="ResizeSwitch" Header="ファイルを開いたとき動画のサイズに合わせてウィンドウを調整する" />
+            <ToggleSwitch x:Name="RememberVolumeSwitch" Header="音量を記憶する" />
+
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Windows との連携" />
+            <TextBlock x:Name="AssocStatus" TextWrapping="Wrap" FontSize="12" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="RegisterButton" Content="メディアアプリとして登録" Click="Register_Click" />
+                <Button x:Name="UnregisterButton" Content="登録を解除" Click="Unregister_Click" />
+                <HyperlinkButton Content="既定のアプリ設定を開く" NavigateUri="ms-settings:defaultapps" />
+            </StackPanel>
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
+                       Text="登録するとエクスプローラーの「プログラムから開く」と Windows の「既定のアプリ」に Nami が表示されます。既定にするには Windows の設定から選んでください。" />
+
+            <TextBlock Style="{StaticResource SectionHeader}" Text="mpv 設定" />
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}">
+                <Run Text="mpv.conf と input.conf をここで編集できます。mpv.conf の変更は保存時に可能な限り即時反映され、次回起動時に完全に適用されます。" />
+            </TextBlock>
+            <HyperlinkButton x:Name="OpenConfigFolder" Content="設定フォルダーを開く" Click="OpenConfigFolder_Click" Padding="0" />
+            <TextBlock Text="mpv.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+            <TextBox x:Name="MpvConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="180"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
+            <TextBlock Text="input.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+            <TextBox x:Name="InputConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="140"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

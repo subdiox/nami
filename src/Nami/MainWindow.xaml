@@ -9,10 +9,42 @@
     Title="Nami"
     mc:Ignorable="d">
 
-    <Grid>
-        <!-- Video fills the whole window; the title bar is a transparent drag region over it. -->
+    <Grid RequestedTheme="Dark">
         <local:MainPage x:Name="Main" />
 
-        <Border x:Name="TitleBarDragRegion" Height="32" VerticalAlignment="Top" Background="Transparent" />
+        <!-- IINA-style title bar: transparent, floats over the video, fades with the OSC. -->
+        <Grid x:Name="TitleOverlay" VerticalAlignment="Top" Height="44">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition x:Name="CaptionSpacer" Width="140" />
+            </Grid.ColumnDefinitions>
+
+            <Rectangle Grid.ColumnSpan="3" IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#80000000" Offset="0" />
+                        <GradientStop Color="#00000000" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <!-- Drag region (also carries the centered title) -->
+            <Border x:Name="DragRegion" Grid.Column="0" Background="Transparent" />
+            <TextBlock x:Name="TitleText" Grid.ColumnSpan="3" Text="Nami" FontSize="13" Foreground="#F2FFFFFF" HorizontalAlignment="Center"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="160,0" IsHitTestVisible="False" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                <Button x:Name="PinButton" Style="{StaticResource OscButton}" Visibility="Collapsed" Click="PinButton_Click" ToolTipService.ToolTip="常に手前に表示を解除" AutomationProperties.Name="常に手前に表示を解除">
+                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE718;" />
+                </Button>
+                <Button Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="クイック設定" AutomationProperties.Name="クイック設定">
+                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE9E9;" />
+                </Button>
+                <Button Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="プレイリスト" AutomationProperties.Name="プレイリスト">
+                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
+                </Button>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

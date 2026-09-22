@@ -1,48 +1,249 @@
+using System.ComponentModel;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Nami.Player;
 using Windows.Graphics;
 
 namespace Nami;
 
 public sealed partial class MainWindow : Window
 {
+    private PlayerViewModel Vm => App.Vm;
+    private readonly OverlappedPresenter _presenter;
+    private bool _fitOnNextVideoSize;
+    private bool _compact;
+    private RectInt32? _restoreBounds;
+    private Preferences? _preferencesDialog;
+
+    public nint Hwnd { get; }
+    public MainPage Page => Main;
+
     public MainWindow()
     {
         InitializeComponent();
+        Hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+        _presenter = OverlappedPresenter.Create();
+        AppWindow.SetPresenter(_presenter);
 
         ExtendsContentIntoTitleBar = true;
-        SetTitleBar(TitleBarDragRegion);
+        SetTitleBar(DragRegion);
         AppWindow.SetIcon("Assets/AppIcon.ico");
-        AppWindow.Resize(new SizeInt32(1280, 720 + 32));
+        AppWindow.ResizeClient(new SizeInt32(1280, 720));
 
         if (AppWindow.TitleBar is { } tb)
         {
             tb.ButtonBackgroundColor = Colors.Transparent;
             tb.ButtonInactiveBackgroundColor = Colors.Transparent;
             tb.ButtonForegroundColor = Colors.White;
-            tb.ButtonInactiveForegroundColor = Colors.Gray;
+            tb.ButtonInactiveForegroundColor = Color(0x99, 0xFF, 0xFF, 0xFF);
+            tb.ButtonHoverBackgroundColor = Color(0x33, 0xFF, 0xFF, 0xFF);
+            tb.ButtonHoverForegroundColor = Colors.White;
+            tb.ButtonPressedBackgroundColor = Color(0x55, 0xFF, 0xFF, 0xFF);
+            tb.ButtonPressedForegroundColor = Colors.White;
+        }
+
+        Vm.PropertyChanged += OnVmChanged;
+        Vm.FileLoaded += () => _fitOnNextVideoSize = App.Settings.ResizeWindowToVideo;
+        Vm.PlaybackRestart += () =>
+        {
+            // Video parameters are final once the first frame is out; fit the window now.
+            if (_fitOnNextVideoSize && Vm.VideoSize.IsValid)
+            {
+                _fitOnNextVideoSize = false;
+                FitToVideo((int)Vm.VideoSize.Width, (int)Vm.VideoSize.Height);
+            }
+        };
+        Vm.Shutdown += Close;
+        AppWindow.Changed += OnAppWindowChanged;
+        Closed += (_, _) => Vm.PropertyChanged -= OnVmChanged;
+
+        Main.VideoView.PlayerCreated += _ => ApplyHdr();
+        Interop.AspectRatioLock.Install(Hwnd);
+        Closed += (_, _) => Interop.AspectRatioLock.Uninstall();
+    }
+
+    private static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
+
+    // ---- view model -> window ----------------------------------------------------------
+
+    private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(PlayerViewModel.MediaTitle):
+                string t = string.IsNullOrEmpty(Vm.MediaTitle) ? "Nami" : Vm.MediaTitle;
+                TitleText.Text = t;
+                Title = t == "Nami" ? "Nami" : $"{t} - Nami";
+                break;
+            case nameof(PlayerViewModel.Fullscreen):
+                ApplyFullscreen(Vm.Fullscreen);
+                break;
+            case nameof(PlayerViewModel.OnTop):
+                _presenter.IsAlwaysOnTop = Vm.OnTop || _compact;
+                PinButton.Visibility = Vm.OnTop ? Visibility.Visible : Visibility.Collapsed;
+                break;
+            case nameof(PlayerViewModel.VideoSize):
+            {
+                var vs = Vm.VideoSize;
+                Interop.AspectRatioLock.SetAspect(vs.Aspect);
+                if (vs.IsValid && !_fitOnNextVideoSize && !IsFullScreen && !_compact
+                    && _presenter.State != OverlappedPresenterState.Maximized)
+                {
+                    // Aspect changed after the initial fit (rotation / override): keep the width, fix the height.
+                    var (cw, chNow) = ClientPixelSize();
+                    int h = (int)Math.Round(cw / vs.Aspect);
+                    if (Math.Abs(h - chNow) > 1) ResizeClientExact(cw, h);
+                }
+                break;
+            }
         }
     }
 
-    public MainPage Page => Main;
+    // ---- fullscreen / compact -----------------------------------------------------------
 
     public bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
 
-    public void ToggleFullScreen()
+    private void ApplyFullscreen(bool on)
     {
-        if (IsFullScreen) ExitFullScreen();
+        if (on == IsFullScreen) return;
+        if (on)
+        {
+            if (_compact) ToggleCompactMode();
+            AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+            CaptionSpacer.Width = new GridLength(8);
+        }
         else
         {
-            AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-            TitleBarDragRegion.Visibility = Visibility.Collapsed;
+            AppWindow.SetPresenter(_presenter);
+            CaptionSpacer.Width = new GridLength(140);
         }
     }
 
-    public void ExitFullScreen()
+    /// <summary>IINA's PiP stand-in: a small, borderless, always-on-top window.</summary>
+    public void ToggleCompactMode()
     {
-        if (!IsFullScreen) return;
-        AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-        TitleBarDragRegion.Visibility = Visibility.Visible;
+        if (IsFullScreen) Vm.SetFullscreen(false);
+        _compact = !_compact;
+        if (_compact)
+        {
+            _restoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+            _presenter.SetBorderAndTitleBar(false, false);
+            _presenter.IsAlwaysOnTop = true;
+            _presenter.IsResizable = true;
+            TitleOverlay.Visibility = Visibility.Collapsed;
+
+            double aspect = Vm.VideoWidth > 0 && Vm.VideoHeight > 0 ? (double)Vm.VideoWidth / Vm.VideoHeight : 16.0 / 9;
+            int w = (int)(480 * Scale);
+            int h = (int)(w / aspect);
+            var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+            AppWindow.MoveAndResize(new RectInt32(area.X + area.Width - w - 24, area.Y + area.Height - h - 24, w, h));
+        }
+        else
+        {
+            _presenter.SetBorderAndTitleBar(true, true);
+            _presenter.IsAlwaysOnTop = Vm.OnTop;
+            TitleOverlay.Visibility = Visibility.Visible;
+            if (_restoreBounds is { } r) AppWindow.MoveAndResize(r);
+        }
     }
+
+    private double Scale => Main.XamlRoot?.RasterizationScale ?? 1.0;
+
+    /// <summary>Resize the window so the client area matches the video aspect (IINA does this on open).</summary>
+    private void FitToVideo(int videoW, int videoH)
+    {
+        if (IsFullScreen || _compact || _presenter.State == OverlappedPresenterState.Maximized) return;
+
+        var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+        // IINA: open at the video's native size, shrunk only if it doesn't fit the screen.
+        double maxW = area.Width * 0.9;
+        double maxH = area.Height * 0.9;
+        double minW = 480 * Scale;
+        double w = videoW;
+        double h = videoH;
+        double s = Math.Min(1.0, Math.Min(maxW / w, maxH / h));
+        if (w * s < minW) s = Math.Min(minW / w, Math.Min(maxW / w, maxH / h));
+        int cw = (int)Math.Round(w * s);
+        int ch = (int)Math.Round(h * s);
+
+        var pos = AppWindow.Position;
+        var size = AppWindow.Size;
+        int cx = pos.X + size.Width / 2;
+        int cy = pos.Y + size.Height / 2;
+        ResizeClientExact(cw, ch);
+        var ns = AppWindow.Size;
+        App.Log($"FitToVideo video={videoW}x{videoH} work={area.Width}x{area.Height} s={s:F3} client={cw}x{ch} -> window {ns.Width}x{ns.Height} client {ClientPixelSize().w}x{ClientPixelSize().h}");
+        int nx = Math.Clamp(cx - ns.Width / 2, area.X, Math.Max(area.X, area.X + area.Width - ns.Width));
+        int ny = Math.Clamp(cy - ns.Height / 2, area.Y, Math.Max(area.Y, area.Y + area.Height - ns.Height));
+        AppWindow.Move(new PointInt32(nx, ny));
+    }
+
+    /// <summary>Real client-area size in pixels (AppWindow.ClientSize excludes the custom title bar).</summary>
+    private unsafe (int w, int h) ClientPixelSize()
+    {
+        Windows.Win32.Foundation.RECT rc;
+        Windows.Win32.PInvoke.GetClientRect((Windows.Win32.Foundation.HWND)Hwnd, &rc);
+        return (rc.right - rc.left, rc.bottom - rc.top);
+    }
+
+    /// <summary>ResizeClient, then correct for the title-bar offset AppWindow adds under ExtendsContentIntoTitleBar.</summary>
+    private void ResizeClientExact(int cw, int ch)
+    {
+        AppWindow.ResizeClient(new SizeInt32(cw, ch));
+        var (aw, ah) = ClientPixelSize();
+        if (aw != cw || ah != ch)
+            AppWindow.ResizeClient(new SizeInt32(cw - (aw - cw), ch - (ah - ch)));
+    }
+
+    private string? _lastDisplayDevice;
+
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (!args.DidPositionChange) return;
+        // Re-evaluate HDR when the window lands on another monitor.
+        var info = Interop.DisplayInfo.Query(Hwnd);
+        if (info?.DeviceName != _lastDisplayDevice)
+        {
+            _lastDisplayDevice = info?.DeviceName;
+            ApplyHdr();
+        }
+    }
+
+    public void ApplyHdr()
+    {
+        if (Vm.Player is { } p)
+        {
+            HdrController.Apply(p, Hwnd, App.Settings.HdrMode);
+            _lastDisplayDevice = HdrController.LastDisplay?.DeviceName;
+        }
+    }
+
+    // ---- overlay ----------------------------------------------------------------------
+
+    public void SetTitleOverlayVisible(bool visible)
+    {
+        if (_compact) return;
+        MainPage.Fade(TitleOverlay, visible ? 1 : 0);
+        TitleOverlay.IsHitTestVisible = true; // keep the drag region usable even when faded
+    }
+
+    public void BringToFront()
+    {
+        if (_presenter.State == OverlappedPresenterState.Minimized) _presenter.Restore();
+        Activate();
+    }
+
+    public async Task ShowPreferencesAsync()
+    {
+        if (_preferencesDialog is not null) return;
+        _preferencesDialog = new Preferences { XamlRoot = Content.XamlRoot };
+        try { await _preferencesDialog.ShowAsync(); }
+        finally { _preferencesDialog = null; }
+    }
+
+    private void PinButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleOnTop();
+    private void SettingsButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Settings);
+    private void PlaylistButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Playlist);
 }

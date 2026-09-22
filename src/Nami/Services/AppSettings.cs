@@ -1,0 +1,61 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Nami.Services;
+
+public enum HdrMode
+{
+    /// <summary>Pass HDR through when the display is in HDR mode, otherwise tone-map to SDR.</summary>
+    Auto,
+    /// <summary>Always tone-map to SDR.</summary>
+    Sdr,
+    /// <summary>Always output HDR10 (PQ / BT.2020).</summary>
+    Passthrough,
+}
+
+public sealed class AppSettings
+{
+    public double Volume { get; set; } = 100;
+    public bool Muted { get; set; }
+    public HdrMode HdrMode { get; set; } = HdrMode.Auto;
+    public bool RememberVolume { get; set; } = true;
+    public bool ResizeWindowToVideo { get; set; } = true;
+
+    public static string Directory { get; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nami");
+
+    public static string MpvConfigDirectory { get; } = Path.Combine(Directory, "mpv");
+
+    private static string FilePath => Path.Combine(Directory, "settings.json");
+
+    public static AppSettings Load()
+    {
+        try
+        {
+            if (File.Exists(FilePath))
+                return JsonSerializer.Deserialize(File.ReadAllText(FilePath), SettingsJsonContext.Default.AppSettings) ?? new();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"settings load failed: {ex.Message}");
+        }
+        return new AppSettings();
+    }
+
+    public void Save()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(Directory);
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(this, SettingsJsonContext.Default.AppSettings));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"settings save failed: {ex.Message}");
+        }
+    }
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal partial class SettingsJsonContext : JsonSerializerContext;

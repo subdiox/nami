@@ -28,6 +28,7 @@ public sealed unsafe class MpvPlayer : IDisposable
     public event Action<string, object?>? PropertyChanged;
     public event Action<MpvLogMessage>? LogMessage;
     public event Action? FileLoaded;
+    public event Action? PlaybackRestart;
     public event Action<MpvEndFile>? EndFile;
     public event Action? Shutdown;
 
@@ -55,16 +56,32 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("idle", "yes");
         Option("keep-open", "yes");
 
-        // We own all input; mpv has no window anyway.
-        Option("input-default-bindings", "no");
+        // Keys are forwarded from XAML via the "keypress" command, so mpv's default
+        // bindings and the user's input.conf keep working.
+        Option("input-default-bindings", "yes");
         Option("input-vo-keyboard", "no");
         Option("osc", "no");
-        Option("osd-bar", "no");
         Option("cursor-autohide", "no");
+
+        // IINA-like OSD: a translucent box in the top-left corner, no bar.
+        Option("osd-bar", "no");
+        Option("osd-font", "Segoe UI");
+        Option("osd-font-size", "30");
+        Option("osd-border-style", "background-box");
+        Option("osd-back-color", "#B3000000");
+        Option("osd-border-size", "0");
+        Option("osd-align-x", "left");
+        Option("osd-align-y", "top");
+        Option("osd-margin-x", "24");
+        Option("osd-margin-y", "24");
+        Option("osd-duration", "1500");
+
+        Option("screenshot-directory", Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+        Option("screenshot-template", "Nami-%F-%P");
 
         Option("audio-client-name", "Nami");
 
-        MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "v"), "request_log_messages");
+        MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "warn"), "request_log_messages");
         MpvException.ThrowIfError(LibMpv.mpv_initialize(_handle), "mpv_initialize");
 
         Observe("display-swapchain", MpvFormat.Int64);
@@ -206,7 +223,8 @@ public sealed unsafe class MpvPlayer : IDisposable
                 {
                     var m = (MpvEventLogMessage*)ev->Data;
                     var msg = new MpvLogMessage(LibMpv.Utf8(m->Prefix), LibMpv.Utf8(m->Level), LibMpv.Utf8(m->Text).TrimEnd());
-                    Debug.WriteLine($"[mpv/{msg.Prefix}] {msg.Level}: {msg.Text}");
+                    if (msg.Level is "error" or "warn" or "fatal")
+                        Debug.WriteLine($"[mpv/{msg.Prefix}] {msg.Level}: {msg.Text}");
                     Post(() => LogMessage?.Invoke(msg));
                     break;
                 }
@@ -227,6 +245,10 @@ public sealed unsafe class MpvPlayer : IDisposable
 
                 case MpvEventId.FileLoaded:
                     Post(() => FileLoaded?.Invoke());
+                    break;
+
+                case MpvEventId.PlaybackRestart:
+                    Post(() => PlaybackRestart?.Invoke());
                     break;
 
                 case MpvEventId.EndFile:

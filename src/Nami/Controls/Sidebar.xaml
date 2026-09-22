@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Nami.Controls.Sidebar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:player="using:Nami.Player"
+    mc:Ignorable="d"
+    RequestedTheme="Dark"
+    Width="360">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="TrackTemplate" x:DataType="player:TrackInfo">
+            <Grid ColumnSpacing="8" Padding="0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Grid.Column="0" Glyph="&#xE73E;" FontSize="12" Foreground="{StaticResource AccentBrush}"
+                          Visibility="{x:Bind Selected}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{x:Bind Display}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{x:Bind Subtitle}" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PlaylistTemplate" x:DataType="player:PlaylistItem">
+            <Grid ColumnSpacing="10" Padding="0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Grid.Column="0" Glyph="&#xE768;" FontSize="12" Foreground="{StaticResource AccentBrush}"
+                          Visibility="{x:Bind Current}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{x:Bind Display}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ChapterTemplate" x:DataType="player:ChapterInfo">
+            <Grid ColumnSpacing="10" Padding="0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{x:Bind Display}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{x:Bind TimeText}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1,0,0,0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Padding="12,44,12,8">
+                <SelectorBar x:Name="Tabs" AutomationProperties.Name="サイドバータブ" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
+                    <SelectorBarItem x:Name="TabVideo" Text="映像" Tag="video" />
+                    <SelectorBarItem x:Name="TabAudio" Text="音声" Tag="audio" />
+                    <SelectorBarItem x:Name="TabSub" Text="字幕" Tag="sub" />
+                    <SelectorBarItem x:Name="TabPlaylist" Text="プレイリスト" Tag="playlist" />
+                    <SelectorBarItem x:Name="TabChapters" Text="チャプター" Tag="chapters" />
+                </SelectorBar>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" Padding="16,0,16,24" VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <!-- ===================== Video ===================== -->
+                    <StackPanel x:Name="VideoPanel" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="映像トラック" />
+                        <ListView x:Name="VideoTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="VideoTrackList_ItemClick" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="アスペクト比" />
+                        <RadioButtons x:Name="AspectButtons" MaxColumns="6" SelectionChanged="AspectButtons_SelectionChanged">
+                            <x:String>自動</x:String>
+                            <x:String>4:3</x:String>
+                            <x:String>16:9</x:String>
+                            <x:String>16:10</x:String>
+                            <x:String>21:9</x:String>
+                            <x:String>1:1</x:String>
+                        </RadioButtons>
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="回転" />
+                        <RadioButtons x:Name="RotateButtons" MaxColumns="4" SelectionChanged="RotateButtons_SelectionChanged">
+                            <x:String>0°</x:String>
+                            <x:String>90°</x:String>
+                            <x:String>180°</x:String>
+                            <x:String>270°</x:String>
+                        </RadioButtons>
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="再生速度" Margin="0" />
+                            <TextBlock x:Name="SpeedLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="1x" />
+                        </Grid>
+                        <Slider x:Name="SpeedSlider" Minimum="0.25" Maximum="4" StepFrequency="0.05" Value="1" IsThumbToolTipEnabled="False" ValueChanged="SpeedSlider_ValueChanged" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button Content="0.5x" Click="SpeedPreset_Click" Tag="0.5" />
+                            <Button Content="1x" Click="SpeedPreset_Click" Tag="1" />
+                            <Button Content="1.5x" Click="SpeedPreset_Click" Tag="1.5" />
+                            <Button Content="2x" Click="SpeedPreset_Click" Tag="2" />
+                        </StackPanel>
+
+                        <Grid Margin="0,16,0,0">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="インターレース解除" Margin="0" VerticalAlignment="Center" />
+                            <ToggleSwitch x:Name="DeinterlaceSwitch" HorizontalAlignment="Right" OnContent="" OffContent="" MinWidth="0" Toggled="DeinterlaceSwitch_Toggled" />
+                        </Grid>
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="画質調整" Margin="0" />
+                            <HyperlinkButton Content="リセット" HorizontalAlignment="Right" Padding="4,0" Click="ResetEq_Click" />
+                        </Grid>
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="明るさ" /> <Slider x:Name="BrightnessSlider" Minimum="-100" Maximum="100" Tag="brightness" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="コントラスト" /> <Slider x:Name="ContrastSlider" Minimum="-100" Maximum="100" Tag="contrast" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="彩度" /> <Slider x:Name="SaturationSlider" Minimum="-100" Maximum="100" Tag="saturation" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="ガンマ" /> <Slider x:Name="GammaSlider" Minimum="-100" Maximum="100" Tag="gamma" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="色相" /> <Slider x:Name="HueSlider" Minimum="-100" Maximum="100" Tag="hue" ValueChanged="EqSlider_ValueChanged" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="HDR 出力" />
+                        <ComboBox x:Name="HdrCombo" HorizontalAlignment="Stretch" SelectionChanged="HdrCombo_SelectionChanged">
+                            <x:String>自動（ディスプレイに従う）</x:String>
+                            <x:String>SDR にトーンマップ</x:String>
+                            <x:String>HDR パススルー</x:String>
+                        </ComboBox>
+                        <TextBlock x:Name="HdrInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock x:Name="DecoderInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,2,0,0" />
+                    </StackPanel>
+
+                    <!-- ===================== Audio ===================== -->
+                    <StackPanel x:Name="AudioPanel" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="音声トラック" />
+                        <ListView x:Name="AudioTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="AudioTrackList_ItemClick" />
+                        <HyperlinkButton Content="音声をオフ" Padding="0" Click="AudioOff_Click" />
+                        <HyperlinkButton Content="外部音声ファイルを追加…" Padding="0" Click="AddAudio_Click" />
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="音量" Margin="0" />
+                            <TextBlock x:Name="VolumeLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100%" />
+                        </Grid>
+                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="130" StepFrequency="1" IsThumbToolTipEnabled="False" ValueChanged="VolumeSlider_ValueChanged" />
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="音声の遅延" Margin="0" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                <TextBlock x:Name="AudioDelayLabel" Style="{StaticResource SidebarLabel}" Text="0.0 s" />
+                                <HyperlinkButton Content="リセット" Padding="4,0" Click="ResetAudioDelay_Click" />
+                            </StackPanel>
+                        </Grid>
+                        <Slider x:Name="AudioDelaySlider" Minimum="-5" Maximum="5" StepFrequency="0.05" IsThumbToolTipEnabled="False" ValueChanged="AudioDelaySlider_ValueChanged" />
+                    </StackPanel>
+
+                    <!-- ===================== Subtitles ===================== -->
+                    <StackPanel x:Name="SubPanel" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="字幕" />
+                        <ListView x:Name="SubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SubTrackList_ItemClick" />
+                        <HyperlinkButton Content="字幕をオフ" Padding="0" Click="SubOff_Click" />
+                        <HyperlinkButton Content="字幕ファイルを追加…" Padding="0" Click="AddSub_Click" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="第 2 字幕" />
+                        <ListView x:Name="SecondarySubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SecondarySubTrackList_ItemClick" />
+                        <HyperlinkButton Content="第 2 字幕をオフ" Padding="0" Click="SecondarySubOff_Click" />
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="字幕の遅延" Margin="0" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                <TextBlock x:Name="SubDelayLabel" Style="{StaticResource SidebarLabel}" Text="0.0 s" />
+                                <HyperlinkButton Content="リセット" Padding="4,0" Click="ResetSubDelay_Click" />
+                            </StackPanel>
+                        </Grid>
+                        <Slider x:Name="SubDelaySlider" Minimum="-10" Maximum="10" StepFrequency="0.1" IsThumbToolTipEnabled="False" ValueChanged="SubDelaySlider_ValueChanged" />
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="字幕の大きさ" Margin="0" />
+                            <TextBlock x:Name="SubScaleLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100%" />
+                        </Grid>
+                        <Slider x:Name="SubScaleSlider" Minimum="0.3" Maximum="3" StepFrequency="0.05" Value="1" IsThumbToolTipEnabled="False" ValueChanged="SubScaleSlider_ValueChanged" />
+
+                        <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="字幕の位置" Margin="0" />
+                            <TextBlock x:Name="SubPosLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100" />
+                        </Grid>
+                        <Slider x:Name="SubPosSlider" Minimum="0" Maximum="150" StepFrequency="1" Value="100" IsThumbToolTipEnabled="False" ValueChanged="SubPosSlider_ValueChanged" />
+                    </StackPanel>
+
+                    <!-- ===================== Playlist ===================== -->
+                    <StackPanel x:Name="PlaylistPanel" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,8,0,4">
+                            <Button Style="{StaticResource OscButton}" Click="AddToPlaylist_Click" ToolTipService.ToolTip="ファイルを追加" AutomationProperties.Name="ファイルを追加">
+                                <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE710;" />
+                            </Button>
+                            <Button Style="{StaticResource OscButton}" Click="ClearPlaylist_Click" ToolTipService.ToolTip="すべて削除" AutomationProperties.Name="すべて削除">
+                                <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE74D;" />
+                            </Button>
+                            <TextBlock x:Name="PlaylistCountText" Style="{StaticResource SidebarLabel}" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <ListView x:Name="PlaylistList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource PlaylistTemplate}"
+                                  ItemClick="PlaylistList_ItemClick" CanReorderItems="False" KeyDown="PlaylistList_KeyDown" SelectionMode="Single" RightTapped="PlaylistList_RightTapped">
+                            <ListView.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="再生" Click="PlaylistPlay_Click" />
+                                    <MenuFlyoutItem Text="リストから削除" Click="PlaylistRemove_Click" />
+                                    <MenuFlyoutItem Text="エクスプローラーで表示" Click="PlaylistReveal_Click" />
+                                </MenuFlyout>
+                            </ListView.ContextFlyout>
+                        </ListView>
+                        <TextBlock x:Name="PlaylistEmptyText" Text="ここにファイルをドロップするか、＋ で追加" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- ===================== Chapters ===================== -->
+                    <StackPanel x:Name="ChaptersPanel" Visibility="Collapsed">
+                        <ListView x:Name="ChapterList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource ChapterTemplate}" ItemClick="ChapterList_ItemClick" Margin="-12,8,-12,0" />
+                        <TextBlock x:Name="ChaptersEmptyText" Text="チャプター情報がありません" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

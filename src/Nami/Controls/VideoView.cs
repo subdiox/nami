@@ -59,11 +59,12 @@ public sealed partial class VideoView : SwapChainPanel
     private void CreatePlayer()
     {
         var (w, h) = PixelSize();
-        string configDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nami", "mpv");
+        string configDir = Nami.Services.AppSettings.MpvConfigDirectory;
         Directory.CreateDirectory(configDir);
 
+        App.Log($"T+{Program.Uptime} ms creating mpv core ({w}x{h})");
         var player = new MpvPlayer(DispatcherQueue.GetForCurrentThread(), w, h, configDir);
+        App.Log($"T+{Program.Uptime} ms mpv core ready");
         player.SwapChainChanged += OnSwapChainChanged;
         _player = player;
 
@@ -72,6 +73,7 @@ public sealed partial class VideoView : SwapChainPanel
         if (existing is > 0) OnSwapChainChanged((nint)existing.Value);
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
+        App.Vm.Attach(player);
         PlayerCreated?.Invoke(player);
     }
 

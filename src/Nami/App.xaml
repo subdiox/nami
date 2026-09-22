@@ -8,9 +8,60 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
-            <!-- Other app resources here -->
+
+            <!-- IINA-like translucent dark panels -->
+            <AcrylicBrush x:Key="PanelBrush" TintColor="#1C1C1E" TintOpacity="0.55" TintLuminosityOpacity="0.75" FallbackColor="#E61C1C1E" />
+            <SolidColorBrush x:Key="PanelBorderBrush" Color="#2EFFFFFF" />
+            <SolidColorBrush x:Key="OverlayTextBrush" Color="#F2FFFFFF" />
+            <SolidColorBrush x:Key="OverlaySubtleTextBrush" Color="#99FFFFFF" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#4C9DFF" />
+
+            <Style x:Key="OscButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{StaticResource OverlayTextBrush}" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Width" Value="32" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="AllowFocusOnInteraction" Value="False" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+            </Style>
+
+            <Style x:Key="OscIcon" TargetType="FontIcon">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
+            </Style>
+
+            <Style x:Key="OscSlider" TargetType="Slider">
+                <Setter Property="IsThumbToolTipEnabled" Value="False" />
+                <Setter Property="AllowFocusOnInteraction" Value="False" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="MinHeight" Value="24" />
+            </Style>
+
+            <Style x:Key="SectionHeader" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{StaticResource OverlaySubtleTextBrush}" />
+                <Setter Property="Margin" Value="0,16,0,6" />
+            </Style>
+
+            <Style x:Key="SidebarLabel" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{StaticResource OverlayTextBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="SidebarListView" TargetType="ListView">
+                <Setter Property="IsItemClickEnabled" Value="True" />
+                <Setter Property="SelectionMode" Value="None" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="-12,0" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
