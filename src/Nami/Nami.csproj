@@ -48,4 +48,17 @@
   <ItemGroup>
     <None Include="..\..\third_party\libmpv\libmpv-2.dll" Link="libmpv-2.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <!--
+    dotnet publish (Native AOT) leaves the app's PRI / XBF XAML resources out of the
+    publish folder, and the app then fails with "Cannot locate resource from
+    ms-appx:///MainWindow.xaml". Add them explicitly.
+  -->
+  <Target Name="NamiPublishXamlResources" BeforeTargets="ComputeResolvedFilesToPublishList" DependsOnTargets="Build">
+    <ItemGroup>
+      <_NamiPri Include="$(OutDir)$(AssemblyName).pri" Condition="Exists('$(OutDir)$(AssemblyName).pri')" />
+      <_NamiXbf Include="$(IntermediateOutputPath)**\*.xbf" Exclude="$(IntermediateOutputPath)embed\**" />
+      <ResolvedFileToPublish Include="@(_NamiPri)" RelativePath="%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(_NamiXbf)" RelativePath="%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 </Project>
