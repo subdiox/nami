@@ -67,15 +67,15 @@ internal sealed unsafe class AspectRatioLock : IDisposable
                     w = proposedW;
                     h = (int)Math.Round(w / aspect);
                 }
-                else if (Math.Abs(proposedH - client.bottom) > Math.Abs(proposedW - client.right))
-                {
-                    h = proposedH;
-                    w = (int)Math.Round(h * aspect);
-                }
                 else
                 {
-                    w = proposedW;
-                    h = (int)Math.Round(w / aspect);
+                    // Corner: follow whichever axis the user is growing more, measured as a ratio.
+                    // (Comparing absolute deltas flips between the two formulas when they are
+                    // close, and the two results differ, which reads as stutter on diagonal drags.)
+                    double sw = proposedW / (double)Math.Max(1, client.right);
+                    double sh = proposedH / (double)Math.Max(1, client.bottom);
+                    if (sh > sw) { h = proposedH; w = (int)Math.Round(h * aspect); }
+                    else { w = proposedW; h = (int)Math.Round(w / aspect); }
                 }
 
                 int totalW = w + ncW, totalH = h + ncH;

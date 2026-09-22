@@ -14,7 +14,10 @@
     Background="Black">
 
     <Grid x:Name="Root">
-        <controls:VideoView x:Name="Video" />
+        <!-- Host grid: the panel inside keeps the buffer's size and is scaled to this host while a resize is in flight. -->
+        <Grid x:Name="VideoHost">
+            <controls:VideoView x:Name="Video" />
+        </Grid>
         <!-- Transparent input surface over the video (SwapChainPanel itself has no background). -->
         <controls:CursorSurface x:Name="Surface" Background="Transparent" />
 

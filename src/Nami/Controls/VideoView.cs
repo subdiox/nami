@@ -1,6 +1,7 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Nami.Interop;
 using Nami.Mpv;
 using Nami.Player;
@@ -8,9 +9,17 @@ using Nami.Player;
 namespace Nami.Controls;
 
 /// <summary>
-/// Hosts the mpv video output. Creates the player once the panel has a size,
-/// keeps the composition swapchain bound to the SwapChainPanel, and forwards
-/// size / DPI changes to mpv.
+/// Hosts the mpv video output. Creates the player once the panel has a size, keeps the composition
+/// swapchain bound to the SwapChainPanel, and forwards size / DPI changes to mpv.
+///
+/// Resizing without flicker: mpv resizes its swapchain and presents a new frame asynchronously, so
+/// the panel must not change size before that frame exists. The panel therefore keeps the size the
+/// buffer really has ("committed") and is scaled to the host with a XAML render transform, which the
+/// XAML compositor applies in the same frame as the layout. When mpv has caught up (buffer matches
+/// the target and a frame has had time to present) the panel is committed to the new size and the
+/// transform reset. During an interactive resize (WM_ENTERSIZEMOVE … WM_EXITSIZEMOVE) mpv is not
+/// asked to resize at all; the last frame keeps playing scaled, and the real resize happens once at
+/// the end.
 /// </summary>
 public sealed partial class VideoView : SwapChainPanel
 {
@@ -26,39 +35,49 @@ public sealed partial class VideoView : SwapChainPanel
     /// <summary>Raised on the UI thread once the mpv core exists.</summary>
     public event Action<MpvPlayer>? PlayerCreated;
 
-    // Live-resize handling (see ApplyTransform / RequestSize):
-    //  - the swapchain transform is updated on every layout change so the frame already on screen
-    //    is stretched to the new panel size instead of leaving bands / jumping;
-    //  - buffer resizes (mpv: d3d11-composition-size → ResizeBuffers + redraw) are throttled, the
-    //    last requested size always wins;
-    //  - after a request, the transform is re-evaluated each tick until the buffer matches.
-    private static readonly TimeSpan ResizeThrottle = TimeSpan.FromMilliseconds(40);
-    private readonly DispatcherQueueTimer _throttle;
-    private readonly DispatcherQueueTimer _sync;
-    private (int w, int h) _wanted;
-    private bool _sizeDirty;
+    private FrameworkElement? _host;
+    private readonly CompositeTransform _transform = new();
+    private Windows.Foundation.Size _committed;     // DIPs the buffer currently matches
+    private Windows.Foundation.Size _target;        // DIPs the host wants
+    private (int w, int h) _wanted;                 // pixels requested from mpv
+    private bool _live;                             // inside WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE
+    private bool _fillOutput;
+    private readonly DispatcherQueueTimer _sync;    // polls the buffer size after a request
+    private readonly DispatcherQueueTimer _commit;  // one frame of grace after the buffer matched
     private DateTime _syncDeadline;
 
     public VideoView()
     {
+        HorizontalAlignment = HorizontalAlignment.Left;
+        VerticalAlignment = VerticalAlignment.Top;
+        RenderTransformOrigin = new Windows.Foundation.Point(0, 0);
+        RenderTransform = _transform;
+
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        SizeChanged += (_, _) => { ApplyTransform(); RequestSize(); };
-        CompositionScaleChanged += (_, _) => { ApplyTransform(); RequestSize(); };
-
-        _throttle = DispatcherQueue.CreateTimer();
-        _throttle.Interval = ResizeThrottle;
-        _throttle.IsRepeating = false;
-        _throttle.Tick += (_, _) => { if (_sizeDirty) { _sizeDirty = false; PushSize(); _throttle.Start(); } };
 
         _sync = DispatcherQueue.CreateTimer();
         _sync.Interval = TimeSpan.FromMilliseconds(8);
         _sync.IsRepeating = true;
         _sync.Tick += (_, _) =>
         {
-            ApplyTransform();
             var (bw, bh) = SwapChainPanelInterop.GetBufferSize(_swapChain);
-            if ((bw == _wanted.w && bh == _wanted.h) || DateTime.UtcNow > _syncDeadline) _sync.Stop();
+            bool matched = bw == _wanted.w && bh == _wanted.h;
+            if (matched || DateTime.UtcNow > _syncDeadline)
+            {
+                _sync.Stop();
+                _commit.Start();   // give mpv one frame to present into the resized buffer
+            }
+        };
+
+        _commit = DispatcherQueue.CreateTimer();
+        _commit.Interval = TimeSpan.FromMilliseconds(40);
+        _commit.IsRepeating = false;
+        _commit.Tick += (_, _) =>
+        {
+            double dpi = Dpi;
+            _committed = new Windows.Foundation.Size(_wanted.w / dpi, _wanted.h / dpi);
+            ApplyLayout();
         };
     }
 
@@ -69,23 +88,71 @@ public sealed partial class VideoView : SwapChainPanel
         else _pending.Enqueue(action);
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    /// <summary>Called by the window on WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE.</summary>
+    public void SetLiveResize(bool live)
     {
-        if (_player is not null) return;
-        if (ActualWidth <= 0 || ActualHeight <= 0)
-        {
-            // Layout hasn't happened yet; SizeChanged will fire and we retry there.
-            SizeChanged += CreateOnFirstSize;
-            return;
-        }
-        CreatePlayer();
+        if (_live == live) return;
+        _live = live;
+        if (!live && _target != _committed) PushSize();
     }
 
-    private void CreateOnFirstSize(object sender, SizeChangedEventArgs e)
+    private double Dpi => XamlRoot?.RasterizationScale ?? 1.0;
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (_player is not null || ActualWidth <= 0 || ActualHeight <= 0) return;
-        SizeChanged -= CreateOnFirstSize;
-        CreatePlayer();
+        _host = Parent as FrameworkElement;
+        if (_host is not null) _host.SizeChanged += OnHostSizeChanged;
+        if (XamlRoot is not null) XamlRoot.Changed += OnXamlRootChanged;
+        if (_host is { ActualWidth: > 0, ActualHeight: > 0 })
+        {
+            _target = _committed = new Windows.Foundation.Size(_host.ActualWidth, _host.ActualHeight);
+            ApplyLayout();
+            if (_player is null) CreatePlayer();
+        }
+    }
+
+    private void OnHostSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        _target = e.NewSize;
+        if (_target.Width <= 0 || _target.Height <= 0) return;
+        if (_player is null)
+        {
+            _committed = _target;
+            ApplyLayout();
+            CreatePlayer();
+            return;
+        }
+        ApplyLayout();
+        if (!_live) PushSize();
+    }
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        // DPI change: the buffer must be re-created at the new pixel size.
+        ApplyDpiTransform();
+        if (_player is not null && !_live) PushSize();
+    }
+
+    /// <summary>
+    /// Panel at its committed size, scaled uniformly to fit the host and centered; identity once the
+    /// buffer matches the host.
+    /// </summary>
+    private void ApplyLayout()
+    {
+        if (_committed.Width <= 0 || _committed.Height <= 0) return;
+        bool same = Math.Abs(_committed.Width - _target.Width) < 0.5 && Math.Abs(_committed.Height - _target.Height) < 0.5;
+        Width = _committed.Width;
+        Height = _committed.Height;
+        if (same)
+        {
+            _transform.ScaleX = _transform.ScaleY = 1;
+            _transform.TranslateX = _transform.TranslateY = 0;
+            return;
+        }
+        double s = Math.Min(_target.Width / _committed.Width, _target.Height / _committed.Height);
+        _transform.ScaleX = _transform.ScaleY = s;
+        _transform.TranslateX = (_target.Width - _committed.Width * s) / 2;
+        _transform.TranslateY = (_target.Height - _committed.Height * s) / 2;
     }
 
     private void CreatePlayer()
@@ -100,6 +167,7 @@ public sealed partial class VideoView : SwapChainPanel
         App.Log($"T+{Program.Uptime} ms mpv core ready");
         player.SwapChainChanged += OnSwapChainChanged;
         _player = player;
+        _wanted = (w, h);
 
         // In case the VO was created before we subscribed (force-window=immediate).
         long? existing = player.GetInt64("display-swapchain");
@@ -107,13 +175,17 @@ public sealed partial class VideoView : SwapChainPanel
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
         Vm?.Attach(player);
-        if (Vm is not null)
-            Vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PlayerViewModel.VideoSize)) { _fillOutput = false; ApplyKeepAspect(); } };
+        Vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PlayerViewModel.VideoSize)) { _fillOutput = false; ApplyKeepAspect(); } };
+        ApplyKeepAspect();
         PlayerCreated?.Invoke(player);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        _sync.Stop();
+        _commit.Stop();
+        if (_host is not null) _host.SizeChanged -= OnHostSizeChanged;
+        if (XamlRoot is not null) XamlRoot.Changed -= OnXamlRootChanged;
         // Window is going away. Detach first so XAML never presents a dead swapchain.
         if (_swapChain != 0)
         {
@@ -129,76 +201,57 @@ public sealed partial class VideoView : SwapChainPanel
         if (swapChain == _swapChain) return;
         _swapChain = swapChain;
         SwapChainPanelInterop.SetSwapChain(this, swapChain);
-        ApplyTransform();
+        ApplyDpiTransform();
     }
 
+    /// <summary>Pixel size the host wants (DIPs × DPI).</summary>
     private (int w, int h) PixelSize()
     {
-        int w = (int)Math.Round(ActualWidth * CompositionScaleX);
-        int h = (int)Math.Round(ActualHeight * CompositionScaleY);
+        double dpi = Dpi;
+        int w = (int)Math.Round(_target.Width * dpi);
+        int h = (int)Math.Round(_target.Height * dpi);
         return (Math.Max(1, w), Math.Max(1, h));
     }
 
-    /// <summary>Ask mpv for the current panel size, at most once per throttle window (last size wins).</summary>
-    private void RequestSize()
-    {
-        if (_player is null) return;
-        _wanted = PixelSize();
-        if (_throttle.IsRunning) { _sizeDirty = true; return; }
-        PushSize();
-        _throttle.Start();
-    }
-
+    /// <summary>Ask mpv for the host size and start watching for the buffer to catch up.</summary>
     private void PushSize()
     {
-        if (_player is null) return;
-        _wanted = PixelSize();
+        if (_player is null || _target.Width <= 0 || _target.Height <= 0) return;
+        var wanted = PixelSize();
+        if (wanted == _wanted && _committed == _target) return;
+        _wanted = wanted;
         ApplyKeepAspect();
         _player.SetOutputSize(_wanted.w, _wanted.h);
+        _commit.Stop();
         _syncDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(1);
         if (!_sync.IsRunning) _sync.Start();
     }
 
     /// <summary>
-    /// Map the buffer onto the panel: the DPI inverse once sizes match; while they do not (a live
-    /// resize, before mpv has caught up) the frame is scaled uniformly to fit and centered, so it
-    /// never looks squashed for a frame.
+    /// SwapChainPanel presents the buffer at its pixel size in DIPs; map one buffer pixel to one
+    /// screen pixel. (The live-resize scaling is a XAML transform on the panel, not this matrix.)
     /// </summary>
-    private void ApplyTransform()
+    private void ApplyDpiTransform()
     {
-        if (_swapChain == 0 || ActualWidth <= 0 || ActualHeight <= 0) return;
-        var (bw, bh) = SwapChainPanelInterop.GetBufferSize(_swapChain);
-        if (bw <= 0 || bh <= 0) { SwapChainPanelInterop.SetTransform(_swapChain, 1f / CompositionScaleX, 1f / CompositionScaleY); return; }
-        double sx = ActualWidth / bw, sy = ActualHeight / bh;
-        if (Math.Abs(sx - sy) / Math.Max(sx, sy) < 0.005)
-        {
-            SwapChainPanelInterop.SetTransform(_swapChain, (float)sx, (float)sy);   // same aspect: fill exactly
-            return;
-        }
-        double s = Math.Min(sx, sy);
-        SwapChainPanelInterop.SetTransform(_swapChain, (float)s, (float)s,
-            (float)((ActualWidth - bw * s) / 2), (float)((ActualHeight - bh * s) / 2));
+        if (_swapChain == 0) return;
+        float inv = (float)(1.0 / Dpi);
+        SwapChainPanelInterop.SetTransform(_swapChain, inv, inv);
     }
 
     /// <summary>
     /// mpv letterboxes whenever the output is not exactly the video aspect, and the window's aspect
     /// lock can only be integer-exact, so a 1 px black line would show up at many sizes. When the
-    /// panel is within 1 % of the video aspect, let mpv fill the output instead (a sub-pixel stretch
-    /// nobody can see); at real letterbox aspects (maximized, snapped, full screen) keep the bars.
+    /// output is within 1 % of the video aspect, let mpv fill it instead (a sub-pixel stretch nobody
+    /// can see); at real letterbox aspects (maximized, snapped, full screen) keep the bars.
     /// </summary>
     private void ApplyKeepAspect()
     {
         if (_player is null || Vm is null) return;
         bool fill = false;
-        if (Vm.VideoSize.IsValid && ActualWidth > 0 && ActualHeight > 0)
-        {
-            var (w, h) = PixelSize();
-            fill = Math.Abs((double)w / h / Vm.VideoSize.Aspect - 1) < 0.01;
-        }
+        if (Vm.VideoSize.IsValid && _wanted.w > 0 && _wanted.h > 0)
+            fill = Math.Abs((double)_wanted.w / _wanted.h / Vm.VideoSize.Aspect - 1) < 0.01;
         if (fill == _fillOutput) return;
         _fillOutput = fill;
         try { _player.SetProperty("keepaspect", !fill); } catch (MpvException) { }
     }
-
-    private bool _fillOutput;
 }

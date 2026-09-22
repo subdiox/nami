@@ -25,6 +25,10 @@ internal sealed unsafe class NonClientHook : IDisposable
         public required Action<int, int> OnVideoRightClick { get; init; }
         public required Action OnVideoMiddleClick { get; init; }
         public required Func<bool> IsCursorHidden { get; init; }
+        /// <summary>WM_ENTERSIZEMOVE (true) / WM_EXITSIZEMOVE (false).</summary>
+        public required Action<bool> OnSizeMove { get; init; }
+        /// <summary>Files dropped from Explorer onto the window (the caption area has no XAML drop target).</summary>
+        public required Action<List<string>> OnFilesDropped { get; init; }
     }
 
     private readonly HWND _hwnd;
@@ -38,6 +42,7 @@ internal sealed unsafe class NonClientHook : IDisposable
         _cb = callbacks;
         _self = GCHandle.Alloc(this, GCHandleType.Weak);
         _installed = PInvoke.SetWindowSubclass(_hwnd, &Proc, SubclassId, (nuint)GCHandle.ToIntPtr(_self));
+        PInvoke.DragAcceptFiles(_hwnd, true);
     }
 
     public void Dispose()
@@ -80,6 +85,29 @@ internal sealed unsafe class NonClientHook : IDisposable
             case PInvoke.WM_SETCURSOR when ((nuint)lParam.Value & 0xFFFF) == PInvoke.HTCAPTION && cb.IsCursorHidden():
                 PInvoke.SetCursor(default);
                 return (LRESULT)1;
+
+            case PInvoke.WM_DROPFILES:
+            {
+                var drop = (Windows.Win32.UI.Shell.HDROP)(nint)wParam.Value;
+                uint count = PInvoke.DragQueryFile(drop, 0xFFFFFFFF, null, 0);
+                var files = new List<string>((int)count);
+                char* buf = stackalloc char[1024];
+                for (uint i = 0; i < count; i++)
+                {
+                    uint n = PInvoke.DragQueryFile(drop, i, buf, 1024);
+                    if (n > 0) files.Add(new string(buf, 0, (int)n));
+                }
+                PInvoke.DragFinish(drop);
+                if (files.Count > 0) cb.OnFilesDropped(files);
+                return (LRESULT)0;
+            }
+
+            case PInvoke.WM_ENTERSIZEMOVE:
+                cb.OnSizeMove(true);
+                break;
+            case PInvoke.WM_EXITSIZEMOVE:
+                cb.OnSizeMove(false);
+                break;
         }
         return PInvoke.DefSubclassProc(hwnd, msg, wParam, lParam);
     }

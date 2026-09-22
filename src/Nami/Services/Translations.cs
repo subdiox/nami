@@ -314,6 +314,7 @@ internal static class Translations
         ["Screenshot folder"] = "スクリーンショットの保存先",
         ["Screenshots"] = "スクリーンショット",
         ["Open folder"] = "フォルダーを開く",
+        ["Always open files from Explorer in a new window (otherwise only while something is playing)"] = "エクスプローラーから開いたファイルは常に新しいウィンドウで開く（オフなら再生中のときだけ）",
         ["Japanese"] = "日本語",
     };
 }

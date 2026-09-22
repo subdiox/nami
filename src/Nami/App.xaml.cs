@@ -86,7 +86,11 @@ public partial class App : Application
         if (dispatcher is null) return;
         dispatcher.TryEnqueue(() =>
         {
-            bool newWindow = _services.Settings.OpenInNewWindow || argv.Contains("--new-window");
+            // IINA-style: a file opened while another one is playing gets its own window; an idle
+            // window is reused. The preference forces a new window every time.
+            bool hasMedia = argv.Any(a => !a.StartsWith("--", StringComparison.Ordinal));
+            bool busy = _services.Windows.Active is { } active && !active.Vm.Idle && !string.IsNullOrEmpty(active.Vm.FilePath);
+            bool newWindow = argv.Contains("--new-window") || (hasMedia && (_services.Settings.OpenInNewWindow || busy));
             var window = newWindow || _services.Windows.Active is null ? _services.Windows.New() : _services.Windows.Active;
             HandleArguments(argv, window);
             window.BringToFront();

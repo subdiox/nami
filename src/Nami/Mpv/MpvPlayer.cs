@@ -181,6 +181,36 @@ public sealed unsafe class MpvPlayer : IDisposable
     }
 
     /// <summary>Read a property as an mpv_node tree converted to managed objects (lists / dictionaries).</summary>
+    /// <summary>Run a command and return its result node as managed objects (null on failure).</summary>
+    public object? CommandNode(params string[] args)
+    {
+        if (_handle == 0) return null;
+        var ptrs = new nint[args.Length + 1];
+        try
+        {
+            for (int i = 0; i < args.Length; i++) ptrs[i] = Marshal.StringToCoTaskMemUTF8(args[i]);
+            MpvNode node;
+            fixed (nint* p = ptrs)
+                if (LibMpv.mpv_command_ret(_handle, (byte**)p, &node) < 0) return null;
+            try { return MpvNodeReader.ToManaged(&node); }
+            finally { LibMpv.mpv_free_node_contents(&node); }
+        }
+        finally { foreach (var p in ptrs) if (p != 0) Marshal.FreeCoTaskMem(p); }
+    }
+
+    /// <summary>The current video frame as bgr0 rows (top-down), or null.</summary>
+    public (byte[] pixels, int width, int height, int stride)? ScreenshotRaw()
+    {
+        if (CommandNode("screenshot-raw", "video") is not Dictionary<string, object?> d) return null;
+        if (d.TryGetValue("data", out var data) && data is byte[] px
+            && d.TryGetValue("w", out var w) && w is long lw
+            && d.TryGetValue("h", out var h) && h is long lh
+            && d.TryGetValue("stride", out var st) && st is long ls
+            && d.TryGetValue("format", out var f) && f is string fmt && fmt == "bgr0")
+            return (px, (int)lw, (int)lh, (int)ls);
+        return null;
+    }
+
     public object? GetNode(string name)
     {
         MpvNode node;

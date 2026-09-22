@@ -20,6 +20,7 @@ public sealed partial class MainWindow : Window
     private readonly OverlappedPresenter _presenter;
     private readonly InputNonClientPointerSource _nonClient;
     private Interop.NonClientHook? _ncHook;
+    private Interop.BridgeEraseHook? _eraseHook;
     private bool _regionUpdateQueued;
     private bool _fitOnNextVideoSize;
     private bool _compact;
@@ -69,8 +70,23 @@ public sealed partial class MainWindow : Window
             OnVideoRightClick = (x, y) => DispatcherQueue.TryEnqueue(() => Main.ShowContextMenu(ScreenToPage(x, y))),
             OnVideoMiddleClick = () => DispatcherQueue.TryEnqueue(() => Vm.Keypress("MBTN_MID")),
             IsCursorHidden = () => Main.CursorHidden,
+            OnFilesDropped = files => DispatcherQueue.TryEnqueue(() => Main.OpenDroppedFiles(files)),
+            OnSizeMove = live =>
+            {
+                Main.VideoView.SetLiveResize(live);
+                if (live)
+                {
+                    var shot = Vm.Player is { } p && !Vm.Idle ? p.ScreenshotRaw() : null;
+                    if (shot is { } s) _eraseHook?.SetSnapshot(s.pixels, s.width, s.height, s.stride);
+                }
+                else _eraseHook?.SetSnapshot(null, 0, 0, 0);
+            },
         });
         Closed += (_, _) => { _ncHook?.Dispose(); _ncHook = null; };
+        // The island lags the frame by one frame while resizing; paint its erase with the video so the
+        // strip continues the picture instead of flashing black.
+        Main.Loaded += (_, _) => { _eraseHook = new Interop.BridgeEraseHook(Hwnd); };
+        Closed += (_, _) => { _eraseHook?.Dispose(); _eraseHook = null; };
         _nonClient.PointerPressed += (_, e) => { if (e.RegionKind == NonClientRegionKind.Caption) _ncPress = e.Point; };
         _nonClient.PointerReleased += (_, e) =>
         {

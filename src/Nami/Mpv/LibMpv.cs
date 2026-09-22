@@ -194,6 +194,7 @@ internal static unsafe partial class LibMpv
     [LibraryImport(Lib)] public static partial int mpv_unobserve_property(nint ctx, ulong registeredReplyUserdata);
 
     [LibraryImport(Lib)] public static partial int mpv_command(nint ctx, byte** args);
+    [LibraryImport(Lib)] public static partial int mpv_command_ret(nint ctx, byte** args, MpvNode* result);
     [LibraryImport(Lib)] public static partial int mpv_command_async(nint ctx, ulong replyUserdata, byte** args);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]

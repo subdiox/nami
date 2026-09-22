@@ -258,7 +258,7 @@ public sealed partial class MainPage : Page
         Music.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         Osc.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
         BottomShade.Visibility = on || Vm.Services.Settings.OscLayout != Services.OscLayout.Floating ? Visibility.Collapsed : Visibility.Visible;
-        Video.Margin = on ? new Thickness(0, 0, 0, Music.Height) : new Thickness(0);
+        VideoHost.Margin = on ? new Thickness(0, 0, 0, Music.Height) : new Thickness(0);
         if (on) ShowOverlay();
         Window?.RequestRegionUpdate();
     }
@@ -639,16 +639,21 @@ public sealed partial class MainPage : Page
         e.DragUIOverride.Caption = L.T("Play with Nami");
     }
 
+    /// <summary>Files dropped on the player (XAML drop or shell drop on the caption area).</summary>
+    public void OpenDroppedFiles(List<string> paths)
+    {
+        if (paths.Count == 1 && IsSubtitle(paths[0]) && !Vm.Idle)
+            Vm.AddSubtitle(paths[0]);
+        else if (paths.Count > 0)
+            Vm.OpenMany(paths, append: Vm.Sidebar == SidebarKind.Playlist);
+    }
+
     private async void OnDrop(object sender, DragEventArgs e)
     {
         if (e.DataView.Contains(StandardDataFormats.StorageItems))
         {
             var items = await e.DataView.GetStorageItemsAsync();
-            var paths = items.OfType<StorageFile>().Select(f => f.Path).ToList();
-            if (paths.Count == 1 && IsSubtitle(paths[0]) && !Vm.Idle)
-                Vm.AddSubtitle(paths[0]);
-            else if (paths.Count > 0)
-                Vm.OpenMany(paths, append: Vm.Sidebar == SidebarKind.Playlist);
+            OpenDroppedFiles(items.OfType<StorageFile>().Select(f => f.Path).ToList());
         }
         else if (e.DataView.Contains(StandardDataFormats.Text))
         {
