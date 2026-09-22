@@ -149,7 +149,13 @@ public sealed partial class Preferences : Window
         var fonts = SubtitleStyle.SystemFonts();
         fonts.Insert(0, L.T("(default)"));
         SubFontCombo.ItemsSource = fonts.Cast<object>().ToList();
-        SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? L.T("(default)") : st.Font;
+        // An editable ComboBox does not render Text set before its template is applied (it shows up
+        // only after a click), so select the matching item instead; free text only for unknown fonts.
+        string fontName = string.IsNullOrEmpty(st.Font) ? L.T("(default)") : st.Font;
+        int fontIndex = fonts.IndexOf(fontName);
+        if (fontIndex >= 0) SubFontCombo.SelectedIndex = fontIndex;
+        else SubFontCombo.Loaded += (_, _) => SubFontCombo.Text = fontName;
+        SubFontCombo.Text = fontName;
         SubSizeSlider.Value = st.Size;
         SubBoldCheck.IsChecked = st.Bold;
         SubItalicCheck.IsChecked = st.Italic;
