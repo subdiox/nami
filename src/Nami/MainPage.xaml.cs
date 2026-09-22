@@ -389,37 +389,37 @@ public sealed partial class MainPage : Page
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
         var menu = new MenuFlyout();
-        menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? L.T("Play") : L.T("Pause"), Command = new Cmd(Vm.TogglePause) });
+        menu.Items.Add(Item(Vm.Paused ? L.T("Play") : L.T("Pause"), Vm.TogglePause));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open file…"), Command = new Cmd(OpenFiles) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open URL…"), Command = new Cmd(() => _ = OpenUrlAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open in new window…"), Command = new Cmd(OpenFilesInNewWindow) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("New window"), Command = new Cmd(() => Vm.Services.Windows.New()) });
+        menu.Items.Add(Item(L.T("Open file…"), OpenFiles));
+        menu.Items.Add(Item(L.T("Open URL…"), () => _ = OpenUrlAsync()));
+        menu.Items.Add(Item(L.T("Open in new window…"), OpenFilesInNewWindow));
+        menu.Items.Add(Item(L.T("New window"), () => Vm.Services.Windows.New()));
         var recent = new MenuFlyoutSubItem { Text = L.T("Recent files") };
         foreach (var h in Vm.History.Entries.Take(12))
-            recent.Items.Add(new MenuFlyoutItem { Text = h.Display, Command = new Cmd(() => Vm.Open(h.Path)) });
+            recent.Items.Add(Item(h.Display, () => Vm.Open(h.Path)));
         recent.IsEnabled = recent.Items.Count > 0;
         menu.Items.Add(recent);
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Add subtitle file…"), Command = new Cmd(async () =>
+        menu.Items.Add(Item(L.T("Add subtitle file…"), async () =>
         {
             var f = await Controls.Sidebar.PickFilesAsync(Window, [".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
-        }) });
+        }));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Quick settings"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Settings)) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Playlist"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Playlist)) });
+        menu.Items.Add(Item(L.T("Quick settings"), () => Vm.ToggleSidebar(SidebarKind.Settings)));
+        menu.Items.Add(Item(L.T("Playlist"), () => Vm.ToggleSidebar(SidebarKind.Playlist)));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("Full screen"), IsChecked = Vm.Fullscreen, Command = new Cmd(Vm.ToggleFullscreen) });
-        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("Always on top"), IsChecked = Vm.OnTop, Command = new Cmd(Vm.ToggleOnTop) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Mini player"), Command = new Cmd(() => Window?.ToggleCompactMode()) });
+        menu.Items.Add(Toggle(L.T("Full screen"), Vm.Fullscreen, Vm.ToggleFullscreen));
+        menu.Items.Add(Toggle(L.T("Always on top"), Vm.OnTop, Vm.ToggleOnTop));
+        menu.Items.Add(Item(L.T("Mini player"), () => Window?.ToggleCompactMode()));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Screenshot"), Command = new Cmd(Vm.Screenshot) });
-        menu.Items.Add(new MenuFlyoutItem { Text = double.IsNaN(Vm.AbLoopA) ? L.T("A-B loop: set point A") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B loop: set point B") : L.T("Clear A-B loop"), Command = new Cmd(Vm.CycleAbLoop) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Frame step"), Command = new Cmd(Vm.FrameStep) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Frame back step"), Command = new Cmd(Vm.FrameBackStep) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Media info…"), Command = new Cmd(() => _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Key bindings…"), Command = new Cmd(() => _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Preferences…"), Command = new Cmd(() => Window?.ShowPreferencesAsync()) });
+        menu.Items.Add(Item(L.T("Screenshot"), Vm.Screenshot));
+        menu.Items.Add(Item(double.IsNaN(Vm.AbLoopA) ? L.T("A-B loop: set point A") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B loop: set point B") : L.T("Clear A-B loop"), Vm.CycleAbLoop));
+        menu.Items.Add(Item(L.T("Frame step"), Vm.FrameStep));
+        menu.Items.Add(Item(L.T("Frame back step"), Vm.FrameBackStep));
+        menu.Items.Add(Item(L.T("Media info…"), () => _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()));
+        menu.Items.Add(Item(L.T("Key bindings…"), () => _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()));
+        menu.Items.Add(Item(L.T("Preferences…"), () => Window?.ShowPreferencesAsync()));
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
     }
@@ -526,11 +526,19 @@ public sealed partial class MainPage : Page
     private static bool IsSubtitle(string path)
         => Path.GetExtension(path).ToLowerInvariant() is ".srt" or ".ass" or ".ssa" or ".sub" or ".vtt" or ".sup";
 
-    /// <summary>Tiny ICommand wrapper for menu items.</summary>
-    private sealed class Cmd(Action action) : System.Windows.Input.ICommand
+    // Click handlers instead of ICommand: a managed ICommand cannot be marshaled to WinRT under NativeAOT
+    // (CCW creation fails), which crashed the context menu in published builds.
+    private static MenuFlyoutItem Item(string text, Action action)
     {
-        public event EventHandler? CanExecuteChanged { add { } remove { } }
-        public bool CanExecute(object? parameter) => true;
-        public void Execute(object? parameter) => action();
+        var item = new MenuFlyoutItem { Text = text };
+        item.Click += (_, _) => action();
+        return item;
+    }
+
+    private static ToggleMenuFlyoutItem Toggle(string text, bool isChecked, Action action)
+    {
+        var item = new ToggleMenuFlyoutItem { Text = text, IsChecked = isChecked };
+        item.Click += (_, _) => action();
+        return item;
     }
 }
