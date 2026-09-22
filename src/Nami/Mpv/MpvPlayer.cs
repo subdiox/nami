@@ -297,9 +297,10 @@ public sealed unsafe class MpvPlayer : IDisposable
                     var msg = new MpvLogMessage(LibMpv.Utf8(m->Prefix), LibMpv.Utf8(m->Level), LibMpv.Utf8(m->Text).TrimEnd());
                     if (msg.Level is "error" or "warn" or "fatal")
                         Debug.WriteLine($"[mpv/{msg.Prefix}] {msg.Level}: {msg.Text}");
-                    if (msg.Prefix == "screenshot" && msg.Text.StartsWith("Screenshot: '", StringComparison.Ordinal))
+                    // mpv logs the saved path as [cplayer] "Screenshot: '<path>'" (older builds used the screenshot prefix).
+                    if (msg.Prefix is "cplayer" or "screenshot" && msg.Text.StartsWith("Screenshot: '", StringComparison.Ordinal))
                     {
-                        string path = msg.Text[13..].TrimEnd('\'');
+                        string path = Path.GetFullPath(msg.Text[13..].TrimEnd('\''));
                         Post(() => ScreenshotSaved?.Invoke(path));
                     }
                     Post(() => LogMessage?.Invoke(msg));
