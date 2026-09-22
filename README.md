@@ -92,6 +92,16 @@ scope, and a fork of winget-pkgs). Once merged: `winget install subdiox.Nami`.
 mpv reads its configuration from `%LOCALAPPDATA%\Nami\mpv\` (`mpv.conf`, `input.conf`, `scripts\`, `yt-dlp.exe`).
 Logs are written next to it (`mpv.log`, `..\nami.log`).
 
+## Acknowledgements
+
+Nami is an independent project inspired by [IINA](https://iina.io/), the macOS media player; it is not affiliated with the IINA project. In particular:
+
+- The window layout, on-screen controller, quick settings panel and overall behavior follow IINA's design.
+- The default key bindings (`src/Nami/Assets/input-default.conf`) are adapted from IINA's `iina-default-input.conf` (GPL-3.0), with macOS Command mapped to Ctrl.
+- The wording of the on-screen messages, including the Japanese strings, follows IINA's localization.
+
+Playback is powered by [mpv](https://mpv.io/) through libmpv (builds by [shinchiro](https://github.com/shinchiro/mpv-winbuild-cmake)). Online video uses [yt-dlp](https://github.com/yt-dlp/yt-dlp); online subtitles use the [OpenSubtitles](https://www.opensubtitles.com/) API.
+
 ## License
 
 Nami is released under the [GNU General Public License v3.0](LICENSE). It bundles [libmpv](https://mpv.io/) (GPL) and uses the Windows App SDK (MIT).
