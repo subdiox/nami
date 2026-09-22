@@ -40,6 +40,7 @@ public sealed class AppSettings
     public double[] EqGains { get; set; } = new double[10];
     public bool EqEnabled { get; set; }
     public string Language { get; set; } = "auto";
+    public bool OpenInNewWindow { get; set; }
     public SubtitleStyle Subtitles { get; set; } = new();
 
     public static string Directory { get; } =

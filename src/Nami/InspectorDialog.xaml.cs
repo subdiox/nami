@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Nami.Mpv;
+using Nami.Player;
 
 namespace Nami;
 
@@ -20,38 +21,41 @@ public sealed partial class InspectorDialog : ContentDialog
 
     private static readonly (string label, string prop, bool osd)[] Props =
     [
-        (L.T("ファイル"), "path", false),
-        (L.T("タイトル"), "media-title", false),
-        (L.T("コンテナ"), "file-format", false),
-        (L.T("サイズ"), "file-size", true),
-        (L.T("長さ"), "duration", true),
-        (L.T("チャプター数"), "chapter-list/count", false),
+        (L.T("File"), "path", false),
+        (L.T("Title"), "media-title", false),
+        (L.T("Container"), "file-format", false),
+        (L.T("Size"), "file-size", true),
+        (L.T("Duration"), "duration", true),
+        (L.T("Chapter count"), "chapter-list/count", false),
         ("", "", false),
-        (L.T("映像コーデック"), "video-codec", false),
-        (L.T("解像度"), "video-params/w", false),
-        (L.T("表示解像度"), "video-params/dw", false),
-        (L.T("ピクセル形式"), "video-params/pixelformat", false),
-        (L.T("色域 / 伝達関数"), "video-params/primaries", false),
-        (L.T("色域 (matrix)"), "video-params/colormatrix", false),
-        (L.T("フレームレート"), "container-fps", false),
-        (L.T("実フレームレート"), "estimated-vf-fps", false),
-        (L.T("映像ビットレート"), "video-bitrate", true),
-        (L.T("ハードウェアデコード"), "hwdec-current", false),
+        (L.T("Video codec"), "video-codec", false),
+        (L.T("Resolution"), "video-params/w", false),
+        (L.T("Display resolution"), "video-params/dw", false),
+        (L.T("Pixel format"), "video-params/pixelformat", false),
+        (L.T("Primaries / transfer"), "video-params/primaries", false),
+        (L.T("Color matrix"), "video-params/colormatrix", false),
+        (L.T("Frame rate"), "container-fps", false),
+        (L.T("Measured frame rate"), "estimated-vf-fps", false),
+        (L.T("Video bitrate"), "video-bitrate", true),
+        (L.T("Hardware decoding"), "hwdec-current", false),
         ("", "", false),
-        (L.T("音声コーデック"), "audio-codec", false),
-        (L.T("サンプルレート"), "audio-params/samplerate", false),
-        (L.T("チャンネル"), "audio-params/channels", false),
-        (L.T("音声フォーマット"), "audio-params/format", false),
-        (L.T("音声ビットレート"), "audio-bitrate", true),
-        (L.T("出力デバイス"), "audio-device", false),
+        (L.T("Audio codec"), "audio-codec", false),
+        (L.T("Sample rate"), "audio-params/samplerate", false),
+        (L.T("Channels"), "audio-params/channels", false),
+        (L.T("Audio format"), "audio-params/format", false),
+        (L.T("Audio bitrate"), "audio-bitrate", true),
+        (L.T("Output device"), "audio-device", false),
         ("", "", false),
-        (L.T("キャッシュ"), "demuxer-cache-duration", true),
-        (L.T("ドロップしたフレーム"), "frame-drop-count", false),
-        (L.T("A/V 同期ずれ"), "avsync", false),
+        (L.T("Cache"), "demuxer-cache-duration", true),
+        (L.T("Dropped frames"), "frame-drop-count", false),
+        (L.T("A/V sync offset"), "avsync", false),
     ];
 
-    public InspectorDialog()
+    private readonly PlayerViewModel _vm;
+
+    public InspectorDialog(PlayerViewModel vm)
     {
+        _vm = vm;
         InitializeComponent();
         Rows.ItemsSource = _rows;
         Refresh();
@@ -64,7 +68,7 @@ public sealed partial class InspectorDialog : ContentDialog
 
     private void Refresh()
     {
-        var p = App.Vm.Player;
+        var p = _vm.Player;
         if (p is null) return;
         var values = new List<InspectorRow>();
         foreach (var (label, prop, osd) in Props)

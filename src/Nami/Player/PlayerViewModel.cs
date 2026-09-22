@@ -87,7 +87,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial int SettingsTab { get; set; }
     [ObservableProperty] public partial int PlaylistTab { get; set; }
 
-    public History History { get; } = History.Load();
+    public History History => App.History;
+    /// <summary>The window hosting this player (set by MainWindow).</summary>
+    public MainWindow? Window { get; set; }
     public ThumbnailGenerator Thumbnails { get; } = new();
     private string? _autoLoadedFolder;
 
@@ -481,7 +483,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (!faster && s > 1 && next < 1) next = 1;
         SetSpeed(next);
         if (Paused) Play();
-        ShowText(L.F("再生速度 {0}", Fmt.Speed(next)));
+        ShowText(L.F("Speed {0}", Fmt.Speed(next)));
     }
 
     public void ToggleShuffle() => Run(p =>
@@ -489,15 +491,15 @@ public sealed partial class PlayerViewModel : ObservableObject
         bool on = !Shuffle;
         p.SetProperty("shuffle", on);
         p.TryCommand(on ? "playlist-shuffle" : "playlist-unshuffle");
-        ShowText(on ? L.T("シャッフル: オン") : L.T("シャッフル: オフ"));
+        ShowText(on ? L.T("Shuffle: on") : L.T("Shuffle: off"));
     });
 
     /// <summary>off → playlist → file → off</summary>
     public void CycleLoop() => Run(p =>
     {
-        if (!LoopPlaylist && !LoopFile) { p.SetProperty("loop-playlist", "inf"); ShowText(L.T("リピート: プレイリスト")); }
-        else if (LoopPlaylist) { p.SetProperty("loop-playlist", "no"); p.SetProperty("loop-file", "inf"); ShowText(L.T("リピート: 1 曲")); }
-        else { p.SetProperty("loop-file", "no"); ShowText(L.T("リピート: オフ")); }
+        if (!LoopPlaylist && !LoopFile) { p.SetProperty("loop-playlist", "inf"); ShowText(L.T("Repeat: playlist")); }
+        else if (LoopPlaylist) { p.SetProperty("loop-playlist", "no"); p.SetProperty("loop-file", "inf"); ShowText(L.T("Repeat: one")); }
+        else { p.SetProperty("loop-file", "no"); ShowText(L.T("Repeat: off")); }
     });
 
     /// <summary>mpv's ab-loop cycle: set A → set B → clear.</summary>

@@ -11,8 +11,8 @@ public sealed record TrackInfo(long Id, string Type, string? Title, string? Lang
             if (!string.IsNullOrEmpty(Title)) parts.Add(Title);
             if (!string.IsNullOrEmpty(Lang)) parts.Add(Lang);
             if (parts.Count == 0 && !string.IsNullOrEmpty(Codec)) parts.Add(Codec);
-            string text = parts.Count == 0 ? L.F("トラック {0}", Id) : string.Join(" · ", parts);
-            return External ? L.F("{0} (外部)", text) : text;
+            string text = parts.Count == 0 ? L.F("Track {0}", Id) : string.Join(" · ", parts);
+            return External ? L.F("{0} (external)", text) : text;
         }
     }
 
@@ -27,13 +27,13 @@ public sealed record PlaylistItem(int Index, long Id, string Filename, string? T
 
 public sealed record ChapterInfo(int Index, string Title, double Time)
 {
-    public string Display => string.IsNullOrEmpty(Title) ? L.F("チャプター {0}", Index + 1) : Title;
+    public string Display => string.IsNullOrEmpty(Title) ? L.F("Chapter {0}", Index + 1) : Title;
     public string TimeText => Fmt.Time(Time);
 }
 
 public sealed record AudioDeviceInfo(string Name, string Description)
 {
-    public string Display => Name == "auto" ? L.T("自動（既定のデバイス）") : (string.IsNullOrEmpty(Description) ? Name : Description);
+    public string Display => Name == "auto" ? L.T("Auto (default device)") : (string.IsNullOrEmpty(Description) ? Name : Description);
 }
 
 /// <summary>Display size of the current video (aspect-corrected, rotation applied). 0x0 when unknown.</summary>

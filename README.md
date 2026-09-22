@@ -1,72 +1,77 @@
 # Nami
 
-IINA 風の、Windows ネイティブな mpv フロントエンド。WinUI 3 (Windows App SDK) + libmpv。
+An IINA-style, Windows-native mpv front end. WinUI 3 (Windows App SDK) + libmpv.
 
-## 仕組み
+## How it works
 
-- libmpv を `--vo=gpu-next --gpu-context=d3d11 --d3d11-output-mode=composition` で起動する。
-  mpv はウィンドウを作らず DXGI コンポジション用スワップチェーンだけを作る（mpv 0.41+）。
-- `display-swapchain` プロパティで受け取った `IDXGISwapChain*` を XAML の `SwapChainPanel` に貼る。
-  描画・提示・hwdec・シェーダは全部 mpv 側。UI は XAML でその上に重ねる。
-- リサイズは `d3d11-composition-size` プロパティを物理ピクセルで更新するだけ。
+- libmpv runs with `--vo=gpu-next --gpu-context=d3d11 --d3d11-output-mode=composition`.
+  mpv creates no window of its own, only a DXGI composition swapchain (mpv 0.41+).
+- The `IDXGISwapChain*` from the `display-swapchain` property is bound to a XAML
+  `SwapChainPanel`. Rendering, presentation, hardware decoding and shaders all stay in mpv;
+  the UI is XAML layered on top.
+- Resizing is just the `d3d11-composition-size` property in physical pixels.
 
-## ビルド
+## Build
 
-前提: .NET 10 SDK、Windows 10 1809 以降。Visual Studio は不要。
+Prerequisites: .NET 10 SDK, Windows 10 1809 or later. Visual Studio is not required.
 
 ```powershell
-scripts\fetch-libmpv.ps1          # third_party/libmpv/libmpv-2.dll を取得（7-Zip が必要）
+scripts\fetch-libmpv.ps1          # downloads third_party/libmpv/libmpv-2.dll (needs 7-Zip)
 dotnet build src\Nami -c Debug -p:Platform=x64
 dotnet run --project src\Nami -- "C:\path\to\video.mkv"
 ```
 
-配布用 (Native AOT, 自己完結型)。VS Build Tools の C++ ワークロード（リンカ）が必要:
+Release build (Native AOT, self-contained; needs the VS Build Tools C++ workload for the linker):
 
 ```powershell
 scripts\publish.ps1
 ```
 
-## 機能
+## Features
 
-- IINA と同じ配置の UI: 透明タイトルバー、フローティング OSC（下部バー／上部バーに切替可）、右サイドバー（クイック設定: 映像／音声／字幕、プレイリスト／チャプター／履歴）
-- 再生位置の再開、無制限の再生履歴、同じフォルダーの自動プレイリスト化、Windows メディアコントロール
-- 字幕: トラック切替、外部字幕、OpenSubtitles.com 検索、フォント／色／縁取り／エンコーディング設定
-- 映像: アスペクト比、クロップ、回転、反転、ズーム（ピンチ対応）、画質調整、インターレース解除、HDR 出力モード
-- 音声: 出力デバイス選択、10 バンドイコライザー、遅延調整、シャッフル／リピート
-- シークバーのサムネイルプレビュー、A-B ループ、コマ送り、メディア情報インスペクター
-- URL 再生と yt-dlp（アプリ内でダウンロード）、`namiplayer://` URL スキーム、ブックマークレット
-- ミュージックモード（音声ファイルで自動切替）、ミニプレイヤー、常に手前に表示
-- キー操作エディタ（input.conf を GUI で編集、即時反映）、mpv.conf エディタ、`--mpv-<option>=<value>` の透過
-- 日本語／英語 UI
+- IINA layout: transparent title bar, floating OSC (switchable to a bottom or top bar), right sidebar
+  (quick settings: video / audio / subtitles; playlist / chapters / history)
+- Resume playback, unlimited history, auto-queue of the opened file's folder, Windows media controls
+- Multiple player windows (`Ctrl+N`, "Open in new window", `--new-window`)
+- Subtitles: track switching, external files, OpenSubtitles.com search, font / color / outline / encoding settings
+- Video: aspect ratio, crop, rotation, flip, zoom (pinch), picture adjustments, deinterlace, HDR output mode
+- Audio: output device, 10-band equalizer, delay, shuffle / repeat
+- Seek-bar thumbnails, A-B loop, frame stepping, media info inspector
+- URL playback with yt-dlp (downloaded in-app), `namiplayer://` URL scheme, bookmarklet
+- Music mode (automatic for audio files), mini player, always on top
+- Key bindings editor (edits input.conf, applied live), mpv.conf editor, `--mpv-<option>=<value>` passthrough
+- English and Japanese UI (English is the source language; see `src/Nami/Services/Translations.cs`)
 
-## 操作
+## Controls
 
-| 操作 | 動作 |
+| Action | Result |
 |---|---|
-| クリック / ダブルクリック | 一時停止 / 全画面 |
-| ドラッグ | ウィンドウ移動（動画上のどこでも） |
-| ホイール | 音量（横ホイールでシーク） |
-| 右クリック | コンテキストメニュー |
-| キーボード | mpv の既定バインドと `input.conf` がそのまま効く（Space, ←→, 9/0, m, f, q など） |
-| Ctrl+O / Ctrl+Shift+S / Ctrl+Shift+P / Ctrl+Shift+M / Ctrl+, / F11 | 開く / クイック設定 / プレイリスト / ミニプレイヤー / 環境設定 / 全画面 |
-| `Nami.exe --register` | エクスプローラーの「プログラムから開く」と既定のアプリに登録（HKCU。`--unregister` で解除） |
+| Click / double-click | Pause / full screen |
+| Drag | Move the window (anywhere on the video) |
+| Wheel | Volume (horizontal wheel: seek) |
+| Right click | Context menu |
+| Keyboard | mpv's default bindings and `input.conf` work as-is (Space, arrows, 9/0, m, f, q, …) |
+| Ctrl+O / Ctrl+Alt+O / Ctrl+N | Open / open in new window / new window |
+| Ctrl+U / Ctrl+I / Ctrl+Shift+K / Ctrl+, / F11 | Open URL / media info / key bindings / preferences / full screen |
+| Ctrl+Shift+S / Ctrl+Shift+P / Ctrl+Shift+M | Quick settings / playlist / mini player |
+| `Nami.exe --register` | Register in Explorer's "Open with" and Windows Default apps (HKCU; `--unregister` to remove) |
 
-## 構成
+## Layout
 
-| パス | 役割 |
+| Path | Role |
 |---|---|
-| `src/Nami/Mpv/LibMpv.cs` | libmpv の P/Invoke（client.h と 1:1） |
-| `src/Nami/Mpv/MpvPlayer.cs` | mpv コアのラッパー。イベントスレッド、プロパティ監視、UI スレッドへのディスパッチ |
-| `src/Nami/Controls/VideoView.cs` | SwapChainPanel 派生。プレイヤー生成、スワップチェーン貼り付け、サイズ/DPI 追従 |
-| `src/Nami/Interop/SwapChainPanelInterop.cs` | ISwapChainPanelNative と IDXGISwapChain2 の呼び出し |
-| `src/Nami/Player/PlayerViewModel.cs` | mpv プロパティを UI 向け状態に写像。コマンドもここ |
-| `src/Nami/Controls/Osc.xaml` | IINA 風フローティング OSC |
-| `src/Nami/Controls/Sidebar.xaml` | クイック設定（映像/音声/字幕）とプレイリスト/チャプターのサイドバー |
-| `src/Nami/MainPage.xaml` | 動画面。ポインタ/キー入力、OSC の自動非表示、ドラッグ&ドロップ |
-| `src/Nami/MainWindow.xaml` | 透明タイトルバー、全画面、動画サイズへのフィット、ミニプレイヤー |
-| `src/Nami/Interop/AspectRatioLock.cs` | WM_SIZING でウィンドウのアスペクト比を動画に固定 |
-| `src/Nami/Interop/DisplayInfo.cs` | DXGI でモニターの HDR 状態・輝度・SDR 白レベルを取得（`Player/HdrController.cs` が mpv に渡す） |
-| `src/Nami/Services/FileAssociation.cs` | HKCU へのメディアアプリ登録 |
-| `third_party/libmpv/` | libmpv のヘッダと DLL（DLL は git 管理外） |
+| `src/Nami/Mpv/LibMpv.cs` | libmpv P/Invoke (1:1 with client.h / render.h) |
+| `src/Nami/Mpv/MpvPlayer.cs` | mpv core wrapper: event thread, property observation, UI-thread dispatch |
+| `src/Nami/Player/PlayerViewModel.cs` | One per window: mpv properties mapped to UI state, commands |
+| `src/Nami/Controls/VideoView.cs` | SwapChainPanel host: creates the player, binds the swapchain, tracks size / DPI |
+| `src/Nami/Controls/Osc.xaml` | IINA-style floating / bar OSC |
+| `src/Nami/Controls/Sidebar.xaml` | Quick settings and playlist / chapters / history sidebar |
+| `src/Nami/MainPage.xaml` | Video surface: pointer / keyboard input, OSC auto-hide, drag & drop |
+| `src/Nami/MainWindow.xaml` | Title bar, full screen, fit-to-video, music mode, mini player |
+| `src/Nami/Interop/AspectRatioLock.cs` | WM_SIZING subclass keeping the window at the video aspect |
+| `src/Nami/Interop/DisplayInfo.cs` | DXGI query of the monitor's HDR state, luminance, SDR white (used by `Player/HdrController.cs`) |
+| `src/Nami/Services/L.cs` | Localization (`L.T`, `L.F`, `{l:Tr}`) |
+| `third_party/libmpv/` | libmpv headers and DLL (the DLL is not committed) |
 
-mpv の設定ファイルは `%LOCALAPPDATA%\Nami\mpv\` （`mpv.conf`, `input.conf` など）から読む。ログは同じ場所の `mpv.log`。
+mpv reads its configuration from `%LOCALAPPDATA%\Nami\mpv\` (`mpv.conf`, `input.conf`, `scripts\`, `yt-dlp.exe`).
+Logs are written next to it (`mpv.log`, `..\nami.log`).

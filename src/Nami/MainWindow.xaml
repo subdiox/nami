@@ -36,13 +36,13 @@
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="160,0" IsHitTestVisible="False" />
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0">
-                <Button x:Name="PinButton" Style="{StaticResource OscButton}" Visibility="Collapsed" Click="PinButton_Click" ToolTipService.ToolTip="常に手前に表示を解除" AutomationProperties.Name="常に手前に表示を解除">
+                <Button x:Name="PinButton" Style="{StaticResource OscButton}" Visibility="Collapsed" Click="PinButton_Click" ToolTipService.ToolTip="Turn off always on top" AutomationProperties.Name="Turn off always on top">
                     <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE718;" />
                 </Button>
-                <Button Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="クイック設定" AutomationProperties.Name="クイック設定">
+                <Button Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="Quick settings" AutomationProperties.Name="Quick settings">
                     <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE9E9;" />
                 </Button>
-                <Button Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="プレイリスト" AutomationProperties.Name="プレイリスト">
+                <Button Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="Playlist" AutomationProperties.Name="Playlist">
                     <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
                 </Button>
             </StackPanel>

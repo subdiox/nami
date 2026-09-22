@@ -7,18 +7,18 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="{l:Tr Text='URL を開く'}"
-    PrimaryButtonText="{l:Tr Text='開く'}"
-    SecondaryButtonText="{l:Tr Text='プレイリストに追加'}"
-    CloseButtonText="{l:Tr Text='キャンセル'}"
+    Title="{l:Tr Text='Open URL'}"
+    PrimaryButtonText="{l:Tr Text='Open'}"
+    SecondaryButtonText="{l:Tr Text='Add to playlist'}"
+    CloseButtonText="{l:Tr Text='Cancel'}"
     DefaultButton="Primary">
 
     <StackPanel Width="520" Spacing="10">
-        <TextBox x:Name="UrlBox" PlaceholderText="{l:Tr Text='https://…  (動画ファイル、配信、YouTube などのページ)'}" TextChanged="UrlBox_TextChanged" />
+        <TextBox x:Name="UrlBox" PlaceholderText="{l:Tr Text='https://…  (media file, stream, or a YouTube-style page)'}" TextChanged="UrlBox_TextChanged" />
         <StackPanel x:Name="YtDlpPanel" Spacing="6" Visibility="Collapsed">
             <TextBlock x:Name="YtDlpText" TextWrapping="Wrap" FontSize="12" Opacity="0.85" />
             <ProgressBar x:Name="YtDlpProgress" Visibility="Collapsed" />
-            <Button x:Name="YtDlpButton" Content="{l:Tr Text='yt-dlp をダウンロード'}" Click="YtDlpButton_Click" />
+            <Button x:Name="YtDlpButton" Content="{l:Tr Text='Download yt-dlp'}" Click="YtDlpButton_Click" />
         </StackPanel>
     </StackPanel>
 </ContentDialog>

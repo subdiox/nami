@@ -68,13 +68,13 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Padding="12,44,12,8">
-                <SelectorBar x:Name="Tabs" AutomationProperties.Name="サイドバータブ" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
-                    <SelectorBarItem x:Name="TabVideo" Text="{l:Tr Text='映像'}" Tag="video" />
-                    <SelectorBarItem x:Name="TabAudio" Text="{l:Tr Text='音声'}" Tag="audio" />
-                    <SelectorBarItem x:Name="TabSub" Text="{l:Tr Text='字幕'}" Tag="sub" />
-                    <SelectorBarItem x:Name="TabPlaylist" Text="{l:Tr Text='プレイリスト'}" Tag="playlist" />
-                    <SelectorBarItem x:Name="TabChapters" Text="{l:Tr Text='チャプター'}" Tag="chapters" />
-                    <SelectorBarItem x:Name="TabHistory" Text="{l:Tr Text='履歴'}" Tag="history" />
+                <SelectorBar x:Name="Tabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
+                    <SelectorBarItem x:Name="TabVideo" Text="{l:Tr Text='Video'}" Tag="video" />
+                    <SelectorBarItem x:Name="TabAudio" Text="{l:Tr Text='Audio'}" Tag="audio" />
+                    <SelectorBarItem x:Name="TabSub" Text="{l:Tr Text='Subtitles'}" Tag="sub" />
+                    <SelectorBarItem x:Name="TabPlaylist" Text="{l:Tr Text='Playlist'}" Tag="playlist" />
+                    <SelectorBarItem x:Name="TabChapters" Text="{l:Tr Text='Chapters'}" Tag="chapters" />
+                    <SelectorBarItem x:Name="TabHistory" Text="{l:Tr Text='History'}" Tag="history" />
                 </SelectorBar>
             </Grid>
 
@@ -82,27 +82,27 @@
                 <Grid>
                     <!-- ===================== Video ===================== -->
                     <StackPanel x:Name="VideoPanel" Visibility="Collapsed">
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='映像トラック'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Video track'}" />
                         <ListView x:Name="VideoTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="VideoTrackList_ItemClick" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='アスペクト比'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Aspect ratio'}" />
                         <RadioButtons x:Name="AspectButtons" MaxColumns="6" SelectionChanged="AspectButtons_SelectionChanged" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='クロップ'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Crop'}" />
                         <RadioButtons x:Name="CropButtons" MaxColumns="5" SelectionChanged="CropButtons_SelectionChanged" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='反転 / ズーム'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Flip / zoom'}" />
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <ToggleButton x:Name="HFlipButton" Content="{l:Tr Text='左右反転'}" Click="HFlip_Click" />
-                            <ToggleButton x:Name="VFlipButton" Content="{l:Tr Text='上下反転'}" Click="VFlip_Click" />
-                            <Button Content="{l:Tr Text='ズームをリセット'}" Click="ResetZoom_Click" />
+                            <ToggleButton x:Name="HFlipButton" Content="{l:Tr Text='Flip horizontally'}" Click="HFlip_Click" />
+                            <ToggleButton x:Name="VFlipButton" Content="{l:Tr Text='Flip vertically'}" Click="VFlip_Click" />
+                            <Button Content="{l:Tr Text='Reset zoom'}" Click="ResetZoom_Click" />
                         </StackPanel>
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='回転'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Rotation'}" />
                         <RadioButtons x:Name="RotateButtons" MaxColumns="4" SelectionChanged="RotateButtons_SelectionChanged" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='再生速度'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Playback speed'}" Margin="0" />
                             <TextBlock x:Name="SpeedLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="1x" />
                         </Grid>
                         <Slider x:Name="SpeedSlider" Minimum="0.25" Maximum="4" StepFrequency="0.05" Value="1" IsThumbToolTipEnabled="False" ValueChanged="SpeedSlider_ValueChanged" />
@@ -114,21 +114,21 @@
                         </StackPanel>
 
                         <Grid Margin="0,16,0,0">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='インターレース解除'}" Margin="0" VerticalAlignment="Center" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Deinterlace'}" Margin="0" VerticalAlignment="Center" />
                             <ToggleSwitch x:Name="DeinterlaceSwitch" HorizontalAlignment="Right" OnContent="" OffContent="" MinWidth="0" Toggled="DeinterlaceSwitch_Toggled" />
                         </Grid>
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='画質調整'}" Margin="0" />
-                            <HyperlinkButton Content="{l:Tr Text='リセット'}" HorizontalAlignment="Right" Padding="4,0" Click="ResetEq_Click" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Picture adjustments'}" Margin="0" />
+                            <HyperlinkButton Content="{l:Tr Text='Reset'}" HorizontalAlignment="Right" Padding="4,0" Click="ResetEq_Click" />
                         </Grid>
-                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='明るさ'}" /> <Slider x:Name="BrightnessSlider" Minimum="-100" Maximum="100" Tag="brightness" ValueChanged="EqSlider_ValueChanged" />
-                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='コントラスト'}" /> <Slider x:Name="ContrastSlider" Minimum="-100" Maximum="100" Tag="contrast" ValueChanged="EqSlider_ValueChanged" />
-                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='彩度'}" /> <Slider x:Name="SaturationSlider" Minimum="-100" Maximum="100" Tag="saturation" ValueChanged="EqSlider_ValueChanged" />
-                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='ガンマ'}" /> <Slider x:Name="GammaSlider" Minimum="-100" Maximum="100" Tag="gamma" ValueChanged="EqSlider_ValueChanged" />
-                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='色相'}" /> <Slider x:Name="HueSlider" Minimum="-100" Maximum="100" Tag="hue" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Brightness'}" /> <Slider x:Name="BrightnessSlider" Minimum="-100" Maximum="100" Tag="brightness" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Contrast'}" /> <Slider x:Name="ContrastSlider" Minimum="-100" Maximum="100" Tag="contrast" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Saturation'}" /> <Slider x:Name="SaturationSlider" Minimum="-100" Maximum="100" Tag="saturation" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Gamma'}" /> <Slider x:Name="GammaSlider" Minimum="-100" Maximum="100" Tag="gamma" ValueChanged="EqSlider_ValueChanged" />
+                        <TextBlock Style="{StaticResource SidebarLabel}" Text="{l:Tr Text='Hue'}" /> <Slider x:Name="HueSlider" Minimum="-100" Maximum="100" Tag="hue" ValueChanged="EqSlider_ValueChanged" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='HDR 出力'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='HDR output'}" />
                         <ComboBox x:Name="HdrCombo" HorizontalAlignment="Stretch" SelectionChanged="HdrCombo_SelectionChanged" />
                         <TextBlock x:Name="HdrInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
                         <TextBlock x:Name="DecoderInfo" FontSize="11" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,2,0,0" />
@@ -136,34 +136,34 @@
 
                     <!-- ===================== Audio ===================== -->
                     <StackPanel x:Name="AudioPanel" Visibility="Collapsed">
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='音声トラック'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Audio track'}" />
                         <ListView x:Name="AudioTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="AudioTrackList_ItemClick" />
-                        <HyperlinkButton Content="{l:Tr Text='音声をオフ'}" Padding="0" Click="AudioOff_Click" />
-                        <HyperlinkButton Content="{l:Tr Text='外部音声ファイルを追加…'}" Padding="0" Click="AddAudio_Click" />
+                        <HyperlinkButton Content="{l:Tr Text='Audio off'}" Padding="0" Click="AudioOff_Click" />
+                        <HyperlinkButton Content="{l:Tr Text='Add external audio file…'}" Padding="0" Click="AddAudio_Click" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='音量'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Volume'}" Margin="0" />
                             <TextBlock x:Name="VolumeLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100%" />
                         </Grid>
                         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="130" StepFrequency="1" IsThumbToolTipEnabled="False" ValueChanged="VolumeSlider_ValueChanged" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='出力デバイス'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Output device'}" />
                         <ComboBox x:Name="AudioDeviceCombo" HorizontalAlignment="Stretch" DisplayMemberPath="Display" SelectionChanged="AudioDeviceCombo_SelectionChanged" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='イコライザー'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Equalizer'}" Margin="0" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                                <HyperlinkButton Content="{l:Tr Text='フラット'}" Padding="4,0" Click="EqFlat_Click" />
+                                <HyperlinkButton Content="{l:Tr Text='Flat'}" Padding="4,0" Click="EqFlat_Click" />
                                 <ToggleSwitch x:Name="EqSwitch" OnContent="" OffContent="" MinWidth="0" Toggled="EqSwitch_Toggled" />
                             </StackPanel>
                         </Grid>
                         <Grid x:Name="EqGrid" Height="150" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='音声の遅延'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Audio delay'}" Margin="0" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                                 <TextBlock x:Name="AudioDelayLabel" Style="{StaticResource SidebarLabel}" Text="0.0 s" />
-                                <HyperlinkButton Content="{l:Tr Text='リセット'}" Padding="4,0" Click="ResetAudioDelay_Click" />
+                                <HyperlinkButton Content="{l:Tr Text='Reset'}" Padding="4,0" Click="ResetAudioDelay_Click" />
                             </StackPanel>
                         </Grid>
                         <Slider x:Name="AudioDelaySlider" Minimum="-5" Maximum="5" StepFrequency="0.05" IsThumbToolTipEnabled="False" ValueChanged="AudioDelaySlider_ValueChanged" />
@@ -171,34 +171,34 @@
 
                     <!-- ===================== Subtitles ===================== -->
                     <StackPanel x:Name="SubPanel" Visibility="Collapsed">
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='字幕'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitles'}" />
                         <ListView x:Name="SubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SubTrackList_ItemClick" />
-                        <HyperlinkButton Content="{l:Tr Text='字幕をオフ'}" Padding="0" Click="SubOff_Click" />
-                        <HyperlinkButton Content="{l:Tr Text='字幕ファイルを追加…'}" Padding="0" Click="AddSub_Click" />
-                        <HyperlinkButton Content="{l:Tr Text='オンライン字幕を検索…'}" Padding="0" Click="SearchOnlineSub_Click" AutomationProperties.Name="オンライン字幕を検索" />
-                        <HyperlinkButton Content="{l:Tr Text='字幕の見た目を設定…'}" Padding="0" Click="SubStyle_Click" />
+                        <HyperlinkButton Content="{l:Tr Text='Subtitles off'}" Padding="0" Click="SubOff_Click" />
+                        <HyperlinkButton Content="{l:Tr Text='Add subtitle file…'}" Padding="0" Click="AddSub_Click" />
+                        <HyperlinkButton Content="{l:Tr Text='Search online subtitles…'}" Padding="0" Click="SearchOnlineSub_Click" AutomationProperties.Name="Search online subtitles" />
+                        <HyperlinkButton Content="{l:Tr Text='Subtitle appearance…'}" Padding="0" Click="SubStyle_Click" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='第 2 字幕'}" />
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Secondary subtitles'}" />
                         <ListView x:Name="SecondarySubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SecondarySubTrackList_ItemClick" />
-                        <HyperlinkButton Content="{l:Tr Text='第 2 字幕をオフ'}" Padding="0" Click="SecondarySubOff_Click" />
+                        <HyperlinkButton Content="{l:Tr Text='Secondary subtitles off'}" Padding="0" Click="SecondarySubOff_Click" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='字幕の遅延'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle delay'}" Margin="0" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                                 <TextBlock x:Name="SubDelayLabel" Style="{StaticResource SidebarLabel}" Text="0.0 s" />
-                                <HyperlinkButton Content="{l:Tr Text='リセット'}" Padding="4,0" Click="ResetSubDelay_Click" />
+                                <HyperlinkButton Content="{l:Tr Text='Reset'}" Padding="4,0" Click="ResetSubDelay_Click" />
                             </StackPanel>
                         </Grid>
                         <Slider x:Name="SubDelaySlider" Minimum="-10" Maximum="10" StepFrequency="0.1" IsThumbToolTipEnabled="False" ValueChanged="SubDelaySlider_ValueChanged" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='字幕の大きさ'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle size'}" Margin="0" />
                             <TextBlock x:Name="SubScaleLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100%" />
                         </Grid>
                         <Slider x:Name="SubScaleSlider" Minimum="0.3" Maximum="3" StepFrequency="0.05" Value="1" IsThumbToolTipEnabled="False" ValueChanged="SubScaleSlider_ValueChanged" />
 
                         <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='字幕の位置'}" Margin="0" />
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle position'}" Margin="0" />
                             <TextBlock x:Name="SubPosLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100" />
                         </Grid>
                         <Slider x:Name="SubPosSlider" Minimum="0" Maximum="150" StepFrequency="1" Value="100" IsThumbToolTipEnabled="False" ValueChanged="SubPosSlider_ValueChanged" />
@@ -207,10 +207,10 @@
                     <!-- ===================== Playlist ===================== -->
                     <StackPanel x:Name="PlaylistPanel" Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,8,0,4">
-                            <Button Style="{StaticResource OscButton}" Click="AddToPlaylist_Click" ToolTipService.ToolTip="ファイルを追加" AutomationProperties.Name="ファイルを追加">
+                            <Button Style="{StaticResource OscButton}" Click="AddToPlaylist_Click" ToolTipService.ToolTip="Add files" AutomationProperties.Name="Add files">
                                 <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE710;" />
                             </Button>
-                            <Button Style="{StaticResource OscButton}" Click="ClearPlaylist_Click" ToolTipService.ToolTip="すべて削除" AutomationProperties.Name="すべて削除">
+                            <Button Style="{StaticResource OscButton}" Click="ClearPlaylist_Click" ToolTipService.ToolTip="Remove all" AutomationProperties.Name="Remove all">
                                 <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE74D;" />
                             </Button>
                             <TextBlock x:Name="PlaylistCountText" Style="{StaticResource SidebarLabel}" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="8,0,0,0" />
@@ -219,19 +219,19 @@
                                   ItemClick="PlaylistList_ItemClick" CanReorderItems="False" KeyDown="PlaylistList_KeyDown" SelectionMode="Single" RightTapped="PlaylistList_RightTapped">
                             <ListView.ContextFlyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Text="{l:Tr Text='再生'}" Click="PlaylistPlay_Click" />
-                                    <MenuFlyoutItem Text="{l:Tr Text='リストから削除'}" Click="PlaylistRemove_Click" />
-                                    <MenuFlyoutItem Text="{l:Tr Text='エクスプローラーで表示'}" Click="PlaylistReveal_Click" />
+                                    <MenuFlyoutItem Text="{l:Tr Text='Play'}" Click="PlaylistPlay_Click" />
+                                    <MenuFlyoutItem Text="{l:Tr Text='Remove from list'}" Click="PlaylistRemove_Click" />
+                                    <MenuFlyoutItem Text="{l:Tr Text='Show in Explorer'}" Click="PlaylistReveal_Click" />
                                 </MenuFlyout>
                             </ListView.ContextFlyout>
                         </ListView>
-                        <TextBlock x:Name="PlaylistEmptyText" Text="{l:Tr Text='ここにファイルをドロップするか、＋ で追加'}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="PlaylistEmptyText" Text="{l:Tr Text='Drop files here or add them with +'}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <!-- ===================== History ===================== -->
                     <StackPanel x:Name="HistoryPanel" Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,8,0,4">
-                            <Button Style="{StaticResource OscButton}" Click="ClearHistory_Click" ToolTipService.ToolTip="履歴を消去" AutomationProperties.Name="履歴を消去">
+                            <Button Style="{StaticResource OscButton}" Click="ClearHistory_Click" ToolTipService.ToolTip="Clear history" AutomationProperties.Name="Clear history">
                                 <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE74D;" />
                             </Button>
                             <TextBlock x:Name="HistoryCountText" Style="{StaticResource SidebarLabel}" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="8,0,0,0" />
@@ -240,19 +240,19 @@
                                   ItemClick="HistoryList_ItemClick" SelectionMode="Single" RightTapped="HistoryList_RightTapped">
                             <ListView.ContextFlyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Text="{l:Tr Text='再生'}" Click="HistoryPlay_Click" />
-                                    <MenuFlyoutItem Text="{l:Tr Text='プレイリストに追加'}" Click="HistoryAppend_Click" />
-                                    <MenuFlyoutItem Text="{l:Tr Text='履歴から削除'}" Click="HistoryRemove_Click" />
+                                    <MenuFlyoutItem Text="{l:Tr Text='Play'}" Click="HistoryPlay_Click" />
+                                    <MenuFlyoutItem Text="{l:Tr Text='Add to playlist'}" Click="HistoryAppend_Click" />
+                                    <MenuFlyoutItem Text="{l:Tr Text='Remove from history'}" Click="HistoryRemove_Click" />
                                 </MenuFlyout>
                             </ListView.ContextFlyout>
                         </ListView>
-                        <TextBlock x:Name="HistoryEmptyText" Text="{l:Tr Text='再生履歴はまだありません'}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="HistoryEmptyText" Text="{l:Tr Text='No playback history yet'}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <!-- ===================== Chapters ===================== -->
                     <StackPanel x:Name="ChaptersPanel" Visibility="Collapsed">
                         <ListView x:Name="ChapterList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource ChapterTemplate}" ItemClick="ChapterList_ItemClick" Margin="-12,8,-12,0" />
-                        <TextBlock x:Name="ChaptersEmptyText" Text="{l:Tr Text='チャプター情報がありません'}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="ChaptersEmptyText" Text="{l:Tr Text='No chapter information'}" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}" Margin="0,24,0,0" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Grid>
             </ScrollViewer>

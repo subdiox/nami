@@ -15,8 +15,9 @@ namespace Nami.Controls;
 /// <summary>IINA-style right sidebar: Quick Settings (video / audio / subtitles) or Playlist (playlist / chapters).</summary>
 public sealed partial class Sidebar : UserControl
 {
-    private PlayerViewModel Vm => App.Vm;
-    private bool _syncing;
+    public PlayerViewModel Vm { get; private set; } = null!;
+    // true until Bind(): value-changed handlers fire while XAML sets initial ranges, before a view model exists
+    private bool _syncing = true;
     private SidebarKind _kind = SidebarKind.None;
 
     private static readonly string[] AspectValues = ["no", "4:3", "16:9", "16:10", "21:9", "1:1"];
@@ -26,6 +27,13 @@ public sealed partial class Sidebar : UserControl
     public Sidebar()
     {
         InitializeComponent();
+        BuildEq();
+    }
+
+    /// <summary>Attach the sidebar to its window's player (called once by MainPage).</summary>
+    public void Bind(PlayerViewModel vm)
+    {
+        Vm = vm;
         VideoTrackList.ItemsSource = Vm.VideoTracks;
         AudioTrackList.ItemsSource = Vm.AudioTracks;
         SubTrackList.ItemsSource = Vm.SubTracks;
@@ -33,12 +41,8 @@ public sealed partial class Sidebar : UserControl
         PlaylistList.ItemsSource = Vm.Playlist;
         ChapterList.ItemsSource = Vm.Chapters;
         HistoryList.ItemsSource = Vm.History.Entries;
-        AspectButtons.ItemsSource = new List<string> {L.T("自動"), "4:3", "16:9", "16:10", "21:9", "1:1"};
-        CropButtons.ItemsSource = new List<string> {L.T("なし"), "16:9", "4:3", "1:1", "2.35:1"};
-        RotateButtons.ItemsSource = new List<string> {"0°", "90°", "180°", "270°"};
-        HdrCombo.ItemsSource = new List<string> {L.T("自動（ディスプレイに従う）"), L.T("SDR にトーンマップ"), L.T("HDR パススルー")};
         AudioDeviceCombo.ItemsSource = Vm.AudioDevices;
-        BuildEq();
+        _syncing = false;
 
         Loaded += (_, _) =>
         {
@@ -100,9 +104,9 @@ public sealed partial class Sidebar : UserControl
     {
         PlaylistEmptyText.Visibility = Vm.Playlist.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ChaptersEmptyText.Visibility = Vm.Chapters.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        PlaylistCountText.Text = Vm.Playlist.Count == 0 ? "" : L.F("{0} 項目", Vm.Playlist.Count);
+        PlaylistCountText.Text = Vm.Playlist.Count == 0 ? "" : L.F("{0} items", Vm.Playlist.Count);
         HistoryEmptyText.Visibility = Vm.History.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        HistoryCountText.Text = Vm.History.Entries.Count == 0 ? "" : L.F("{0} 件", Vm.History.Entries.Count);
+        HistoryCountText.Text = Vm.History.Entries.Count == 0 ? "" : L.F("{0} entries", Vm.History.Entries.Count);
     }
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
@@ -201,14 +205,14 @@ public sealed partial class Sidebar : UserControl
 
     private void RefreshHdrInfo()
     {
-        var d = HdrController.LastDisplay;
-        string mode = HdrController.IsPassthroughActive ? L.T("HDR10 パススルー") : "SDR";
+        var d = Vm.Window?.LastDisplay;
+        string mode = Vm.Window?.IsHdrPassthrough == true ? L.T("HDR10 passthrough") : "SDR";
         HdrInfo.Text = d is null
-            ? L.F("出力: {0}", mode)
-            : L.F("出力: {0} / ディスプレイ: {1} {2}bit, ピーク {3:0} nits, SDR 白 {4:0} nits", mode, d.IsHdr ? "HDR" : "SDR", d.BitsPerColor, d.MaxLuminance, d.SdrWhiteNits);
+            ? L.F("Output: {0}", mode)
+            : L.F("Output: {0} / display: {1} {2}-bit, peak {3:0} nits, SDR white {4:0} nits", mode, d.IsHdr ? "HDR" : "SDR", d.BitsPerColor, d.MaxLuminance, d.SdrWhiteNits);
         DecoderInfo.Text = string.IsNullOrEmpty(Vm.HwdecCurrent) || Vm.HwdecCurrent == "no"
-            ? L.T("デコード: ソフトウェア")
-            : L.F("デコード: {0}", Vm.HwdecCurrent);
+            ? L.T("Decoding: software")
+            : L.F("Decoding: {0}", Vm.HwdecCurrent);
     }
 
     // ---- video -----------------------------------------------------------------------
@@ -339,7 +343,7 @@ public sealed partial class Sidebar : UserControl
         if (_syncing || HdrCombo.SelectedIndex < 0) return;
         App.Settings.HdrMode = (HdrMode)HdrCombo.SelectedIndex;
         App.Settings.Save();
-        App.Window?.ApplyHdr();
+        foreach (var w in App.Windows) w.ApplyHdr();
         RefreshHdrInfo();
     }
 
@@ -395,15 +399,13 @@ public sealed partial class Sidebar : UserControl
 
     private async void SearchOnlineSub_Click(object sender, RoutedEventArgs e)
     {
-        if (App.Window is null) return;
-        var dlg = new OnlineSubtitlesDialog(Vm.FilePath, Vm.MediaTitle) { XamlRoot = XamlRoot };
+        var dlg = new OnlineSubtitlesDialog(Vm, Vm.FilePath, Vm.MediaTitle) { XamlRoot = XamlRoot };
         await dlg.ShowAsync();
     }
 
     private async void SubStyle_Click(object sender, RoutedEventArgs e)
     {
-        if (App.Window is null) return;
-        await App.Window.ShowPreferencesAsync();
+        if (Vm.Window is { } w) await w.ShowPreferencesAsync();
     }
 
     private void SubDelaySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -523,11 +525,11 @@ public sealed partial class Sidebar : UserControl
     public static async Task<List<string>> PickFilesAsync(IEnumerable<string> extensions, bool multiple = true)
     {
         var result = new List<string>();
-        if (App.Window is null) return result;
+        if (App.ActiveWindow is null) return result;
         var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.VideosLibrary };
         foreach (var ext in extensions) picker.FileTypeFilter.Add(ext);
         picker.FileTypeFilter.Add("*");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.ActiveWindow));
         if (multiple)
         {
             var files = await picker.PickMultipleFilesAsync();

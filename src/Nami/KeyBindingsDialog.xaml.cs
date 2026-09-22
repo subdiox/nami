@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Nami.Input;
+using Nami.Player;
 using Nami.Services;
 using Windows.System;
 
@@ -12,7 +13,7 @@ public sealed class KeyBindingRow(string key, string command, bool user)
     public string Key { get; set; } = key;
     public string Command { get; set; } = command;
     public bool IsUser { get; } = user;
-    public string Source => IsUser ? "input.conf" : L.T("mpv 既定");
+    public string Source => IsUser ? "input.conf" : L.T("mpv default");
 }
 
 /// <summary>
@@ -29,8 +30,11 @@ public sealed partial class KeyBindingsDialog : ContentDialog
     private readonly List<string> _otherLines = [];   // comments etc. preserved on save
     private readonly HashSet<string> _removedKeys = new(StringComparer.Ordinal);
 
-    public KeyBindingsDialog()
+    private readonly PlayerViewModel _vm;
+
+    public KeyBindingsDialog(PlayerViewModel vm)
     {
+        _vm = vm;
         InitializeComponent();
         LoadUser();
         LoadDefaults();
@@ -58,7 +62,7 @@ public sealed partial class KeyBindingsDialog : ContentDialog
     private void LoadDefaults()
     {
         // Active bindings as mpv sees them; entries not from input.conf are the defaults.
-        if (App.Vm.Player?.GetNode("input-bindings") is not List<object?> list) return;
+        if (_vm.Player?.GetNode("input-bindings") is not List<object?> list) return;
         foreach (var item in list)
         {
             if (item is not Dictionary<string, object?> d) continue;
@@ -137,9 +141,10 @@ public sealed partial class KeyBindingsDialog : ContentDialog
         lines.AddRange(_user.Select(r => $"{r.Key} {r.Command}"));
         File.WriteAllText(InputConfPath, string.Join(Environment.NewLine, lines) + Environment.NewLine);
 
-        // Apply live: user bindings override, removed ones fall back to mpv's default table.
-        if (App.Vm.Player is { } p)
+        // Apply live in every window: user bindings override, removed ones fall back to mpv's default table.
+        foreach (var w in App.Windows)
         {
+            if (w.Vm.Player is not { } p) continue;
             foreach (var r in _user) p.TryCommand("keybind", r.Key, r.Command);
             foreach (var k in _removedKeys) p.TryCommand("keybind", k, "");
         }

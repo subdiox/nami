@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Nami.Interop;
 using Nami.Mpv;
+using Nami.Player;
 
 namespace Nami.Controls;
 
@@ -18,6 +19,9 @@ public sealed partial class VideoView : SwapChainPanel
     private readonly Queue<Action<MpvPlayer>> _pending = new();
 
     public MpvPlayer? Player => _player;
+
+    /// <summary>Set by MainPage before the control loads.</summary>
+    public PlayerViewModel? Vm { get; set; }
 
     /// <summary>Raised on the UI thread once the mpv core exists.</summary>
     public event Action<MpvPlayer>? PlayerCreated;
@@ -73,7 +77,7 @@ public sealed partial class VideoView : SwapChainPanel
         if (existing is > 0) OnSwapChainChanged((nint)existing.Value);
 
         while (_pending.Count > 0) _pending.Dequeue()(player);
-        App.Vm.Attach(player);
+        Vm?.Attach(player);
         PlayerCreated?.Invoke(player);
     }
 

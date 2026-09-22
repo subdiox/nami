@@ -8,8 +8,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:Nami"
     mc:Ignorable="d"
-    Title="{l:Tr Text='メディア情報'}"
-    CloseButtonText="{l:Tr Text='閉じる'}"
+    Title="{l:Tr Text='Media info'}"
+    CloseButtonText="{l:Tr Text='Close'}"
     DefaultButton="Close">
 
     <ContentDialog.Resources>

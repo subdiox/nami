@@ -11,15 +11,12 @@ namespace Nami.Player;
 /// </summary>
 public static class HdrController
 {
-    public static DisplayInfo? LastDisplay { get; private set; }
-    public static bool IsPassthroughActive { get; private set; }
-
-    public static void Apply(MpvPlayer player, nint hwnd, HdrMode mode)
+    /// <summary>Configure mpv's target color space for the monitor under <paramref name="hwnd"/>.</summary>
+    public static (DisplayInfo? display, bool passthrough) Apply(MpvPlayer player, nint hwnd, HdrMode mode)
     {
         DisplayInfo? display = null;
         try { display = DisplayInfo.Query(hwnd); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"DisplayInfo failed: {ex}"); }
-        LastDisplay = display;
 
         bool passthrough = mode switch
         {
@@ -27,7 +24,6 @@ public static class HdrController
             HdrMode.Sdr => false,
             _ => display?.IsHdr == true,
         };
-        IsPassthroughActive = passthrough;
 
         if (passthrough)
         {
@@ -53,6 +49,7 @@ public static class HdrController
         }
 
         System.Diagnostics.Debug.WriteLine($"HDR: mode={mode} passthrough={passthrough} display={display}");
+        return (display, passthrough);
     }
 
     private static void Set(MpvPlayer player, string name, string value)

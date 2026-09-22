@@ -8,9 +8,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:Nami"
     mc:Ignorable="d"
-    Title="{l:Tr Text='キー操作'}"
-    PrimaryButtonText="{l:Tr Text='保存'}"
-    CloseButtonText="{l:Tr Text='閉じる'}"
+    Title="{l:Tr Text='Key bindings'}"
+    PrimaryButtonText="{l:Tr Text='Save'}"
+    CloseButtonText="{l:Tr Text='Close'}"
     DefaultButton="Primary"
     PrimaryButtonClick="OnSave">
 
@@ -41,8 +41,8 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="FilterBox" Grid.Column="0" PlaceholderText="{l:Tr Text='キーまたはコマンドで絞り込み'}" TextChanged="FilterBox_TextChanged" />
-            <CheckBox x:Name="ShowDefaults" Grid.Column="1" Content="{l:Tr Text='mpv 既定も表示'}" IsChecked="True" Click="FilterBox_TextChanged" />
+            <TextBox x:Name="FilterBox" Grid.Column="0" PlaceholderText="{l:Tr Text='Filter by key or command'}" TextChanged="FilterBox_TextChanged" />
+            <CheckBox x:Name="ShowDefaults" Grid.Column="1" Content="{l:Tr Text='Show mpv defaults'}" IsChecked="True" Click="FilterBox_TextChanged" />
         </Grid>
 
         <ListView x:Name="List" Grid.Row="1" ItemTemplate="{StaticResource BindingTemplate}" SelectionMode="Single"
@@ -59,12 +59,12 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBox x:Name="KeyBox" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='キー（押して入力）'}" PlaceholderText="{l:Tr Text='例: Ctrl+r'}" PreviewKeyDown="KeyBox_PreviewKeyDown" IsSpellCheckEnabled="False" />
-            <TextBox x:Name="CommandBox" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='mpv コマンド'}" PlaceholderText="{l:Tr Text='例: seek 10 ; show-text 10秒進む'}" IsSpellCheckEnabled="False" />
-            <Button x:Name="AddButton" Grid.Row="0" Grid.Column="2" Content="{l:Tr Text='追加 / 更新'}" VerticalAlignment="Bottom" Click="Add_Click" />
-            <Button x:Name="RemoveButton" Grid.Row="0" Grid.Column="3" Content="{l:Tr Text='削除'}" VerticalAlignment="Bottom" Click="Remove_Click" IsEnabled="False" />
+            <TextBox x:Name="KeyBox" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='Key (press to capture)'}" PlaceholderText="{l:Tr Text='e.g. Ctrl+r'}" PreviewKeyDown="KeyBox_PreviewKeyDown" IsSpellCheckEnabled="False" />
+            <TextBox x:Name="CommandBox" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='mpv command'}" PlaceholderText="{l:Tr Text='e.g. seek 10 ; show-text Forward'}" IsSpellCheckEnabled="False" />
+            <Button x:Name="AddButton" Grid.Row="0" Grid.Column="2" Content="{l:Tr Text='Add / update'}" VerticalAlignment="Bottom" Click="Add_Click" />
+            <Button x:Name="RemoveButton" Grid.Row="0" Grid.Column="3" Content="{l:Tr Text='Delete'}" VerticalAlignment="Bottom" Click="Remove_Click" IsEnabled="False" />
             <TextBlock Grid.Row="1" Grid.ColumnSpan="4" FontSize="11" Opacity="0.7" TextWrapping="Wrap">
-                <Run Text="{l:Tr Text='保存すると input.conf に書き込まれ、その場で有効になります。コマンドの書式は mpv のマニュアル（Input Commands）を参照。'}" />
+                <Run Text="{l:Tr Text='Saving writes input.conf and applies the bindings immediately. See the mpv manual (Input Commands) for the command syntax.'}" />
             </TextBlock>
         </Grid>
     </Grid>

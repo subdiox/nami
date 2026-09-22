@@ -72,12 +72,12 @@ public static class YtDlp
 
     public static readonly (string label, string value)[] Formats =
     [
-        (L.T("最高画質"), "bestvideo+bestaudio/best"),
-        (L.T("最大 2160p (4K)"), "bestvideo[height<=?2160]+bestaudio/best"),
-        (L.T("最大 1440p"), "bestvideo[height<=?1440]+bestaudio/best"),
-        (L.T("最大 1080p"), "bestvideo[height<=?1080]+bestaudio/best"),
-        (L.T("最大 720p"), "bestvideo[height<=?720]+bestaudio/best"),
-        (L.T("最大 480p"), "bestvideo[height<=?480]+bestaudio/best"),
-        (L.T("音声のみ"), "bestaudio/best"),
+        (L.T("Best quality"), "bestvideo+bestaudio/best"),
+        (L.T("Up to 2160p (4K)"), "bestvideo[height<=?2160]+bestaudio/best"),
+        (L.T("Up to 1440p"), "bestvideo[height<=?1440]+bestaudio/best"),
+        (L.T("Up to 1080p"), "bestvideo[height<=?1080]+bestaudio/best"),
+        (L.T("Up to 720p"), "bestvideo[height<=?720]+bestaudio/best"),
+        (L.T("Up to 480p"), "bestvideo[height<=?480]+bestaudio/best"),
+        (L.T("Audio only"), "bestaudio/best"),
     ];
 }

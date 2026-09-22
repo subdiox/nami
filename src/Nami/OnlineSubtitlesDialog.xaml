@@ -8,9 +8,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:services="using:Nami.Services"
     mc:Ignorable="d"
-    Title="{l:Tr Text='オンライン字幕を検索'}"
-    PrimaryButtonText="{l:Tr Text='ダウンロードして使う'}"
-    CloseButtonText="{l:Tr Text='閉じる'}"
+    Title="{l:Tr Text='Search online subtitles'}"
+    PrimaryButtonText="{l:Tr Text='Download and use'}"
+    CloseButtonText="{l:Tr Text='Close'}"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="False"
     PrimaryButtonClick="OnDownload">
@@ -36,19 +36,19 @@
         <!-- credentials (shown until an API key is stored) -->
         <StackPanel x:Name="CredentialsPanel" Grid.Row="0" Spacing="6" Visibility="Collapsed">
             <TextBlock TextWrapping="Wrap" FontSize="12">
-                <Run Text="{l:Tr Text='OpenSubtitles.com の無料アカウントと API キーが必要です。'}" />
-                <Hyperlink NavigateUri="https://www.opensubtitles.com/consumers">API キーを取得</Hyperlink>
+                <Run Text="{l:Tr Text='A free OpenSubtitles.com account and API key are required.'}" />
+                <Hyperlink NavigateUri="https://www.opensubtitles.com/consumers"><Run Text="{l:Tr Text='Get an API key'}" /></Hyperlink>
             </TextBlock>
-            <TextBox x:Name="ApiKeyBox" Header="{l:Tr Text='API キー'}" />
+            <TextBox x:Name="ApiKeyBox" Header="{l:Tr Text='API key'}" />
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="UserBox" Grid.Column="0" Header="{l:Tr Text='ユーザー名'}" />
-                <PasswordBox x:Name="PasswordBox" Grid.Column="1" Header="{l:Tr Text='パスワード'}" />
+                <TextBox x:Name="UserBox" Grid.Column="0" Header="{l:Tr Text='User name'}" />
+                <PasswordBox x:Name="PasswordBox" Grid.Column="1" Header="{l:Tr Text='Password'}" />
             </Grid>
-            <Button Content="{l:Tr Text='保存'}" Click="SaveCredentials_Click" HorizontalAlignment="Right" />
+            <Button Content="{l:Tr Text='Save'}" Click="SaveCredentials_Click" HorizontalAlignment="Right" />
         </StackPanel>
 
         <Grid Grid.Row="1" ColumnSpacing="8">
@@ -57,9 +57,9 @@
                 <ColumnDefinition Width="120" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="QueryBox" Grid.Column="0" Header="{l:Tr Text='検索語'}" KeyDown="QueryBox_KeyDown" />
-            <TextBox x:Name="LanguagesBox" Grid.Column="1" Header="{l:Tr Text='言語'}" Text="ja,en" />
-            <Button x:Name="SearchButton" Grid.Column="2" Content="{l:Tr Text='検索'}" VerticalAlignment="Bottom" Click="Search_Click" />
+            <TextBox x:Name="QueryBox" Grid.Column="0" Header="{l:Tr Text='Query'}" KeyDown="QueryBox_KeyDown" />
+            <TextBox x:Name="LanguagesBox" Grid.Column="1" Header="{l:Tr Text='Languages'}" Text="ja,en" />
+            <Button x:Name="SearchButton" Grid.Column="2" Content="{l:Tr Text='Search'}" VerticalAlignment="Bottom" Click="Search_Click" />
         </Grid>
 
         <ProgressBar x:Name="Busy" Grid.Row="2" IsIndeterminate="True" Visibility="Collapsed" />

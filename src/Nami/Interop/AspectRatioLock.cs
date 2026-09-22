@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Windows.Win32;
@@ -6,40 +7,43 @@ using Windows.Win32.Foundation;
 namespace Nami.Interop;
 
 /// <summary>
-/// Keeps the window's client area at a fixed aspect ratio while the user drags its edges,
-/// the way IINA constrains its window to the video. Implemented with a window subclass
-/// that rewrites the proposed rectangle in WM_SIZING.
+/// Keeps a window's client area at a fixed aspect ratio while the user drags its edges,
+/// the way IINA constrains its window to the video. One instance per window; the
+/// WM_SIZING handler is a window subclass.
 /// </summary>
-internal static unsafe class AspectRatioLock
+internal sealed unsafe class AspectRatioLock : IDisposable
 {
-    private static double s_aspect;          // client width / height; 0 = unlocked
-    private static HWND s_hwnd;
-    private static bool s_installed;
+    private static readonly ConcurrentDictionary<nint, double> s_aspects = new();
     private const nuint SubclassId = 0x4E41;
 
-    public static void Install(nint hwnd)
+    private readonly HWND _hwnd;
+    private bool _installed;
+
+    public AspectRatioLock(nint hwnd)
     {
-        if (s_installed) return;
-        s_hwnd = (HWND)hwnd;
-        s_installed = PInvoke.SetWindowSubclass(s_hwnd, &Proc, SubclassId, 0);
+        _hwnd = (HWND)hwnd;
+        _installed = PInvoke.SetWindowSubclass(_hwnd, &Proc, SubclassId, 0);
+        s_aspects[hwnd] = 0;
     }
 
-    public static void Uninstall()
+    /// <summary>Client aspect (w/h); 0 disables the constraint.</summary>
+    public double Aspect
     {
-        if (!s_installed) return;
-        PInvoke.RemoveWindowSubclass(s_hwnd, &Proc, SubclassId);
-        s_installed = false;
+        get => s_aspects.TryGetValue((nint)_hwnd, out var a) ? a : 0;
+        set => s_aspects[(nint)_hwnd] = value > 0 && double.IsFinite(value) ? value : 0;
     }
 
-    /// <summary>Set the client aspect (w/h). Pass 0 to stop constraining.</summary>
-    public static void SetAspect(double aspect) => s_aspect = aspect > 0 && double.IsFinite(aspect) ? aspect : 0;
-
-    public static double Aspect => s_aspect;
+    public void Dispose()
+    {
+        if (_installed) PInvoke.RemoveWindowSubclass(_hwnd, &Proc, SubclassId);
+        _installed = false;
+        s_aspects.TryRemove((nint)_hwnd, out _);
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static LRESULT Proc(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam, nuint id, nuint refData)
     {
-        if (msg == PInvoke.WM_SIZING && s_aspect > 0)
+        if (msg == PInvoke.WM_SIZING && s_aspects.TryGetValue((nint)hwnd, out double aspect) && aspect > 0)
         {
             var rect = (RECT*)(nint)lParam;
             RECT win, client;
@@ -55,20 +59,22 @@ internal static unsafe class AspectRatioLock
                 if (edge is PInvoke.WMSZ_TOP or PInvoke.WMSZ_BOTTOM)
                 {
                     h = proposedH;
-                    w = (int)Math.Round(h * s_aspect);
+                    w = (int)Math.Round(h * aspect);
                 }
                 else if (edge is PInvoke.WMSZ_LEFT or PInvoke.WMSZ_RIGHT)
                 {
                     w = proposedW;
-                    h = (int)Math.Round(w / s_aspect);
+                    h = (int)Math.Round(w / aspect);
+                }
+                else if (Math.Abs(proposedH - client.bottom) > Math.Abs(proposedW - client.right))
+                {
+                    h = proposedH;
+                    w = (int)Math.Round(h * aspect);
                 }
                 else
                 {
-                    // Corner drag: follow whichever axis moved more.
-                    if (Math.Abs(proposedH - client.bottom) > Math.Abs(proposedW - client.right))
-                    { h = proposedH; w = (int)Math.Round(h * s_aspect); }
-                    else
-                    { w = proposedW; h = (int)Math.Round(w / s_aspect); }
+                    w = proposedW;
+                    h = (int)Math.Round(w / aspect);
                 }
 
                 int totalW = w + ncW, totalH = h + ncH;

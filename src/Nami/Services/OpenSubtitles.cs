@@ -9,7 +9,7 @@ namespace Nami.Services;
 public sealed record SubtitleSearchResult(string FileId, string Language, string Release, string FileName, int Downloads, bool HearingImpaired, double Score)
 {
     public string Display => string.IsNullOrEmpty(Release) ? FileName : Release;
-    public string Subtitle => $"{Language.ToUpperInvariant()} · {Downloads:N0} DL" + (HearingImpaired ? L.T(" · 聴覚障害者向け") : "");
+    public string Subtitle => $"{Language.ToUpperInvariant()} · {Downloads:N0} DL" + (HearingImpaired ? L.T(" · hearing impaired") : "");
 }
 
 /// <summary>
@@ -74,10 +74,10 @@ public sealed class OpenSubtitles
         if (_token is not null || string.IsNullOrEmpty(user)) return;
         using var res = await _http.PostAsJsonAsync(BaseUrl + "login", new LoginRequest(user, password), OsJsonContext.Default.LoginRequest, ct);
         if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException(L.F("OpenSubtitles ログインに失敗しました ({0})", (int)res.StatusCode));
+            throw new InvalidOperationException(L.F("OpenSubtitles login failed ({0})", (int)res.StatusCode));
         var body = await res.Content.ReadFromJsonAsync(OsJsonContext.Default.LoginResponse, ct);
         _token = body?.Token;
-        if (_token is null) throw new InvalidOperationException(L.T("OpenSubtitles からトークンを受け取れませんでした"));
+        if (_token is null) throw new InvalidOperationException(L.T("OpenSubtitles did not return a token"));
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
     }
 
@@ -93,7 +93,7 @@ public sealed class OpenSubtitles
         }
         using var res = await _http.GetAsync(BaseUrl + "subtitles?" + string.Join("&", q), ct);
         if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException(L.F("OpenSubtitles 検索に失敗しました ({0})", (int)res.StatusCode));
+            throw new InvalidOperationException(L.F("OpenSubtitles search failed ({0})", (int)res.StatusCode));
         var body = await res.Content.ReadFromJsonAsync(OsJsonContext.Default.SearchResponse, ct);
         var list = new List<SubtitleSearchResult>();
         foreach (var d in body?.Data ?? [])
@@ -115,11 +115,11 @@ public sealed class OpenSubtitles
         using var res = await _http.PostAsJsonAsync(BaseUrl + "download", new DownloadRequest(long.Parse(r.FileId)), OsJsonContext.Default.DownloadRequest, ct);
         if (!res.IsSuccessStatusCode)
         {
-            string msg = (int)res.StatusCode == 406 ? L.T("ダウンロード上限に達しました") : $"({(int)res.StatusCode})";
-            throw new InvalidOperationException(L.T("OpenSubtitles ダウンロードに失敗しました ") + msg);
+            string msg = (int)res.StatusCode == 406 ? L.T("download quota exceeded") : $"({(int)res.StatusCode})";
+            throw new InvalidOperationException(L.T("OpenSubtitles download failed ") + msg);
         }
         var body = await res.Content.ReadFromJsonAsync(OsJsonContext.Default.DownloadResponse, ct);
-        if (body?.Link is null) throw new InvalidOperationException(L.T("ダウンロードリンクがありません"));
+        if (body?.Link is null) throw new InvalidOperationException(L.T("No download link"));
 
         string ext = Path.GetExtension(r.FileName);
         if (string.IsNullOrEmpty(ext)) ext = ".srt";

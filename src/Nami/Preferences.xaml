@@ -7,26 +7,27 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="{l:Tr Text='環境設定'}"
-    PrimaryButtonText="{l:Tr Text='保存'}"
-    CloseButtonText="{l:Tr Text='閉じる'}"
+    Title="{l:Tr Text='Preferences'}"
+    PrimaryButtonText="{l:Tr Text='Save'}"
+    CloseButtonText="{l:Tr Text='Close'}"
     DefaultButton="Primary"
     PrimaryButtonClick="OnSave">
 
     <ScrollViewer MaxHeight="560" Width="560">
         <StackPanel Spacing="8">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='一般'}" Margin="0,0,0,6" />
-            <ComboBox x:Name="LanguageCombo" Header="{l:Tr Text='言語（再起動後に反映）'}" HorizontalAlignment="Stretch" />
-            <ToggleSwitch x:Name="ResizeSwitch" Header="{l:Tr Text='ファイルを開いたとき動画のサイズに合わせてウィンドウを調整する'}" />
-            <ToggleSwitch x:Name="RememberVolumeSwitch" Header="{l:Tr Text='音量を記憶する'}" />
-            <ToggleSwitch x:Name="ResumeSwitch" Header="{l:Tr Text='前回の再生位置から再開する'}" />
-            <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="{l:Tr Text='同じフォルダーのファイルを自動的にプレイリストへ追加する'}" />
-            <ToggleSwitch x:Name="HistorySwitch" Header="{l:Tr Text='再生履歴を記録する'}" />
-            <ToggleSwitch x:Name="ThumbnailSwitch" Header="{l:Tr Text='シークバーにサムネイルを表示する（バックグラウンドで生成）'}" />
-            <ToggleSwitch x:Name="AutoMusicSwitch" Header="{l:Tr Text='音声ファイルを開いたら自動的にミュージックモードにする'}" />
-            <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='コントローラー (OSC) の配置'}" HorizontalAlignment="Stretch" />
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='General'}" Margin="0,0,0,6" />
+            <ComboBox x:Name="LanguageCombo" Header="{l:Tr Text='Language (takes effect after restart)'}" HorizontalAlignment="Stretch" />
+            <ToggleSwitch x:Name="ResizeSwitch" Header="{l:Tr Text='Resize the window to the video when a file is opened'}" />
+            <ToggleSwitch x:Name="RememberVolumeSwitch" Header="{l:Tr Text='Remember volume'}" />
+            <ToggleSwitch x:Name="NewWindowSwitch" Header="{l:Tr Text='Open files from Explorer in a new window'}" />
+            <ToggleSwitch x:Name="ResumeSwitch" Header="{l:Tr Text='Resume from the last playback position'}" />
+            <ToggleSwitch x:Name="AutoLoadFolderSwitch" Header="{l:Tr Text='Automatically add files from the same folder to the playlist'}" />
+            <ToggleSwitch x:Name="HistorySwitch" Header="{l:Tr Text='Keep playback history'}" />
+            <ToggleSwitch x:Name="ThumbnailSwitch" Header="{l:Tr Text='Show thumbnails on the seek bar (generated in the background)'}" />
+            <ToggleSwitch x:Name="AutoMusicSwitch" Header="{l:Tr Text='Switch to music mode automatically for audio files'}" />
+            <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='Controller (OSC) layout'}" HorizontalAlignment="Stretch" />
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='字幕の見た目'}" />
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle appearance'}" />
             <Grid ColumnSpacing="8" RowSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -39,37 +40,37 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='フォント'}" IsEditable="True" HorizontalAlignment="Stretch" />
-                <Slider x:Name="SubSizeSlider" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='サイズ'}" Minimum="16" Maximum="100" StepFrequency="1" />
+                <ComboBox x:Name="SubFontCombo" Grid.Row="0" Grid.Column="0" Header="{l:Tr Text='Font'}" IsEditable="True" HorizontalAlignment="Stretch" />
+                <Slider x:Name="SubSizeSlider" Grid.Row="0" Grid.Column="1" Header="{l:Tr Text='Size'}" Minimum="16" Maximum="100" StepFrequency="1" />
                 <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                    <CheckBox x:Name="SubBoldCheck" Content="{l:Tr Text='太字'}" />
-                    <CheckBox x:Name="SubItalicCheck" Content="{l:Tr Text='斜体'}" />
+                    <CheckBox x:Name="SubBoldCheck" Content="{l:Tr Text='Bold'}" />
+                    <CheckBox x:Name="SubItalicCheck" Content="{l:Tr Text='Italic'}" />
                 </StackPanel>
-                <ComboBox x:Name="SubBorderStyleCombo" Grid.Row="1" Grid.Column="1" Header="{l:Tr Text='縁取りの種類'}" HorizontalAlignment="Stretch" />
+                <ComboBox x:Name="SubBorderStyleCombo" Grid.Row="1" Grid.Column="1" Header="{l:Tr Text='Border style'}" HorizontalAlignment="Stretch" />
                 <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="SubColorButton" Content="{l:Tr Text='文字色'}" Click="SubColor_Click" Tag="text" />
-                    <Button x:Name="SubOutlineColorButton" Content="{l:Tr Text='縁の色'}" Click="SubColor_Click" Tag="outline" />
-                    <Button x:Name="SubBackColorButton" Content="{l:Tr Text='背景色'}" Click="SubColor_Click" Tag="back" />
+                    <Button x:Name="SubColorButton" Content="{l:Tr Text='Text color'}" Click="SubColor_Click" Tag="text" />
+                    <Button x:Name="SubOutlineColorButton" Content="{l:Tr Text='Outline color'}" Click="SubColor_Click" Tag="outline" />
+                    <Button x:Name="SubBackColorButton" Content="{l:Tr Text='Background color'}" Click="SubColor_Click" Tag="back" />
                 </StackPanel>
-                <Slider x:Name="SubOutlineSlider" Grid.Row="2" Grid.Column="1" Header="{l:Tr Text='縁の太さ'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
-                <Slider x:Name="SubShadowSlider" Grid.Row="3" Grid.Column="0" Header="{l:Tr Text='影のオフセット'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
-                <ComboBox x:Name="SubCodepageCombo" Grid.Row="3" Grid.Column="1" Header="{l:Tr Text='文字エンコーディング'}" HorizontalAlignment="Stretch" />
-                <ComboBox x:Name="SubAssOverrideCombo" Grid.Row="4" Grid.Column="0" Header="{l:Tr Text='ASS 字幕のスタイル'}" HorizontalAlignment="Stretch" />
-                <HyperlinkButton Grid.Row="4" Grid.Column="1" Content="{l:Tr Text='既定に戻す'}" Click="SubStyleReset_Click" VerticalAlignment="Bottom" />
+                <Slider x:Name="SubOutlineSlider" Grid.Row="2" Grid.Column="1" Header="{l:Tr Text='Outline width'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
+                <Slider x:Name="SubShadowSlider" Grid.Row="3" Grid.Column="0" Header="{l:Tr Text='Shadow offset'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
+                <ComboBox x:Name="SubCodepageCombo" Grid.Row="3" Grid.Column="1" Header="{l:Tr Text='Text encoding'}" HorizontalAlignment="Stretch" />
+                <ComboBox x:Name="SubAssOverrideCombo" Grid.Row="4" Grid.Column="0" Header="{l:Tr Text='ASS subtitle styles'}" HorizontalAlignment="Stretch" />
+                <HyperlinkButton Grid.Row="4" Grid.Column="1" Content="{l:Tr Text='Restore defaults'}" Click="SubStyleReset_Click" VerticalAlignment="Bottom" />
             </Grid>
-            <TextBlock x:Name="SubLangHeader" Text="{l:Tr Text='オンライン字幕の言語（カンマ区切り）'}" FontSize="12" Margin="0,8,0,0" />
+            <TextBlock x:Name="SubLangHeader" Text="{l:Tr Text='Online subtitle languages (comma-separated)'}" FontSize="12" Margin="0,8,0,0" />
             <TextBox x:Name="SubLanguagesBox" />
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='スクリーンショット'}" />
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Screenshot'}" />
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="120" />
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='保存先（空欄でピクチャ）'}" />
-                <Button Grid.Column="1" Content="{l:Tr Text='参照…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
-                <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="2" Header="{l:Tr Text='形式'}" HorizontalAlignment="Stretch">
+                <TextBox x:Name="ScreenshotDirBox" Grid.Column="0" Header="{l:Tr Text='Folder (empty = Pictures)'}" />
+                <Button Grid.Column="1" Content="{l:Tr Text='Browse…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
+                <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="2" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">
                     <x:String>png</x:String>
                     <x:String>jpg</x:String>
                     <x:String>webp</x:String>
@@ -77,38 +78,38 @@
                 </ComboBox>
             </Grid>
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='オンライン動画 (yt-dlp)'}" />
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Online video (yt-dlp)'}" />
             <TextBlock x:Name="YtDlpStatus" FontSize="12" TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="YtDlpInstallButton" Content="{l:Tr Text='yt-dlp をダウンロード / 更新'}" Click="YtDlpInstall_Click" />
+                <Button x:Name="YtDlpInstallButton" Content="{l:Tr Text='Download / update yt-dlp'}" Click="YtDlpInstall_Click" />
                 <ProgressBar x:Name="YtDlpProgress" Width="160" VerticalAlignment="Center" Visibility="Collapsed" />
             </StackPanel>
-            <ComboBox x:Name="YtdlFormatCombo" Header="{l:Tr Text='画質'}" HorizontalAlignment="Stretch" />
+            <ComboBox x:Name="YtdlFormatCombo" Header="{l:Tr Text='Quality'}" HorizontalAlignment="Stretch" />
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Windows との連携'}" />
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Windows integration'}" />
             <TextBlock x:Name="AssocStatus" TextWrapping="Wrap" FontSize="12" />
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="RegisterButton" Content="{l:Tr Text='メディアアプリとして登録'}" Click="Register_Click" />
-                <Button x:Name="UnregisterButton" Content="{l:Tr Text='登録を解除'}" Click="Unregister_Click" />
-                <HyperlinkButton Content="{l:Tr Text='既定のアプリ設定を開く'}" NavigateUri="ms-settings:defaultapps" />
+                <Button x:Name="RegisterButton" Content="{l:Tr Text='Register as a media app'}" Click="Register_Click" />
+                <Button x:Name="UnregisterButton" Content="{l:Tr Text='Unregister'}" Click="Unregister_Click" />
+                <HyperlinkButton Content="{l:Tr Text='Open default apps settings'}" NavigateUri="ms-settings:defaultapps" />
             </StackPanel>
             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
-                       Text="{l:Tr Text='登録するとエクスプローラーの「プログラムから開く」と Windows の「既定のアプリ」に Nami が表示され、namiplayer:// リンクも開けるようになります。既定にするには Windows の設定から選んでください。'}" />
-            <TextBlock Text="{l:Tr Text='ブラウザーから開く（ブックマークレット）'}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
+                       Text="{l:Tr Text='Registering adds Nami to the Explorer Open-with menu and to Windows Default apps, and enables namiplayer:// links. To make it the default, choose it in Windows Settings.'}" />
+            <TextBlock Text="{l:Tr Text='Open from the browser (bookmarklet)'}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
             <TextBox x:Name="BookmarkletBox" IsReadOnly="True" FontSize="11" FontFamily="Cascadia Mono, Consolas" TextWrapping="Wrap"
                      Text="javascript:location.href='namiplayer://open?url='+encodeURIComponent(location.href)" />
             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
-                       Text="{l:Tr Text='上の 1 行をブックマークの URL に登録すると、見ているページを Nami で開けます（yt-dlp 対応サイト）。'}" />
+                       Text="{l:Tr Text='Save the line above as a bookmark URL to open the current page in Nami (sites supported by yt-dlp).'}" />
 
-            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='mpv 設定'}" />
+            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='mpv configuration'}" />
             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}">
-                <Run Text="{l:Tr Text='mpv.conf と input.conf をここで編集できます。mpv.conf の変更は保存時に可能な限り即時反映され、次回起動時に完全に適用されます。'}" />
+                <Run Text="{l:Tr Text='Edit mpv.conf and input.conf here. Changes to mpv.conf are applied immediately where possible and fully on the next start.'}" />
             </TextBlock>
-            <HyperlinkButton x:Name="OpenConfigFolder" Content="{l:Tr Text='設定フォルダーを開く'}" Click="OpenConfigFolder_Click" Padding="0" />
+            <HyperlinkButton x:Name="OpenConfigFolder" Content="{l:Tr Text='Open configuration folder'}" Click="OpenConfigFolder_Click" Padding="0" />
             <TextBlock Text="mpv.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
             <TextBox x:Name="MpvConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="180"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
-            <Button Content="{l:Tr Text='キー操作をカスタマイズ…'}" Click="KeyBindings_Click" Margin="0,8,0,0" />
+            <Button Content="{l:Tr Text='Customize key bindings…'}" Click="KeyBindings_Click" Margin="0,8,0,0" />
             <TextBlock Text="input.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
             <TextBox x:Name="InputConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="140"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />

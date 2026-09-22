@@ -11,8 +11,8 @@ namespace Nami.Controls;
 /// <summary>IINA-style floating on-screen controller.</summary>
 public sealed partial class Osc : UserControl
 {
-    private PlayerViewModel Vm => App.Vm;
-    private bool _syncing;
+    public PlayerViewModel Vm { get; set; } = null!;
+    private bool _syncing = true;
     private bool _scrubbing;
     private bool _showRemaining;
 

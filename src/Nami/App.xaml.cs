@@ -1,15 +1,19 @@
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
-using Nami.Player;
 using Nami.Services;
 
 namespace Nami;
 
 public partial class App : Application
 {
-    public static MainWindow? Window { get; private set; }
-    public static PlayerViewModel Vm { get; } = new();
+    /// <summary>All open player windows, in creation order.</summary>
+    public static List<MainWindow> Windows { get; } = [];
+
+    /// <summary>The most recently activated window; new files go here unless a new window is requested.</summary>
+    public static MainWindow? ActiveWindow { get; set; }
+
     public static AppSettings Settings { get; private set; } = new();
+    public static History History { get; private set; } = new();
 
     public static string LogPath { get; } = Path.Combine(AppSettings.Directory, "nami.log");
 
@@ -18,6 +22,7 @@ public partial class App : Application
         SetupLogging();
         InitializeComponent();
         Settings = AppSettings.Load();
+        History = History.Load();
         AppInstance.GetCurrent().Activated += OnRedirectedActivation;
         UnhandledException += (_, e) =>
         {
@@ -47,12 +52,30 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        Window = new MainWindow();
-        Window.Activate();
+        var window = NewWindow();
         Log($"T+{Program.Uptime} ms window activated");
-        Vm.FileLoaded += () => Log($"T+{Program.Uptime} ms file loaded: {Vm.FilePath}");
-        Vm.PlaybackRestart += () => Log($"T+{Program.Uptime} ms first frame / playback started");
-        OpenFromCommandLine(Environment.GetCommandLineArgs().Skip(1));
+        window.Vm.FileLoaded += () => Log($"T+{Program.Uptime} ms file loaded: {window.Vm.FilePath}");
+        window.Vm.PlaybackRestart += () => Log($"T+{Program.Uptime} ms first frame / playback started");
+        HandleArguments(Environment.GetCommandLineArgs().Skip(1), window);
+    }
+
+    /// <summary>Create and show a new player window.</summary>
+    public static MainWindow NewWindow()
+    {
+        var window = new MainWindow();
+        Windows.Add(window);
+        ActiveWindow = window;
+        window.Activated += (_, e) =>
+        {
+            if (e.WindowActivationState != WindowActivationState.Deactivated) ActiveWindow = window;
+        };
+        window.Closed += (_, _) =>
+        {
+            Windows.Remove(window);
+            if (ActiveWindow == window) ActiveWindow = Windows.LastOrDefault();
+        };
+        window.Activate();
+        return window;
     }
 
     /// <summary>Another instance was started (e.g. from Explorer) and redirected to us.</summary>
@@ -65,14 +88,20 @@ public partial class App : Application
         if (argv.Count > 0 && argv[0].EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             argv.RemoveAt(0);
 
-        Window?.DispatcherQueue.TryEnqueue(() =>
+        var target = ActiveWindow ?? Windows.LastOrDefault();
+        var dispatcher = target?.DispatcherQueue;
+        if (dispatcher is null) return;
+        dispatcher.TryEnqueue(() =>
         {
-            OpenFromCommandLine(argv);
-            Window?.BringToFront();
+            bool newWindow = Settings.OpenInNewWindow || argv.Contains("--new-window");
+            var window = newWindow || ActiveWindow is null ? NewWindow() : ActiveWindow;
+            HandleArguments(argv, window);
+            window.BringToFront();
         });
     }
 
-    private static void OpenFromCommandLine(IEnumerable<string> args)
+    /// <summary>Apply command-line arguments: files/URLs to play plus a few switches.</summary>
+    private static void HandleArguments(IEnumerable<string> args, MainWindow window)
     {
         bool first = true;
         foreach (var a in args)
@@ -86,6 +115,8 @@ public partial class App : Application
                 case "--unregister":
                     try { FileAssociation.Unregister(); Log("file associations unregistered"); }
                     catch (Exception ex) { Log("unregister failed: " + ex); }
+                    continue;
+                case "--new-window":
                     continue;
             }
             if (a.StartsWith("--mpv-", StringComparison.Ordinal))
@@ -103,7 +134,7 @@ public partial class App : Application
                 target = FileAssociation.ParseSchemeUrl(a) ?? "";
                 if (target.Length == 0) continue;
             }
-            Vm.Open(target, append: !first);
+            window.Vm.Open(target, append: !first);
             first = false;
         }
     }

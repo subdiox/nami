@@ -21,8 +21,8 @@
         <!-- Empty state (IINA shows a drop hint when nothing is open) -->
         <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" IsHitTestVisible="False">
             <FontIcon Glyph="&#xE714;" FontSize="56" Foreground="#40FFFFFF" />
-            <TextBlock Text="{l:Tr Text='ここに動画をドロップ'}" Foreground="#80FFFFFF" FontSize="16" HorizontalAlignment="Center" />
-            <TextBlock Text="{l:Tr Text='Ctrl+O でファイルを開く'}" Foreground="#50FFFFFF" FontSize="12" HorizontalAlignment="Center" />
+            <TextBlock Text="{l:Tr Text='Drop a video here'}" Foreground="#80FFFFFF" FontSize="16" HorizontalAlignment="Center" />
+            <TextBlock Text="{l:Tr Text='Ctrl+O to open a file'}" Foreground="#50FFFFFF" FontSize="12" HorizontalAlignment="Center" />
         </StackPanel>
 
         <!-- Bottom gradient behind the OSC -->

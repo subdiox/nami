@@ -9,8 +9,8 @@ namespace Nami.Controls;
 /// <summary>IINA-style music mode controls, shown below the cover art.</summary>
 public sealed partial class MusicPanel : UserControl
 {
-    private PlayerViewModel Vm => App.Vm;
-    private bool _syncing;
+    public PlayerViewModel Vm { get; set; } = null!;
+    private bool _syncing = true;
 
     public MusicPanel()
     {
@@ -92,5 +92,5 @@ public sealed partial class MusicPanel : UserControl
     private void Shuffle_Click(object sender, RoutedEventArgs e) => Vm.ToggleShuffle();
     private void Loop_Click(object sender, RoutedEventArgs e) => Vm.CycleLoop();
     private void PlaylistButton_Click(object sender, RoutedEventArgs e) => Vm.ToggleSidebar(SidebarKind.Playlist);
-    private void ExitButton_Click(object sender, RoutedEventArgs e) => App.Window?.SetMusicMode(false);
+    private void ExitButton_Click(object sender, RoutedEventArgs e) => Vm.Window?.SetMusicMode(false);
 }

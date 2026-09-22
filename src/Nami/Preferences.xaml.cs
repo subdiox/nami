@@ -13,18 +13,22 @@ public sealed partial class Preferences : ContentDialog
     private static string MpvConfPath => Path.Combine(AppSettings.MpvConfigDirectory, "mpv.conf");
     private static string InputConfPath => Path.Combine(AppSettings.MpvConfigDirectory, "input.conf");
 
-    public Preferences()
+    private readonly Player.PlayerViewModel _vm;
+
+    public Preferences(Player.PlayerViewModel vm)
     {
+        _vm = vm;
         InitializeComponent();
-        OscLayoutCombo.ItemsSource = new List<string> {L.T("フローティング（既定）"), L.T("下部バー"), L.T("上部バー")};
-        SubBorderStyleCombo.ItemsSource = new List<string> {L.T("縁取りと影"), L.T("不透明の箱"), L.T("背景の箱")};
-        SubAssOverrideCombo.ItemsSource = new List<string> {L.T("字幕ファイルのスタイルを使う"), L.T("この設定で上書きする（yes）"), L.T("サイズのみ合わせる（scale）"), L.T("強制的に上書き（force）"), L.T("装飾を取り除く（strip）")};
+        OscLayoutCombo.ItemsSource = new List<string> {L.T("Floating (default)"), L.T("Bottom bar"), L.T("Top bar")};
+        SubBorderStyleCombo.ItemsSource = new List<string> {L.T("Outline and shadow"), L.T("Opaque box"), L.T("Background box")};
+        SubAssOverrideCombo.ItemsSource = new List<string> {L.T("Use the styles from the subtitle file"), L.T("Override with these settings (yes)"), L.T("Match size only (scale)"), L.T("Force override (force)"), L.T("Strip styling (strip)")};
         var s = App.Settings;
         LanguageCombo.ItemsSource = L.Available.Select(a => a.name).ToList();
         int li = Array.FindIndex(L.Available, a => a.code == s.Language);
         LanguageCombo.SelectedIndex = li < 0 ? 0 : li;
         ResizeSwitch.IsOn = s.ResizeWindowToVideo;
         RememberVolumeSwitch.IsOn = s.RememberVolume;
+        NewWindowSwitch.IsOn = s.OpenInNewWindow;
         ResumeSwitch.IsOn = s.ResumePlayback;
         AutoLoadFolderSwitch.IsOn = s.AutoLoadFolder;
         HistorySwitch.IsOn = s.KeepHistory;
@@ -47,10 +51,10 @@ public sealed partial class Preferences : ContentDialog
 
     private async void BrowseScreenshotDir_Click(object sender, RoutedEventArgs e)
     {
-        if (App.Window is null) return;
+        if (App.ActiveWindow is null) return;
         var picker = new Windows.Storage.Pickers.FolderPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary };
         picker.FileTypeFilter.Add("*");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.ActiveWindow));
         var folder = await picker.PickSingleFolderAsync();
         if (folder is not null) ScreenshotDirBox.Text = folder.Path;
     }
@@ -58,7 +62,7 @@ public sealed partial class Preferences : ContentDialog
     private async Task RefreshYtDlpStatusAsync()
     {
         string? v = await YtDlp.GetVersionAsync();
-        YtDlpStatus.Text = v is null ? L.T("yt-dlp は未導入です（YouTube などのサイトを開くのに必要）") : L.F("yt-dlp {0}（{1}）", v, YtDlp.ExePath);
+        YtDlpStatus.Text = v is null ? L.T("yt-dlp is not installed (needed for YouTube and similar sites)") : L.F("yt-dlp {0} ({1})", v, YtDlp.ExePath);
     }
 
     private async void YtDlpInstall_Click(object sender, RoutedEventArgs e)
@@ -70,7 +74,7 @@ public sealed partial class Preferences : ContentDialog
             await YtDlp.InstallOrUpdateAsync(new Progress<double>(v => YtDlpProgress.Value = v * 100), CancellationToken.None);
             await RefreshYtDlpStatusAsync();
         }
-        catch (Exception ex) { YtDlpStatus.Text = L.T("ダウンロードに失敗しました: ") + ex.Message; }
+        catch (Exception ex) { YtDlpStatus.Text = L.T("Download failed: ") + ex.Message; }
         finally
         {
             YtDlpProgress.Visibility = Visibility.Collapsed;
@@ -87,9 +91,9 @@ public sealed partial class Preferences : ContentDialog
     private void LoadSubtitleStyle(SubtitleStyle st)
     {
         var fonts = SubtitleStyle.SystemFonts();
-        fonts.Insert(0, L.T("(既定)"));
+        fonts.Insert(0, L.T("(default)"));
         SubFontCombo.ItemsSource = fonts;
-        SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? L.T("(既定)") : st.Font;
+        SubFontCombo.Text = string.IsNullOrEmpty(st.Font) ? L.T("(default)") : st.Font;
         SubSizeSlider.Value = st.Size;
         SubBoldCheck.IsChecked = st.Bold;
         SubItalicCheck.IsChecked = st.Italic;
@@ -147,7 +151,7 @@ public sealed partial class Preferences : ContentDialog
         string font = SubFontCombo.Text?.Trim() ?? "";
         return new SubtitleStyle
         {
-            Font = font == L.T("(既定)") ? "" : font,
+            Font = font == L.T("(default)") ? "" : font,
             Size = Math.Round(SubSizeSlider.Value),
             Bold = SubBoldCheck.IsChecked == true,
             Italic = SubItalicCheck.IsChecked == true,
@@ -173,7 +177,7 @@ public sealed partial class Preferences : ContentDialog
     private void UpdateAssocStatus()
     {
         bool reg = FileAssociation.IsRegistered;
-        AssocStatus.Text = reg ? L.T("状態: 登録済み") : L.T("状態: 未登録");
+        AssocStatus.Text = reg ? L.T("Status: registered") : L.T("Status: not registered");
         RegisterButton.IsEnabled = !reg;
         UnregisterButton.IsEnabled = reg;
     }
@@ -181,14 +185,14 @@ public sealed partial class Preferences : ContentDialog
     private void Register_Click(object sender, RoutedEventArgs e)
     {
         try { FileAssociation.Register(); }
-        catch (Exception ex) { AssocStatus.Text = L.T("登録に失敗しました: ") + ex.Message; return; }
+        catch (Exception ex) { AssocStatus.Text = L.T("Registration failed: ") + ex.Message; return; }
         UpdateAssocStatus();
     }
 
     private void Unregister_Click(object sender, RoutedEventArgs e)
     {
         try { FileAssociation.Unregister(); }
-        catch (Exception ex) { AssocStatus.Text = L.T("解除に失敗しました: ") + ex.Message; return; }
+        catch (Exception ex) { AssocStatus.Text = L.T("Unregistering failed: ") + ex.Message; return; }
         UpdateAssocStatus();
     }
 
@@ -196,9 +200,9 @@ public sealed partial class Preferences : ContentDialog
     {
         // ContentDialogs cannot stack; close this one, show the editor, then reopen preferences.
         Hide();
-        var dlg = new KeyBindingsDialog { XamlRoot = XamlRoot };
+        var dlg = new KeyBindingsDialog(_vm) { XamlRoot = XamlRoot };
         await dlg.ShowAsync();
-        if (App.Window is not null) _ = App.Window.ShowPreferencesAsync();
+        if (_vm.Window is { } w) _ = w.ShowPreferencesAsync();
     }
 
     private async void OpenConfigFolder_Click(object sender, RoutedEventArgs e)
@@ -213,6 +217,7 @@ public sealed partial class Preferences : ContentDialog
         s.ResizeWindowToVideo = ResizeSwitch.IsOn;
         if (LanguageCombo.SelectedIndex >= 0) s.Language = L.Available[LanguageCombo.SelectedIndex].code;
         s.RememberVolume = RememberVolumeSwitch.IsOn;
+        s.OpenInNewWindow = NewWindowSwitch.IsOn;
         s.ResumePlayback = ResumeSwitch.IsOn;
         s.AutoLoadFolder = AutoLoadFolderSwitch.IsOn;
         s.KeepHistory = HistorySwitch.IsOn;
@@ -220,7 +225,7 @@ public sealed partial class Preferences : ContentDialog
         s.AutoMusicMode = AutoMusicSwitch.IsOn;
         s.ScreenshotDirectory = ScreenshotDirBox.Text.Trim();
         s.ScreenshotFormat = ScreenshotFormatCombo.SelectedItem as string ?? "png";
-        if (App.Vm.Player is { } shp)
+        foreach (var shp in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>())
         {
             try
             {
@@ -231,16 +236,16 @@ public sealed partial class Preferences : ContentDialog
             catch (Mpv.MpvException) { }
         }
         s.OscLayout = (OscLayout)Math.Max(0, OscLayoutCombo.SelectedIndex);
-        App.Window?.Page.ApplyOscLayout(s.OscLayout);
+        foreach (var w in App.Windows) w.Page.ApplyOscLayout(s.OscLayout);
         if (YtdlFormatCombo.SelectedIndex >= 0)
         {
             s.YtdlFormat = YtDlp.Formats[YtdlFormatCombo.SelectedIndex].value;
-            if (App.Vm.Player is { } yp) { try { yp.SetProperty("ytdl-format", s.YtdlFormat); } catch (Mpv.MpvException) { } }
+            foreach (var yp in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>()) { try { yp.SetProperty("ytdl-format", s.YtdlFormat); } catch (Mpv.MpvException) { } }
         }
         s.Subtitles = CollectSubtitleStyle();
         s.SubtitleLanguages = SubLanguagesBox.Text.Trim();
-        if (App.Vm.Player is { } sp) s.Subtitles.Apply(sp);
-        if (App.Vm.Player is { } pl)
+        foreach (var sp in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>()) s.Subtitles.Apply(sp);
+        foreach (var pl in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>())
         {
             try
             {
@@ -256,7 +261,7 @@ public sealed partial class Preferences : ContentDialog
         File.WriteAllText(InputConfPath, InputConfBox.Text);
 
         // Best-effort live apply of mpv.conf: "name=value" lines become property sets.
-        if (App.Vm.Player is { } p)
+        foreach (var p in App.Windows.Select(w => w.Vm.Player).OfType<Mpv.MpvPlayer>())
         {
             foreach (var raw in MpvConfBox.Text.Split('\n'))
             {

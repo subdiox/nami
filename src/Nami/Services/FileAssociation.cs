@@ -66,14 +66,14 @@ public static class FileAssociation
         // ProgID
         using (var prog = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{ProgId}"))
         {
-            prog.SetValue("", L.T("メディアファイル (Nami)"));
-            prog.SetValue("FriendlyTypeName", L.T("メディアファイル (Nami)"));
+            prog.SetValue("", L.T("Media file (Nami)"));
+            prog.SetValue("FriendlyTypeName", L.T("Media file (Nami)"));
             using var icon = prog.CreateSubKey("DefaultIcon");
             icon.SetValue("", $"\"{exe}\",0");
             using var cmd = prog.CreateSubKey(@"shell\open\command");
             cmd.SetValue("", openCommand);
             using var open = prog.CreateSubKey(@"shell\open");
-            open.SetValue("", L.T("Nami で再生"));
+            open.SetValue("", L.T("Play with Nami"));
         }
 
         // Applications\Nami.exe (drives the "Open with" list)
@@ -90,7 +90,7 @@ public static class FileAssociation
         using (var caps = Registry.CurrentUser.CreateSubKey(@"Software\Nami\Capabilities"))
         {
             caps.SetValue("ApplicationName", AppName);
-            caps.SetValue("ApplicationDescription", L.T("mpv ベースのメディアプレイヤー"));
+            caps.SetValue("ApplicationDescription", L.T("mpv-based media player"));
             using var assoc = caps.CreateSubKey("FileAssociations");
             foreach (var ext in AllExtensions) assoc.SetValue(ext, ProgId);
         }

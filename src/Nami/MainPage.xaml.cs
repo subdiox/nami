@@ -17,8 +17,9 @@ namespace Nami;
 
 public sealed partial class MainPage : Page
 {
-    private PlayerViewModel Vm => App.Vm;
+    public PlayerViewModel Vm { get; } = new();
     public Controls.VideoView VideoView => Video;
+    private MainWindow? Window => Vm.Window;
 
     private static readonly TimeSpan HideDelay = TimeSpan.FromMilliseconds(2500);
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _hideTimer;
@@ -35,6 +36,10 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
+        Video.Vm = Vm;
+        Osc.Vm = Vm;
+        Music.Vm = Vm;
+        Sidebar.Bind(Vm);
 
         _hideTimer = DispatcherQueue.CreateTimer();
         _hideTimer.Interval = HideDelay;
@@ -67,8 +72,8 @@ public sealed partial class MainPage : Page
             c.PointerExited += (_, _) => { _pointerOverControls = false; RestartHideTimer(); };
         }
 
-        Osc.PipRequested += () => App.Window?.ToggleCompactMode();
-        Osc.MusicModeRequested += () => App.Window?.SetMusicMode(true);
+        Osc.PipRequested += () => Window?.ToggleCompactMode();
+        Osc.MusicModeRequested += () => Window?.SetMusicMode(true);
         ApplyOscLayout(App.Settings.OscLayout);
 
         DragOver += OnDragOver;
@@ -80,7 +85,7 @@ public sealed partial class MainPage : Page
     {
         Focus(FocusState.Programmatic);
         Vm.PropertyChanged += OnVmChanged;
-        Vm.Error += msg => Vm.ShowText(L.T("エラー: ") + msg, 4000);
+        Vm.Error += msg => Vm.ShowText(L.T("Error: ") + msg, 4000);
         UpdateEmptyState();
         RestartHideTimer();
     }
@@ -151,7 +156,7 @@ public sealed partial class MainPage : Page
             _overlayVisible = true;
             Fade(Osc, 1);
             Fade(BottomShade, 1);
-            App.Window?.SetTitleOverlayVisible(true);
+            Window?.SetTitleOverlayVisible(true);
         }
         RestartHideTimer();
     }
@@ -169,7 +174,7 @@ public sealed partial class MainPage : Page
         _overlayVisible = false;
         Fade(Osc, 0);
         Fade(BottomShade, 0);
-        App.Window?.SetTitleOverlayVisible(false);
+        Window?.SetTitleOverlayVisible(false);
         if (_pointerInside) WindowInterop.HideCursor();
     }
 
@@ -227,7 +232,7 @@ public sealed partial class MainPage : Page
         _pointerInside = true;
         ShowOverlay();
 
-        if (_leftDown && !_dragging && !Vm.Fullscreen && App.Window is { } w)
+        if (_leftDown && !_dragging && !Vm.Fullscreen && Window is { } w)
         {
             var p = e.GetCurrentPoint(Root).Position;
             if (Math.Abs(p.X - _pressPoint.X) > 4 || Math.Abs(p.Y - _pressPoint.Y) > 4)
@@ -314,35 +319,37 @@ public sealed partial class MainPage : Page
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
         var menu = new MenuFlyout();
-        menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? L.T("再生") : L.T("一時停止"), Command = new Cmd(Vm.TogglePause) });
+        menu.Items.Add(new MenuFlyoutItem { Text = Vm.Paused ? L.T("Play") : L.T("Pause"), Command = new Cmd(Vm.TogglePause) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("ファイルを開く…"), Command = new Cmd(OpenFiles) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("URL を開く…"), Command = new Cmd(() => _ = OpenUrlAsync()) });
-        var recent = new MenuFlyoutSubItem { Text = L.T("最近使ったファイル") };
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open file…"), Command = new Cmd(OpenFiles) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open URL…"), Command = new Cmd(() => _ = OpenUrlAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Open in new window…"), Command = new Cmd(OpenFilesInNewWindow) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("New window"), Command = new Cmd(() => App.NewWindow()) });
+        var recent = new MenuFlyoutSubItem { Text = L.T("Recent files") };
         foreach (var h in Vm.History.Entries.Take(12))
             recent.Items.Add(new MenuFlyoutItem { Text = h.Display, Command = new Cmd(() => Vm.Open(h.Path)) });
         recent.IsEnabled = recent.Items.Count > 0;
         menu.Items.Add(recent);
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("字幕ファイルを追加…"), Command = new Cmd(async () =>
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Add subtitle file…"), Command = new Cmd(async () =>
         {
             var f = await Controls.Sidebar.PickFilesAsync([".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
         }) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("クイック設定"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Settings)) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("プレイリスト"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Playlist)) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Quick settings"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Settings)) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Playlist"), Command = new Cmd(() => Vm.ToggleSidebar(SidebarKind.Playlist)) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("全画面"), IsChecked = Vm.Fullscreen, Command = new Cmd(Vm.ToggleFullscreen) });
-        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("常に手前に表示"), IsChecked = Vm.OnTop, Command = new Cmd(Vm.ToggleOnTop) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("ミニプレイヤー"), Command = new Cmd(() => App.Window?.ToggleCompactMode()) });
+        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("Full screen"), IsChecked = Vm.Fullscreen, Command = new Cmd(Vm.ToggleFullscreen) });
+        menu.Items.Add(new ToggleMenuFlyoutItem { Text = L.T("Always on top"), IsChecked = Vm.OnTop, Command = new Cmd(Vm.ToggleOnTop) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Mini player"), Command = new Cmd(() => Window?.ToggleCompactMode()) });
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("スクリーンショット"), Command = new Cmd(Vm.Screenshot) });
-        menu.Items.Add(new MenuFlyoutItem { Text = double.IsNaN(Vm.AbLoopA) ? L.T("A-B ループ: A 点を設定") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B ループ: B 点を設定") : L.T("A-B ループを解除"), Command = new Cmd(Vm.CycleAbLoop) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("コマ送り"), Command = new Cmd(Vm.FrameStep) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("コマ戻し"), Command = new Cmd(Vm.FrameBackStep) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("メディア情報…"), Command = new Cmd(() => _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("キー操作…"), Command = new Cmd(() => _ = new KeyBindingsDialog { XamlRoot = XamlRoot }.ShowAsync()) });
-        menu.Items.Add(new MenuFlyoutItem { Text = L.T("環境設定…"), Command = new Cmd(() => App.Window?.ShowPreferencesAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Screenshot"), Command = new Cmd(Vm.Screenshot) });
+        menu.Items.Add(new MenuFlyoutItem { Text = double.IsNaN(Vm.AbLoopA) ? L.T("A-B loop: set point A") : double.IsNaN(Vm.AbLoopB) ? L.T("A-B loop: set point B") : L.T("Clear A-B loop"), Command = new Cmd(Vm.CycleAbLoop) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Frame step"), Command = new Cmd(Vm.FrameStep) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Frame back step"), Command = new Cmd(Vm.FrameBackStep) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Media info…"), Command = new Cmd(() => _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Key bindings…"), Command = new Cmd(() => _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = L.T("Preferences…"), Command = new Cmd(() => Window?.ShowPreferencesAsync()) });
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
     }
@@ -362,6 +369,12 @@ public sealed partial class MainPage : Page
         if (files.Count > 0) Vm.OpenMany(files);
     }
 
+    public async void OpenFilesInNewWindow()
+    {
+        var files = await Controls.Sidebar.PickFilesAsync(FileAssociation.AllExtensions);
+        if (files.Count > 0) App.NewWindow().Vm.OpenMany(files);
+    }
+
     // ---- keyboard ---------------------------------------------------------------------
 
     private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
@@ -379,14 +392,16 @@ public sealed partial class MainPage : Page
         bool handled = true;
         switch (e.Key)
         {
+            case VirtualKey.O when ctrl && alt: OpenFilesInNewWindow(); break;
             case VirtualKey.O when ctrl: OpenFiles(); break;
+            case VirtualKey.N when ctrl: App.NewWindow(); break;
             case VirtualKey.U when ctrl: _ = OpenUrlAsync(); break;
-            case VirtualKey.I when ctrl: _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync(); break;
-            case VirtualKey.K when ctrl && shift: _ = new KeyBindingsDialog { XamlRoot = XamlRoot }.ShowAsync(); break;
+            case VirtualKey.I when ctrl: _ = new InspectorDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync(); break;
+            case VirtualKey.K when ctrl && shift: _ = new KeyBindingsDialog(Vm) { XamlRoot = XamlRoot }.ShowAsync(); break;
             case VirtualKey.P when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Playlist); break;
             case VirtualKey.S when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Settings); break;
-            case VirtualKey.M when ctrl && shift: App.Window?.ToggleCompactMode(); break;
-            case (VirtualKey)0xBC when ctrl: _ = App.Window?.ShowPreferencesAsync(); break;   // Ctrl+,
+            case VirtualKey.M when ctrl && shift: Window?.ToggleCompactMode(); break;
+            case (VirtualKey)0xBC when ctrl: _ = Window?.ShowPreferencesAsync(); break;   // Ctrl+,
             case VirtualKey.F11: Vm.ToggleFullscreen(); break;
             case VirtualKey.Escape when Vm.Sidebar != SidebarKind.None: Vm.CloseSidebar(); break;
             default: handled = false; break;
@@ -417,7 +432,7 @@ public sealed partial class MainPage : Page
         e.AcceptedOperation = e.DataView.Contains(StandardDataFormats.StorageItems) || e.DataView.Contains(StandardDataFormats.Text)
             ? DataPackageOperation.Copy
             : DataPackageOperation.None;
-        e.DragUIOverride.Caption = L.T("Nami で再生");
+        e.DragUIOverride.Caption = L.T("Play with Nami");
     }
 
     private async void OnDrop(object sender, DragEventArgs e)

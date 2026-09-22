@@ -37,7 +37,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel x:Name="VolumePanel" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="2" VerticalAlignment="Center">
-                        <Button x:Name="MuteButton" Style="{StaticResource OscButton}" Click="MuteButton_Click" ToolTipService.ToolTip="ミュート" AutomationProperties.Name="ミュート">
+                        <Button x:Name="MuteButton" Style="{StaticResource OscButton}" Click="MuteButton_Click" ToolTipService.ToolTip="Mute" AutomationProperties.Name="Mute">
                             <FontIcon x:Name="VolumeIcon" Style="{StaticResource OscIcon}" Glyph="&#xE767;" />
                         </Button>
                         <Slider x:Name="VolumeSlider" Style="{StaticResource OscSlider}" Width="84" Minimum="0" Maximum="130" StepFrequency="1"
@@ -45,31 +45,31 @@
                     </StackPanel>
 
                     <StackPanel x:Name="CenterPanel" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" VerticalAlignment="Center">
-                        <Button x:Name="LeftArrowButton" Style="{StaticResource OscButton}" Click="LeftArrowButton_Click" ToolTipService.ToolTip="遅く" AutomationProperties.Name="遅く">
+                        <Button x:Name="LeftArrowButton" Style="{StaticResource OscButton}" Click="LeftArrowButton_Click" ToolTipService.ToolTip="Slower" AutomationProperties.Name="Slower">
                             <TextBlock Text="&#x23EA;" FontFamily="Segoe UI Symbol" FontSize="18" />
                         </Button>
-                        <Button x:Name="PlayButton" Style="{StaticResource OscButton}" Width="40" Height="40" Click="PlayButton_Click" ToolTipService.ToolTip="再生 / 一時停止" AutomationProperties.Name="再生 / 一時停止">
+                        <Button x:Name="PlayButton" Style="{StaticResource OscButton}" Width="40" Height="40" Click="PlayButton_Click" ToolTipService.ToolTip="Play / Pause" AutomationProperties.Name="Play / Pause">
                             <FontIcon x:Name="PlayIcon" Style="{StaticResource OscIcon}" FontSize="26" Glyph="&#xE768;" />
                         </Button>
-                        <Button x:Name="RightArrowButton" Style="{StaticResource OscButton}" Click="RightArrowButton_Click" ToolTipService.ToolTip="速く" AutomationProperties.Name="速く">
+                        <Button x:Name="RightArrowButton" Style="{StaticResource OscButton}" Click="RightArrowButton_Click" ToolTipService.ToolTip="Faster" AutomationProperties.Name="Faster">
                             <TextBlock Text="&#x23E9;" FontFamily="Segoe UI Symbol" FontSize="18" />
                         </Button>
                     </StackPanel>
 
                     <StackPanel x:Name="ToolbarPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" VerticalAlignment="Center">
-                        <Button x:Name="SettingsButton" Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="クイック設定" AutomationProperties.Name="クイック設定">
+                        <Button x:Name="SettingsButton" Style="{StaticResource OscButton}" Click="SettingsButton_Click" ToolTipService.ToolTip="Quick settings" AutomationProperties.Name="Quick settings">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE9E9;" />
                         </Button>
-                        <Button x:Name="PlaylistButton" Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="プレイリスト" AutomationProperties.Name="プレイリスト">
+                        <Button x:Name="PlaylistButton" Style="{StaticResource OscButton}" Click="PlaylistButton_Click" ToolTipService.ToolTip="Playlist" AutomationProperties.Name="Playlist">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8FD;" />
                         </Button>
-                        <Button x:Name="MusicModeButton" Style="{StaticResource OscButton}" Click="MusicModeButton_Click" ToolTipService.ToolTip="ミュージックモード" AutomationProperties.Name="ミュージックモード">
+                        <Button x:Name="MusicModeButton" Style="{StaticResource OscButton}" Click="MusicModeButton_Click" ToolTipService.ToolTip="Music mode" AutomationProperties.Name="Music mode">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE8D6;" />
                         </Button>
-                        <Button x:Name="PipButton" Style="{StaticResource OscButton}" Click="PipButton_Click" ToolTipService.ToolTip="ミニプレイヤー" AutomationProperties.Name="ミニプレイヤー">
+                        <Button x:Name="PipButton" Style="{StaticResource OscButton}" Click="PipButton_Click" ToolTipService.ToolTip="Mini player" AutomationProperties.Name="Mini player">
                             <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xEE49;" />
                         </Button>
-                        <Button x:Name="FullscreenButton" Style="{StaticResource OscButton}" Click="FullscreenButton_Click" ToolTipService.ToolTip="全画面" AutomationProperties.Name="全画面">
+                        <Button x:Name="FullscreenButton" Style="{StaticResource OscButton}" Click="FullscreenButton_Click" ToolTipService.ToolTip="Full screen" AutomationProperties.Name="Full screen">
                             <FontIcon x:Name="FullscreenIcon" Style="{StaticResource OscIcon}" Glyph="&#xE740;" />
                         </Button>
                     </StackPanel>
@@ -92,7 +92,7 @@
                         <Rectangle x:Name="LoopB" Width="2" Height="14" Fill="#FFFFC83D" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Collapsed" IsHitTestVisible="False" />
                     </Grid>
                     <Button x:Name="DurationButton" Grid.Column="2" Style="{StaticResource OscButton}" Width="52" Height="24" Click="DurationButton_Click"
-                            ToolTipService.ToolTip="残り時間に切替" AutomationProperties.Name="残り時間に切替">
+                            ToolTipService.ToolTip="Show remaining time" AutomationProperties.Name="Show remaining time">
                         <TextBlock x:Name="DurationText" Text="00:00" FontSize="12" Foreground="{StaticResource OverlayTextBrush}" MinWidth="40" FontFamily="Segoe UI Variable Text" />
                     </Button>
                 </Grid>

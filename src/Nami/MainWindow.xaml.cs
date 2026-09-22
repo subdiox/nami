@@ -9,7 +9,10 @@ namespace Nami;
 
 public sealed partial class MainWindow : Window
 {
-    private PlayerViewModel Vm => App.Vm;
+    public PlayerViewModel Vm => Main.Vm;
+    private Interop.AspectRatioLock? _aspectLock;
+    public Interop.DisplayInfo? LastDisplay { get; private set; }
+    public bool IsHdrPassthrough { get; private set; }
     private readonly OverlappedPresenter _presenter;
     private bool _fitOnNextVideoSize;
     private bool _compact;
@@ -23,6 +26,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        Vm.Window = this;
 
         _presenter = OverlappedPresenter.Create();
         AppWindow.SetPresenter(_presenter);
@@ -73,8 +77,8 @@ public sealed partial class MainWindow : Window
 
         Main.VideoView.PlayerCreated += _ => ApplyHdr();
         Main.Loaded += (_, _) => Services.L.Localize(TitleOverlay);
-        Interop.AspectRatioLock.Install(Hwnd);
-        Closed += (_, _) => Interop.AspectRatioLock.Uninstall();
+        _aspectLock = new Interop.AspectRatioLock(Hwnd);
+        Closed += (_, _) => { _aspectLock?.Dispose(); _aspectLock = null; };
     }
 
     private static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
@@ -100,7 +104,7 @@ public sealed partial class MainWindow : Window
             case nameof(PlayerViewModel.VideoSize):
             {
                 var vs = Vm.VideoSize;
-                Interop.AspectRatioLock.SetAspect(vs.Aspect);
+                if (_aspectLock is not null) _aspectLock.Aspect = vs.Aspect;
                 if (vs.IsValid && !_fitOnNextVideoSize && !IsFullScreen && !_compact && !Vm.MusicMode
                     && _presenter.State != OverlappedPresenterState.Maximized)
                 {
@@ -149,7 +153,7 @@ public sealed partial class MainWindow : Window
         if (on)
         {
             _musicRestoreBounds = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
-            Interop.AspectRatioLock.SetAspect(0);
+            if (_aspectLock is not null) _aspectLock.Aspect = 0;
             int w = (int)(MusicWidthDip * Scale);
             int h = (int)((MusicWidthDip + MusicPanelHeightDip) * Scale);
             _presenter.IsResizable = false;
@@ -163,7 +167,7 @@ public sealed partial class MainWindow : Window
             if (_musicRestoreBounds is { } r) AppWindow.MoveAndResize(r);
             if (Vm.VideoSize.IsValid)
             {
-                Interop.AspectRatioLock.SetAspect(Vm.VideoSize.Aspect);
+                if (_aspectLock is not null) _aspectLock.Aspect = Vm.VideoSize.Aspect;
                 _fitOnNextVideoSize = false;
                 FitToVideo((int)Vm.VideoSize.Width, (int)Vm.VideoSize.Height);
             }
@@ -264,8 +268,8 @@ public sealed partial class MainWindow : Window
     {
         if (Vm.Player is { } p)
         {
-            HdrController.Apply(p, Hwnd, App.Settings.HdrMode);
-            _lastDisplayDevice = HdrController.LastDisplay?.DeviceName;
+            (LastDisplay, IsHdrPassthrough) = HdrController.Apply(p, Hwnd, App.Settings.HdrMode);
+            _lastDisplayDevice = LastDisplay?.DeviceName;
         }
     }
 
@@ -287,7 +291,7 @@ public sealed partial class MainWindow : Window
     public async Task ShowPreferencesAsync()
     {
         if (_preferencesDialog is not null) return;
-        _preferencesDialog = new Preferences { XamlRoot = Content.XamlRoot };
+        _preferencesDialog = new Preferences(Vm) { XamlRoot = Content.XamlRoot };
         try { await _preferencesDialog.ShowAsync(); }
         finally { _preferencesDialog = null; }
     }
