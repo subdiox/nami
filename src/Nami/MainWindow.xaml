@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Nami.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Nami"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Nami"
+    mc:Ignorable="d">
+
+    <Grid>
+        <!-- Video fills the whole window; the title bar is a transparent drag region over it. -->
+        <local:MainPage x:Name="Main" />
+
+        <Border x:Name="TitleBarDragRegion" Height="32" VerticalAlignment="Top" Background="Transparent" />
+    </Grid>
+</Window>
