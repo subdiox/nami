@@ -1,6 +1,10 @@
-# Nami
+<p align="center">
+  <img src="src/Nami/Assets/AppIcon.png" width="128" alt="Nami icon">
+</p>
 
-An IINA-style, Windows-native mpv front end. WinUI 3 (Windows App SDK) + libmpv.
+<h1 align="center">Nami</h1>
+
+<p align="center">An IINA-style, Windows-native mpv front end. WinUI 3 (Windows App SDK) + libmpv.</p>
 
 ## How it works
 
