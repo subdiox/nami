@@ -105,7 +105,12 @@
                 <HyperlinkButton Content="既定のアプリ設定を開く" NavigateUri="ms-settings:defaultapps" />
             </StackPanel>
             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
-                       Text="登録するとエクスプローラーの「プログラムから開く」と Windows の「既定のアプリ」に Nami が表示されます。既定にするには Windows の設定から選んでください。" />
+                       Text="登録するとエクスプローラーの「プログラムから開く」と Windows の「既定のアプリ」に Nami が表示され、namiplayer:// リンクも開けるようになります。既定にするには Windows の設定から選んでください。" />
+            <TextBlock Text="ブラウザーから開く（ブックマークレット）" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBox x:Name="BookmarkletBox" IsReadOnly="True" FontSize="11" FontFamily="Cascadia Mono, Consolas" TextWrapping="Wrap"
+                     Text="javascript:location.href='namiplayer://open?url='+encodeURIComponent(location.href)" />
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
+                       Text="上の 1 行をブックマークの URL に登録すると、見ているページを Nami で開けます（yt-dlp 対応サイト）。" />
 
             <TextBlock Style="{StaticResource SectionHeader}" Text="mpv 設定" />
             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}">
@@ -115,6 +120,7 @@
             <TextBlock Text="mpv.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
             <TextBox x:Name="MpvConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="180"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />
+            <Button Content="キー操作をカスタマイズ…" Click="KeyBindings_Click" Margin="0,8,0,0" />
             <TextBlock Text="input.conf" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
             <TextBox x:Name="InputConfBox" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" Height="140"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsSpellCheckEnabled="False" />

@@ -186,6 +186,15 @@ public sealed partial class Preferences : ContentDialog
         UpdateAssocStatus();
     }
 
+    private async void KeyBindings_Click(object sender, RoutedEventArgs e)
+    {
+        // ContentDialogs cannot stack; close this one, show the editor, then reopen preferences.
+        Hide();
+        var dlg = new KeyBindingsDialog { XamlRoot = XamlRoot };
+        await dlg.ShowAsync();
+        if (App.Window is not null) _ = App.Window.ShowPreferencesAsync();
+    }
+
     private async void OpenConfigFolder_Click(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(AppSettings.MpvConfigDirectory);

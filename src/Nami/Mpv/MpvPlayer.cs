@@ -184,6 +184,15 @@ public sealed unsafe class MpvPlayer : IDisposable
         return LibMpv.mpv_get_property(_handle, name, MpvFormat.Flag, &v) >= 0 ? v != 0 : null;
     }
 
+    /// <summary>Read a property as an mpv_node tree converted to managed objects (lists / dictionaries).</summary>
+    public object? GetNode(string name)
+    {
+        MpvNode node;
+        if (LibMpv.mpv_get_property(_handle, name, MpvFormat.Node, &node) < 0) return null;
+        try { return MpvNodeReader.ToManaged(&node); }
+        finally { LibMpv.mpv_free_node_contents(&node); }
+    }
+
     public string? GetString(string name)
     {
         byte* p = LibMpv.mpv_get_property_string(_handle, name);

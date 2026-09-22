@@ -341,6 +341,7 @@ public sealed partial class MainPage : Page
         menu.Items.Add(new MenuFlyoutItem { Text = "コマ送り", Command = new Cmd(Vm.FrameStep) });
         menu.Items.Add(new MenuFlyoutItem { Text = "コマ戻し", Command = new Cmd(Vm.FrameBackStep) });
         menu.Items.Add(new MenuFlyoutItem { Text = "メディア情報…", Command = new Cmd(() => _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync()) });
+        menu.Items.Add(new MenuFlyoutItem { Text = "キー操作…", Command = new Cmd(() => _ = new KeyBindingsDialog { XamlRoot = XamlRoot }.ShowAsync()) });
         menu.Items.Add(new MenuFlyoutItem { Text = "環境設定…", Command = new Cmd(() => App.Window?.ShowPreferencesAsync()) });
         menu.ShowAt(Root, e.GetPosition(Root));
         e.Handled = true;
@@ -381,6 +382,7 @@ public sealed partial class MainPage : Page
             case VirtualKey.O when ctrl: OpenFiles(); break;
             case VirtualKey.U when ctrl: _ = OpenUrlAsync(); break;
             case VirtualKey.I when ctrl: _ = new InspectorDialog { XamlRoot = XamlRoot }.ShowAsync(); break;
+            case VirtualKey.K when ctrl && shift: _ = new KeyBindingsDialog { XamlRoot = XamlRoot }.ShowAsync(); break;
             case VirtualKey.P when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Playlist); break;
             case VirtualKey.S when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Settings); break;
             case VirtualKey.M when ctrl && shift: App.Window?.ToggleCompactMode(); break;
