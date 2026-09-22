@@ -71,8 +71,10 @@ public sealed class AppSettings
     public OsdSettings Osd { get; set; } = new();
     public SubtitleStyle Subtitles { get; set; } = new();
 
+    // NAMI_DATA_DIR overrides the settings / history / log folder (development instances).
     public static string Directory { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nami");
+        Environment.GetEnvironmentVariable("NAMI_DATA_DIR") is { Length: > 0 } d ? d
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nami");
 
     public static string MpvConfigDirectory { get; } = Path.Combine(Directory, "mpv");
 

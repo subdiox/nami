@@ -81,6 +81,10 @@ public sealed partial class Preferences : Window
         ShowScreenshotDir(s.ScreenshotDirectory);
         ScreenshotFormatCombo.SelectedItem = s.ScreenshotFormat;
         if (ScreenshotFormatCombo.SelectedIndex < 0) ScreenshotFormatCombo.SelectedIndex = 0;
+        ShowValue(SubSizeSlider, "Size", "0");
+        ShowValue(SubOutlineSlider, "Outline width", "0.#");
+        ShowValue(SubShadowSlider, "Shadow offset", "0.#");
+        ShowValue(OsdDurationSlider, "Duration (seconds)", "0.#");
     }
 
     private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
@@ -179,9 +183,17 @@ public sealed partial class Preferences : Window
 
     private void PaintColorButtons()
     {
-        SubColorButton.Background = new SolidColorBrush(ParseColor(_subColor));
-        SubOutlineColorButton.Background = new SolidColorBrush(ParseColor(_subOutline));
-        SubBackColorButton.Background = new SolidColorBrush(ParseColor(_subBack));
+        SubColorSwatch.Background = new SolidColorBrush(ParseColor(_subColor));
+        SubOutlineSwatch.Background = new SolidColorBrush(ParseColor(_subOutline));
+        SubBackSwatch.Background = new SolidColorBrush(ParseColor(_subBack));
+    }
+
+    /// <summary>Sliders show their current value in the header ("Size  55").</summary>
+    private static void ShowValue(Slider slider, string label, string format)
+    {
+        void Update() => slider.Header = $"{L.T(label)}   {slider.Value.ToString(format, System.Globalization.CultureInfo.InvariantCulture)}";
+        slider.ValueChanged += (_, _) => Update();
+        Update();
     }
 
     private static Windows.UI.Color ParseColor(string s)

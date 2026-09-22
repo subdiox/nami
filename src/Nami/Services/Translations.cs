@@ -312,6 +312,7 @@ internal static class Translations
         ["Change…"] = "変更…",
         ["Use Pictures"] = "ピクチャに戻す",
         ["Screenshot folder"] = "スクリーンショットの保存先",
+        ["Screenshots"] = "スクリーンショット",
         ["Japanese"] = "日本語",
     };
 }

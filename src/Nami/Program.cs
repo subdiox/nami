@@ -8,7 +8,9 @@ namespace Nami;
 
 public static class Program
 {
-    private const string InstanceKey = "nami-main";
+    // NAMI_INSTANCE=<name> runs a separate instance (own single-instance key); for development.
+    private static readonly string InstanceKey =
+        Environment.GetEnvironmentVariable("NAMI_INSTANCE") is { Length: > 0 } k ? "nami-" + k : "nami-main";
 
     /// <summary>Milliseconds since the process started (for startup timing logs).</summary>
     public static long Uptime => (long)(DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalMilliseconds;

@@ -112,6 +112,13 @@ public partial class App : Application
                 case "--new-window":
                     continue;
             }
+            if (a.StartsWith("--preferences", StringComparison.Ordinal))
+            {
+                // --preferences[=section]: open the preferences window on start (used for UI checks).
+                string? section = a.Length > 14 && a[13] == '=' ? a[14..] : null;
+                window.DispatcherQueue.TryEnqueue(() => _ = window.ShowPreferencesAsync(section));
+                continue;
+            }
             if (a.StartsWith("--mpv-", StringComparison.Ordinal))
             {
                 // --mpv-hwdec=no  →  mpv option hwdec=no (only effective for cores created afterwards)

@@ -73,14 +73,23 @@
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Controller (OSC)'}" Margin="0,0,0,6" />
                         <ComboBox x:Name="OscLayoutCombo" Header="{l:Tr Text='Controller (OSC) layout'}" MinWidth="260" />
                         <TextBlock Text="{l:Tr Text='Controller toolbar buttons'}" FontSize="12" Margin="0,8,0,0" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <CheckBox x:Name="TbSpeed" Content="{l:Tr Text='Playback speed'}" MinWidth="0" />
-                            <CheckBox x:Name="TbSettings" Content="{l:Tr Text='Video, audio &amp; subtitles'}" MinWidth="0" />
-                            <CheckBox x:Name="TbPlaylist" Content="{l:Tr Text='Playlist'}" MinWidth="0" />
-                            <CheckBox x:Name="TbMusic" Content="{l:Tr Text='Music mode'}" MinWidth="0" />
-                            <CheckBox x:Name="TbMini" Content="{l:Tr Text='Mini player'}" MinWidth="0" />
-                            <CheckBox x:Name="TbFullscreen" Content="{l:Tr Text='Full screen'}" MinWidth="0" />
-                        </StackPanel>
+                        <Grid ColumnSpacing="16" RowSpacing="2" Width="600" HorizontalAlignment="Left">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <CheckBox x:Name="TbSpeed" Grid.Row="0" Grid.Column="0" Content="{l:Tr Text='Playback speed'}" MinWidth="0" />
+                            <CheckBox x:Name="TbSettings" Grid.Row="0" Grid.Column="1" Content="{l:Tr Text='Video, audio &amp; subtitles'}" MinWidth="0" />
+                            <CheckBox x:Name="TbPlaylist" Grid.Row="0" Grid.Column="2" Content="{l:Tr Text='Playlist'}" MinWidth="0" />
+                            <CheckBox x:Name="TbMusic" Grid.Row="1" Grid.Column="0" Content="{l:Tr Text='Music mode'}" MinWidth="0" />
+                            <CheckBox x:Name="TbMini" Grid.Row="1" Grid.Column="1" Content="{l:Tr Text='Mini player'}" MinWidth="0" />
+                            <CheckBox x:Name="TbFullscreen" Grid.Row="1" Grid.Column="2" Content="{l:Tr Text='Full screen'}" MinWidth="0" />
+                        </Grid>
 
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='On-screen display'}" />
                         <ToggleSwitch x:Name="OsdSwitch" Header="{l:Tr Text='Show on-screen messages (volume, seek, track changes…)'}" />
@@ -118,47 +127,57 @@
                                 <CheckBox x:Name="SubItalicCheck" Content="{l:Tr Text='Italic'}" />
                             </StackPanel>
                             <ComboBox x:Name="SubBorderStyleCombo" Grid.Row="1" Grid.Column="1" Header="{l:Tr Text='Border style'}" HorizontalAlignment="Stretch" />
-                            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                                <Button x:Name="SubColorButton" Content="{l:Tr Text='Text color'}" Click="SubColor_Click" Tag="text" />
-                                <Button x:Name="SubOutlineColorButton" Content="{l:Tr Text='Outline color'}" Click="SubColor_Click" Tag="outline" />
-                                <Button x:Name="SubBackColorButton" Content="{l:Tr Text='Background color'}" Click="SubColor_Click" Tag="back" />
+                            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                <Button x:Name="SubColorButton" Click="SubColor_Click" Tag="text" Padding="10,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border x:Name="SubColorSwatch" Width="14" Height="14" CornerRadius="3" BorderThickness="1" BorderBrush="#66FFFFFF" VerticalAlignment="Center" />
+                                        <TextBlock Text="{l:Tr Text='Text color'}" />
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="SubOutlineColorButton" Click="SubColor_Click" Tag="outline" Padding="10,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border x:Name="SubOutlineSwatch" Width="14" Height="14" CornerRadius="3" BorderThickness="1" BorderBrush="#66FFFFFF" VerticalAlignment="Center" />
+                                        <TextBlock Text="{l:Tr Text='Outline color'}" />
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="SubBackColorButton" Click="SubColor_Click" Tag="back" Padding="10,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border x:Name="SubBackSwatch" Width="14" Height="14" CornerRadius="3" BorderThickness="1" BorderBrush="#66FFFFFF" VerticalAlignment="Center" />
+                                        <TextBlock Text="{l:Tr Text='Background color'}" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                             <Slider x:Name="SubOutlineSlider" Grid.Row="2" Grid.Column="1" Header="{l:Tr Text='Outline width'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
                             <Slider x:Name="SubShadowSlider" Grid.Row="3" Grid.Column="0" Header="{l:Tr Text='Shadow offset'}" Minimum="0" Maximum="10" StepFrequency="0.5" />
                             <ComboBox x:Name="SubCodepageCombo" Grid.Row="3" Grid.Column="1" Header="{l:Tr Text='Text encoding'}" HorizontalAlignment="Stretch" />
                             <ComboBox x:Name="SubAssOverrideCombo" Grid.Row="4" Grid.Column="0" Header="{l:Tr Text='ASS subtitle styles'}" HorizontalAlignment="Stretch" />
-                            <HyperlinkButton Grid.Row="4" Grid.Column="1" Content="{l:Tr Text='Restore defaults'}" Click="SubStyleReset_Click" VerticalAlignment="Bottom" />
                         </Grid>
+                        <HyperlinkButton Content="{l:Tr Text='Restore defaults'}" Click="SubStyleReset_Click" Padding="0" />
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Online subtitles'}" />
                         <TextBox x:Name="SubLanguagesBox" Header="{l:Tr Text='Online subtitle languages (comma-separated)'}" Width="300" HorizontalAlignment="Left" />
                     </StackPanel>
 
                     <!-- Screenshots -->
-                    <StackPanel x:Name="ScreenshotsPanel" Spacing="10" Visibility="Collapsed">
+                    <StackPanel x:Name="ScreenshotsPanel" Spacing="10" Visibility="Collapsed" Width="640" HorizontalAlignment="Left">
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Screenshots'}" Margin="0,0,0,6" />
-                        <Grid ColumnSpacing="8" Width="640" HorizontalAlignment="Left">
+                        <TextBlock Text="{l:Tr Text='Folder'}" />
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="110" />
                             </Grid.ColumnDefinitions>
                             <!-- The path is chosen with the folder dialog, never typed or selected. -->
-                            <StackPanel Grid.Column="0" Spacing="6">
-                                <TextBlock Text="{l:Tr Text='Folder'}" FontSize="12" />
-                                <Border Height="32" CornerRadius="4" Padding="10,0" Background="#14FFFFFF" BorderThickness="1" BorderBrush="{StaticResource PanelBorderBrush}">
-                                    <TextBlock x:Name="ScreenshotDirText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="False" />
-                                </Border>
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="{l:Tr Text='Change…'}" VerticalAlignment="Bottom" Click="BrowseScreenshotDir_Click" />
-                            <Button x:Name="ScreenshotDirResetButton" Grid.Column="2" Content="{l:Tr Text='Use Pictures'}" VerticalAlignment="Bottom" Click="ResetScreenshotDir_Click" />
-                            <ComboBox x:Name="ScreenshotFormatCombo" Grid.Column="3" Header="{l:Tr Text='Format'}" HorizontalAlignment="Stretch">
-                                <x:String>png</x:String>
-                                <x:String>jpg</x:String>
-                                <x:String>webp</x:String>
-                                <x:String>jxl</x:String>
-                            </ComboBox>
+                            <TextBlock x:Name="ScreenshotDirText" Grid.Column="0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="False" />
+                            <Button Grid.Column="1" Content="{l:Tr Text='Change…'}" Click="BrowseScreenshotDir_Click" />
+                            <Button x:Name="ScreenshotDirResetButton" Grid.Column="2" Content="{l:Tr Text='Use Pictures'}" Click="ResetScreenshotDir_Click" />
                         </Grid>
+                        <ComboBox x:Name="ScreenshotFormatCombo" Header="{l:Tr Text='Format'}" Width="160" HorizontalAlignment="Left" Margin="0,6,0,0">
+                            <x:String>png</x:String>
+                            <x:String>jpg</x:String>
+                            <x:String>webp</x:String>
+                            <x:String>jxl</x:String>
+                        </ComboBox>
                     </StackPanel>
 
                     <!-- Online video -->
@@ -191,7 +210,7 @@
                     </StackPanel>
 
                     <!-- mpv -->
-                    <StackPanel x:Name="MpvPanel" Spacing="10" Visibility="Collapsed" Width="640" HorizontalAlignment="Left">
+                    <StackPanel x:Name="MpvPanel" Spacing="10" Visibility="Collapsed" Width="620" HorizontalAlignment="Left">
                         <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='mpv configuration'}" Margin="0,0,0,6" />
                         <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource OverlaySubtleTextBrush}"
                                    Text="{l:Tr Text='Edit mpv.conf and input.conf here. Changes to mpv.conf are applied immediately where possible and fully on the next start.'}" />
