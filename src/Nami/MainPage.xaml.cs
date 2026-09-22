@@ -77,7 +77,6 @@ public sealed partial class MainPage : Page
         Root.RightTapped += OnRightTapped;
         Surface.Tapped += OnVideoTapped;
         Surface.DoubleTapped += OnVideoDoubleTapped;
-        Surface.ManipulationDelta += OnManipulationDelta;
 
         foreach (var c in new UIElement[] { Osc, Sidebar })
         {
@@ -329,18 +328,19 @@ public sealed partial class MainPage : Page
         Vm.ToggleFullscreen();
     }
 
-    /// <summary>Trackpad pinch → video zoom (IINA gesture).</summary>
-    private void OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-    {
-        if (Math.Abs(e.Delta.Scale - 1) < 0.001) return;
-        Vm.SetZoom(Vm.VideoZoom + Math.Log2(e.Delta.Scale));
-    }
-
     private void OnPointerWheel(object sender, PointerRoutedEventArgs e)
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
         var props = e.GetCurrentPoint(Root).Properties;
         int delta = props.MouseWheelDelta;
+        bool ctrl = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+        if (ctrl && !props.IsHorizontalMouseWheel)
+        {
+            // Touchpad pinch arrives as Ctrl+wheel; a mouse wheel with Ctrl zooms too (IINA gesture).
+            Vm.SetZoom(Vm.VideoZoom + delta / 120.0 * 0.1);
+            e.Handled = true;
+            return;
+        }
         if (props.IsHorizontalMouseWheel)
             Vm.Keypress(delta > 0 ? "WHEEL_RIGHT" : "WHEEL_LEFT");
         else
