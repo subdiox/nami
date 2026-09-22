@@ -411,6 +411,50 @@ public sealed partial class MainWindow : Window
 
     private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)Hwnd) / 96.0;
 
+    /// <summary>Client area = video size × scale (IINA's Cmd+0/1/2), centered, clamped to the work area.</summary>
+    public void ResizeToVideoScale(double scale)
+    {
+        if (!Vm.VideoSize.IsValid || IsFullScreen || _compact || Vm.MusicMode) return;
+        if (_presenter.State == OverlappedPresenterState.Maximized) _presenter.Restore();
+        ResizeClientKeepingCenter((int)Math.Round(Vm.VideoSize.Width * scale), (int)Math.Round(Vm.VideoSize.Height * scale));
+    }
+
+    /// <summary>Window size × factor at the video aspect (IINA's Cmd+- / Cmd+=).</summary>
+    public void ScaleWindow(double factor)
+    {
+        if (IsFullScreen || _compact || Vm.MusicMode) return;
+        if (_presenter.State == OverlappedPresenterState.Maximized) _presenter.Restore();
+        var (cw, ch) = ClientPixelSize();
+        int w = (int)Math.Round(cw * factor);
+        int h = Vm.VideoSize.IsValid ? (int)Math.Round(w / Vm.VideoSize.Aspect) : (int)Math.Round(ch * factor);
+        ResizeClientKeepingCenter(w, h);
+    }
+
+    /// <summary>As large as the work area allows at the video aspect (IINA's Cmd+3).</summary>
+    public void FitToScreen()
+    {
+        if (!Vm.VideoSize.IsValid || IsFullScreen || _compact || Vm.MusicMode) return;
+        if (_presenter.State == OverlappedPresenterState.Maximized) _presenter.Restore();
+        var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+        double s = Math.Min(area.Width / (double)Vm.VideoSize.Width, area.Height / (double)Vm.VideoSize.Height);
+        ResizeClientKeepingCenter((int)Math.Round(Vm.VideoSize.Width * s), (int)Math.Round(Vm.VideoSize.Height * s));
+    }
+
+    private void ResizeClientKeepingCenter(int cw, int ch)
+    {
+        var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+        double minW = 320 * Scale;
+        if (cw < minW && Vm.VideoSize.IsValid) { cw = (int)minW; ch = (int)Math.Round(cw / Vm.VideoSize.Aspect); }
+        var pos = AppWindow.Position;
+        var size = AppWindow.Size;
+        int cx = pos.X + size.Width / 2, cy = pos.Y + size.Height / 2;
+        ResizeClientExact(cw, ch);
+        var ns = AppWindow.Size;
+        int nx = Math.Clamp(cx - ns.Width / 2, area.X, Math.Max(area.X, area.X + area.Width - ns.Width));
+        int ny = Math.Clamp(cy - ns.Height / 2, area.Y, Math.Max(area.Y, area.Y + area.Height - ns.Height));
+        AppWindow.Move(new PointInt32(nx, ny));
+    }
+
     /// <summary>Resize the window so the client area matches the video aspect (IINA does this on open).</summary>
     private void FitToVideo(int videoW, int videoH)
     {

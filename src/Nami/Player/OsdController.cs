@@ -41,7 +41,7 @@ public sealed class OsdController : IDisposable
         vm.PlaybackRestart += OnPlaybackRestart;
         vm.SeekStarted += () => _seekPending = true;
         vm.ClientMessage += OnClientMessage;
-        vm.ScreenshotSaved += _ => Show(new OsdMessage(OsdMessage.IconScreenshot, L.T("Screenshot saved")));
+        vm.ScreenshotSaved += _ => Show(new OsdMessage(OsdMessage.IconScreenshot, L.T("Screenshot captured")));
         vm.OsdRequested += Show;
     }
 
@@ -98,6 +98,14 @@ public sealed class OsdController : IDisposable
 
     private static string Signed(double v) => v.ToString("+0.##;-0.##;0", CultureInfo.InvariantCulture);
 
+    /// <summary>IINA: "Subtitle Delay: 0.50s later" / "… earlier" / "… No delay".</summary>
+    private static string Delay(string label, double seconds)
+    {
+        if (Math.Abs(seconds) < 0.0005) return Line(label, L.T("No delay"));
+        string v = Math.Abs(seconds).ToString("0.00", CultureInfo.InvariantCulture) + "s";
+        return Line(label, seconds > 0 ? L.F("{0} later", v) : L.F("{0} earlier", v));
+    }
+
     private string TrackName(IEnumerable<TrackInfo> tracks, string id)
     {
         if (id is "no" or "") return L.T("Off");
@@ -129,7 +137,7 @@ public sealed class OsdController : IDisposable
                     if (muteToggled)
                         Show(new OsdMessage(icon, L.T(_vm.Muted ? "Mute" : "Unmute"), null, _vm.Muted ? 0 : Math.Min(1, v / 100)));
                     else
-                        Show(new OsdMessage(icon, L.F("Volume {0}", (int)Math.Round(v)), null, Math.Min(1, v / 100)));
+                        Show(new OsdMessage(icon, L.F("Volume: {0}", (int)Math.Round(v)), null, Math.Min(1, v / 100)));
                 }
                 break;
 
@@ -137,7 +145,7 @@ public sealed class OsdController : IDisposable
                 if (Math.Abs(_vm.Speed - _speed) > 0.0001)
                 {
                     _speed = _vm.Speed;
-                    if (Armed) Show(new OsdMessage(OsdMessage.IconSpeed, L.F("Speed {0}", Fmt.Speed(_speed))));
+                    if (Armed) Show(new OsdMessage(OsdMessage.IconSpeed, L.F("Speed: {0}x", _speed.ToString("0.00", CultureInfo.InvariantCulture))));
                 }
                 break;
 
@@ -152,20 +160,20 @@ public sealed class OsdController : IDisposable
                 break;
 
             case nameof(PlayerViewModel.SubDelay):
-                if (Math.Abs(_vm.SubDelay - _subDelay) > 0.0005) { _subDelay = _vm.SubDelay; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.F("Subtitle delay {0} s", Signed(_subDelay)))); }
+                if (Math.Abs(_vm.SubDelay - _subDelay) > 0.0005) { _subDelay = _vm.SubDelay; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, Delay(L.T("Subtitle delay"), _subDelay))); }
                 break;
             case nameof(PlayerViewModel.AudioDelay):
-                if (Math.Abs(_vm.AudioDelay - _audioDelay) > 0.0005) { _audioDelay = _vm.AudioDelay; if (Armed) Show(new OsdMessage(OsdMessage.IconAudio, L.F("Audio delay {0} s", Signed(_audioDelay)))); }
+                if (Math.Abs(_vm.AudioDelay - _audioDelay) > 0.0005) { _audioDelay = _vm.AudioDelay; if (Armed) Show(new OsdMessage(OsdMessage.IconAudio, Delay(L.T("Audio delay"), _audioDelay))); }
                 break;
             case nameof(PlayerViewModel.SubScale):
-                if (Math.Abs(_vm.SubScale - _subScale) > 0.0005) { _subScale = _vm.SubScale; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.F("Subtitle size {0}%", (int)Math.Round(_subScale * 100)))); }
+                if (Math.Abs(_vm.SubScale - _subScale) > 0.0005) { _subScale = _vm.SubScale; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.F("Subtitle scale: {0}x", _subScale.ToString("0.00", CultureInfo.InvariantCulture)))); }
                 break;
             case nameof(PlayerViewModel.SubPos):
-                if (_vm.SubPos != _subPos) { _subPos = _vm.SubPos; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.F("Subtitle position {0}", _subPos))); }
+                if (_vm.SubPos != _subPos) { _subPos = _vm.SubPos; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.F("Subtitle position: {0}", _subPos))); }
                 break;
 
             case nameof(PlayerViewModel.Rotate):
-                if (_vm.Rotate != _rotate) { _rotate = _vm.Rotate; if (Armed) Show(new OsdMessage(OsdMessage.IconRotate, L.F("Rotate {0}°", _rotate))); }
+                if (_vm.Rotate != _rotate) { _rotate = _vm.Rotate; if (Armed) Show(new OsdMessage(OsdMessage.IconRotate, L.F("Rotation: {0}°", _rotate))); }
                 break;
             case nameof(PlayerViewModel.Aspect):
                 if (_vm.Aspect != _aspect) { _aspect = _vm.Aspect; if (Armed) Show(new OsdMessage(OsdMessage.IconAspect, Line(L.T("Aspect ratio"), _aspect is "no" or "-1" or "-1.000000" ? L.T("Auto") : _aspect))); }
@@ -177,7 +185,7 @@ public sealed class OsdController : IDisposable
                 if (_vm.Deinterlace != _deinterlace) { _deinterlace = _vm.Deinterlace; if (Armed) Show(new OsdMessage(OsdMessage.IconVideo, Line(L.T("Deinterlace"), L.T(_deinterlace ? "On" : "Off")))); }
                 break;
             case nameof(PlayerViewModel.VideoZoom):
-                if (Math.Abs(_vm.VideoZoom - _zoom) > 0.001) { _zoom = _vm.VideoZoom; if (Armed) Show(new OsdMessage(OsdMessage.IconZoom, L.F("Zoom {0}%", (int)Math.Round(Math.Pow(2, _zoom) * 100)))); }
+                if (Math.Abs(_vm.VideoZoom - _zoom) > 0.001) { _zoom = _vm.VideoZoom; if (Armed) Show(new OsdMessage(OsdMessage.IconZoom, L.F("Zoom: {0}%", (int)Math.Round(Math.Pow(2, _zoom) * 100)))); }
                 break;
 
             case nameof(PlayerViewModel.Brightness): Eq(ref _brightness, _vm.Brightness, "Brightness", OsdMessage.IconBrightness); break;
@@ -195,7 +203,7 @@ public sealed class OsdController : IDisposable
                 {
                     _loopFile = _vm.LoopFile; _loopPlaylist = _vm.LoopPlaylist;
                     if (Armed) Show(new OsdMessage(_loopFile ? OsdMessage.IconLoopOne : OsdMessage.IconLoop,
-                        Line(L.T("Repeat"), L.T(_loopFile ? "This file" : _loopPlaylist ? "Playlist" : "Off"))));
+                        (_loopFile ? Line(L.T("Loop file"), L.T("On")) : _loopPlaylist ? Line(L.T("Loop playlist"), L.T("On")) : Line(L.T("Loop"), L.T("Off")))));
                 }
                 break;
 
@@ -206,8 +214,8 @@ public sealed class OsdController : IDisposable
                     _abA = _vm.AbLoopA; _abB = _vm.AbLoopB;
                     if (!Armed) break;
                     if (double.IsNaN(_abA) && double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), L.T("Cleared"))));
-                    else if (double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), L.F("A: {0}", Fmt.Time(_abA)))));
-                    else Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), $"{Fmt.Time(_abA)} – {Fmt.Time(_abB)}")));
+                    else if (double.IsNaN(_abB)) Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), "A")));
+                    else Show(new OsdMessage(OsdMessage.IconLoop, Line(L.T("A-B loop"), "B")));
                 }
                 break;
 
@@ -226,7 +234,7 @@ public sealed class OsdController : IDisposable
     {
         if (current == previous) return;
         previous = current;
-        if (Armed) Show(new OsdMessage(icon, L.F("{0} {1}", L.T(label), Signed(current)), null, (current + 100) / 200.0));
+        if (Armed) Show(new OsdMessage(icon, L.F("{0}: {1}", L.T(label), Signed(current)), null, (current + 100) / 200.0));
     }
 
     private static bool SameTime(double a, double b) => double.IsNaN(a) && double.IsNaN(b) || Math.Abs(a - b) < 0.0005;

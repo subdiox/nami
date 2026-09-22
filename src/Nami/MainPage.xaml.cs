@@ -578,6 +578,26 @@ public sealed partial class MainPage : Page
 
     private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e) => HandleKey(e);
 
+    private void OpenSettingsTab(int tab)
+    {
+        Vm.SettingsTab = tab;
+        if (Vm.Sidebar != SidebarKind.Settings) Vm.ToggleSidebar(SidebarKind.Settings);
+    }
+
+    private void OpenPlaylistTab(int tab)
+    {
+        Vm.PlaylistTab = tab;
+        if (Vm.Sidebar != SidebarKind.Playlist) Vm.ToggleSidebar(SidebarKind.Playlist);
+    }
+
+    private void RevealCurrentFile()
+    {
+        string? path = Vm.FilePath;
+        if (string.IsNullOrEmpty(path) || path.Contains("://") || !File.Exists(path)) return;
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = false }); }
+        catch (Exception ex) { App.Log("reveal: " + ex.Message); }
+    }
+
     /// <summary>Player shortcuts; also called by the window when focus is outside this page.</summary>
     public void HandleKey(KeyRoutedEventArgs e)
     {
@@ -603,10 +623,27 @@ public sealed partial class MainPage : Page
             case VirtualKey.I when ctrl: _ = ShowDialogAsync(new InspectorDialog(Vm)); break;
             case VirtualKey.K when ctrl && shift: _ = ShowDialogAsync(new KeyBindingsDialog(Vm)); break;
             case VirtualKey.P when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Playlist); break;
-            case VirtualKey.S when ctrl && shift: Vm.ToggleSidebar(SidebarKind.Settings); break;
+            case VirtualKey.S when ctrl && shift: OpenSettingsTab(2); break;
             case VirtualKey.M when ctrl && shift: Window?.ToggleCompactMode(); break;
             case (VirtualKey)0xBC when ctrl: _ = Window?.ShowPreferencesAsync(); break;   // Ctrl+,
             case VirtualKey.F11: Vm.ToggleFullscreen(); break;
+            // IINA: Cmd+0/1/2 window at half / actual / double size, Cmd+3 fit to screen, Cmd+-/= smaller / bigger
+            case VirtualKey.Number0 when ctrl && !shift: Window?.ResizeToVideoScale(0.5); break;
+            case VirtualKey.Number1 when ctrl && !shift: Window?.ResizeToVideoScale(1); break;
+            case VirtualKey.Number2 when ctrl && !shift: Window?.ResizeToVideoScale(2); break;
+            case VirtualKey.Number3 when ctrl && !shift: Window?.FitToScreen(); break;
+            case (VirtualKey)0xBD when ctrl: Window?.ScaleWindow(1 / 1.1); break;   // Ctrl+-
+            case (VirtualKey)0xBB when ctrl: Window?.ScaleWindow(1.1); break;       // Ctrl+=
+            // IINA: Shift+Cmd+v / a / s panels, Shift+Cmd+c chapters
+            case VirtualKey.V when ctrl && shift: OpenSettingsTab(0); break;
+            case VirtualKey.A when ctrl && shift: OpenSettingsTab(1); break;
+            case VirtualKey.C when ctrl && shift: OpenPlaylistTab(1); break;
+            // IINA: Ctrl+Cmd+p picture in picture, Alt+Cmd+m music mode
+            case VirtualKey.P when ctrl && alt: Window?.ToggleCompactMode(); break;
+            case VirtualKey.M when ctrl && alt: Window?.SetMusicMode(!Vm.MusicMode); break;
+            // IINA: Shift+Cmd+r reveal in Finder, Cmd+d find online subtitles
+            case VirtualKey.R when ctrl && shift: RevealCurrentFile(); break;
+            case VirtualKey.D when ctrl && !shift: OpenSettingsTab(2); break;
             case VirtualKey.Escape when Vm.Sidebar != SidebarKind.None: Vm.CloseSidebar(); break;
             default: handled = false; break;
         }

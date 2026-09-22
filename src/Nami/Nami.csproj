@@ -35,6 +35,7 @@
   <ItemGroup>
     <Content Include="Assets\AppIcon.ico" />
     <Content Include="Assets\AppIcon.png" />
+    <Content Include="Assets\input-default.conf" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

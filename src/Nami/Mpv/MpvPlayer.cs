@@ -68,9 +68,12 @@ public sealed unsafe class MpvPlayer : IDisposable
         Option("idle", "yes");
         Option("keep-open", "yes");
 
-        // Keys are forwarded from XAML via the "keypress" command, so mpv's default
-        // bindings and the user's input.conf keep working.
+        // Keys are forwarded from XAML via the "keypress" command. IINA's default bindings
+        // (Assets/input-default.conf) come first; the user's input.conf is loaded on top after
+        // initialization; mpv's own defaults remain as the lowest-priority fallback.
         Option("input-default-bindings", "yes");
+        string defaultInput = Path.Combine(AppContext.BaseDirectory, "Assets", "input-default.conf");
+        if (File.Exists(defaultInput)) Option("input-conf", defaultInput);
         Option("input-vo-keyboard", "no");
         Option("osc", "no");
         Option("cursor-autohide", "no");
@@ -110,6 +113,8 @@ public sealed unsafe class MpvPlayer : IDisposable
         // "info" so screenshot confirmations ("[screenshot] Screenshot: 'path'") reach us.
         MpvException.ThrowIfError(LibMpv.mpv_request_log_messages(_handle, "info"), "request_log_messages");
         MpvException.ThrowIfError(LibMpv.mpv_initialize(_handle), "mpv_initialize");
+        string userInput = Path.Combine(configDir, "input.conf");
+        if (File.Exists(userInput)) TryCommand("load-input-conf", userInput);
 
         Observe("display-swapchain", MpvFormat.Int64);
         MpvException.ThrowIfError(LibMpv.mpv_hook_add(_handle, 1, "on_unload", 0), "hook on_unload");

@@ -42,8 +42,7 @@ public sealed partial class Osd : UserControl
     public void Show(OsdMessage m)
     {
         if (!_settings.Enabled) return;
-        Icon.Glyph = m.Icon;
-        Icon.Visibility = string.IsNullOrEmpty(m.Icon) ? Visibility.Collapsed : Visibility.Visible;
+        Icon.Visibility = Visibility.Collapsed;   // IINA's OSD is text (and a bar) only
         Text.Text = m.Text;
         Detail.Text = m.Detail ?? "";
         Detail.Visibility = string.IsNullOrEmpty(m.Detail) ? Visibility.Collapsed : Visibility.Visible;
