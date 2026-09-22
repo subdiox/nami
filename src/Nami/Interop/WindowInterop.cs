@@ -1,4 +1,5 @@
 using Windows.Win32;
+using Windows.Win32.Foundation;
 
 namespace Nami.Interop;
 
@@ -15,6 +16,21 @@ internal static class WindowInterop
             PInvoke.GetCursorPos(out var p);
             return p;
         }
+    }
+
+    /// <summary>
+    /// Make Windows re-evaluate the cursor under the mouse now (it normally does so only on the next
+    /// mouse move): a WM_SETCURSOR round-trip to the window under the cursor, if it is ours.
+    /// </summary>
+    public static unsafe void RefreshCursor()
+    {
+        PInvoke.GetCursorPos(out var pos);
+        var under = PInvoke.WindowFromPoint(pos);
+        if (under == default) return;
+        PInvoke.GetWindowThreadProcessId(under, out uint pid);
+        if (pid != (uint)Environment.ProcessId) return;
+        var ht = PInvoke.SendMessage(under, PInvoke.WM_NCHITTEST, default, new LPARAM(((nint)(ushort)(short)pos.Y << 16) | (ushort)(short)pos.X));
+        PInvoke.SendMessage(under, PInvoke.WM_SETCURSOR, new WPARAM((nuint)under.Value), new LPARAM(((nint)PInvoke.WM_MOUSEMOVE << 16) | (ushort)(short)ht.Value));
     }
 
     /// <summary>Diagnostic: what the OS currently shows as the cursor.</summary>

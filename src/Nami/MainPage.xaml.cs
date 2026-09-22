@@ -53,6 +53,7 @@ public sealed partial class MainPage : Page
         // The pointer is over Surface (the input layer above the video); set it there and on the page.
         Surface.SetCursor(hide ? HiddenCursor : null);
         ProtectedCursor = hide ? HiddenCursor : ArrowCursor;
+        WindowInterop.RefreshCursor();
         App.Log($"cursor: {(hide ? "hidden" : "shown")} ({WindowInterop.CursorState()})");
     }
 
@@ -259,6 +260,7 @@ public sealed partial class MainPage : Page
         BottomShade.Visibility = on || Vm.Services.Settings.OscLayout != Services.OscLayout.Floating ? Visibility.Collapsed : Visibility.Visible;
         Video.Margin = on ? new Thickness(0, 0, 0, Music.Height) : new Thickness(0);
         if (on) ShowOverlay();
+        Window?.RequestRegionUpdate();
     }
 
     private void UpdateEmptyState()
@@ -276,6 +278,7 @@ public sealed partial class MainPage : Page
             Fade(BottomShade, 1);
             Fade(Mini, 1);
             Window?.SetTitleOverlayVisible(true);
+            Window?.RequestRegionUpdate();
         }
         RestartHideTimer();
     }
@@ -294,6 +297,7 @@ public sealed partial class MainPage : Page
         Fade(BottomShade, 0);
         Fade(Mini, 0);
         Window?.SetTitleOverlayVisible(false);
+        Window?.RequestRegionUpdate();
     }
 
     private bool _menuOpen;
@@ -314,6 +318,7 @@ public sealed partial class MainPage : Page
         Fade(BottomShade, 0);
         Fade(Mini, 0);
         Window?.SetTitleOverlayVisible(false);
+        Window?.RequestRegionUpdate();
         SetCursorHidden(true);
     }
 
@@ -337,6 +342,7 @@ public sealed partial class MainPage : Page
 
     private void SetSidebar(SidebarKind kind)
     {
+        Window?.RequestRegionUpdate();
         if (kind == SidebarKind.None)
         {
             var anim = new DoubleAnimation { To = Sidebar.Width, Duration = new Duration(TimeSpan.FromMilliseconds(200)), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
@@ -344,7 +350,7 @@ public sealed partial class MainPage : Page
             Storyboard.SetTargetProperty(anim, "X");
             var sb = new Storyboard();
             sb.Children.Add(anim);
-            sb.Completed += (_, _) => { if (Vm.Sidebar == SidebarKind.None) Sidebar.Visibility = Visibility.Collapsed; };
+            sb.Completed += (_, _) => { if (Vm.Sidebar == SidebarKind.None) Sidebar.Visibility = Visibility.Collapsed; Window?.RequestRegionUpdate(); };
             sb.Begin();
             Focus(FocusState.Programmatic);
             return;
@@ -381,11 +387,10 @@ public sealed partial class MainPage : Page
 
         if (!_dragging)
         {
+            // Only the mini player gets here (in windowed mode the video is the caption and Windows drags).
             if (Math.Abs(p.X - _pressPoint.X) <= DragThreshold && Math.Abs(p.Y - _pressPoint.Y) <= DragThreshold) return;
             _clickTimer.Stop();
             _dragging = true;
-            // Like a title-bar drag: a maximized window drops back to its normal size under the cursor.
-            if (w.IsMaximized) w.RestoreForDrag(WindowInterop.CursorPosition);
             _dragWindowOrigin = w.AppWindow.Position;
             _dragCursorOrigin = WindowInterop.CursorPosition;
             Root.CapturePointer(e.Pointer);
@@ -428,8 +433,24 @@ public sealed partial class MainPage : Page
         if (!_dragging) return;
         _dragging = false;
         if (pointer is not null) Root.ReleasePointerCapture(pointer);
-        // Dropped at a screen edge → snap, as a title-bar drag would.
-        Window?.SnapAfterDrag(WindowInterop.CursorPosition);
+    }
+
+    /// <summary>HUD elements that must stay clickable (excluded from the caption region while visible).</summary>
+    public IEnumerable<FrameworkElement> InteractiveOverlays()
+    {
+        foreach (var el in new FrameworkElement[] { Osc, Sidebar, Music, Mini })
+            if (el.Visibility == Visibility.Visible && el.IsHitTestVisible && el.ActualWidth > 0) yield return el;
+    }
+
+    public bool CursorHidden => _cursorHidden;
+
+    /// <summary>A plain click on the video (from the non-client caption path): the configurable single-click action.</summary>
+    public void OnVideoClick()
+    {
+        FocusVideo();
+        if (Vm.Services.Settings.SingleClick == SingleClickAction.None) return;
+        _clickTimer.Stop();
+        _clickTimer.Start();
     }
 
     private void OnVideoTapped(object sender, TappedRoutedEventArgs e)
@@ -486,6 +507,13 @@ public sealed partial class MainPage : Page
     private void OnRightTapped(object sender, RightTappedRoutedEventArgs e)
     {
         if (e.OriginalSource is not UIElement src || !IsVideoSurface(src)) return;
+        ShowContextMenu(e.GetPosition(Root));
+        e.Handled = true;
+    }
+
+    /// <summary>The player context menu at a page position.</summary>
+    public void ShowContextMenu(Windows.Foundation.Point position)
+    {
         var menu = new MenuFlyout();
         // Shortcuts shown on the right: app-level ones are fixed, mpv ones follow the current key bindings.
         menu.Items.Add(Item(Vm.Paused ? L.T("Play") : L.T("Pause"), Vm.TogglePause, Vm.KeyFor("cycle pause")));
@@ -521,8 +549,7 @@ public sealed partial class MainPage : Page
         menu.Items.Add(Item(L.T("Preferences…"), () => Window?.ShowPreferencesAsync(), "Ctrl+,"));
         menu.Opened += (_, _) => SetMenuOpen(true);
         menu.Closed += (_, _) => { SetMenuOpen(false); FocusVideo(); };
-        menu.ShowAt(Root, e.GetPosition(Root));
-        e.Handled = true;
+        menu.ShowAt(Root, position);
     }
 
     public async Task OpenUrlAsync()

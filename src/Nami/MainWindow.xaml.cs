@@ -19,7 +19,8 @@ public sealed partial class MainWindow : Window
     public bool IsHdrPassthrough { get; private set; }
     private readonly OverlappedPresenter _presenter;
     private readonly InputNonClientPointerSource _nonClient;
-    private Interop.CaptionButtonHook? _captionHook;
+    private Interop.NonClientHook? _ncHook;
+    private bool _regionUpdateQueued;
     private bool _fitOnNextVideoSize;
     private bool _compact;
     private RectInt32? _restoreBounds;
@@ -58,9 +59,27 @@ public sealed partial class MainWindow : Window
         _nonClient.PointerExited += (_, e) => { if (e.RegionKind == NonClientRegionKind.Maximize) SetMaximizeHover(false); };
         TitleOverlay.SizeChanged += (_, _) => UpdateNonClientRegions();
         TitleOverlay.Loaded += (_, _) => UpdateNonClientRegions();
-        // Snap Layouts on hover (system maximize button) + our own click (full screen).
-        _captionHook = new Interop.CaptionButtonHook(Hwnd, () => DispatcherQueue.TryEnqueue(() => { App.Log("caption: maximize button -> full screen"); Vm.ToggleFullscreen(); }));
-        Closed += (_, _) => { _captionHook?.Dispose(); _captionHook = null; };
+        // The video area is the window caption (see UpdateNonClientRegions): Windows runs the drag,
+        // with the Aero Snap preview. The hook restores our meaning of clicks on that area.
+        _ncHook = new Interop.NonClientHook(Hwnd, new Interop.NonClientHook.Callbacks
+        {
+            OnMaximizeClick = () => DispatcherQueue.TryEnqueue(() => Vm.ToggleFullscreen()),
+            IsVideoArea = IsVideoArea,
+            OnVideoDoubleClick = () => DispatcherQueue.TryEnqueue(() => Vm.ToggleFullscreen()),
+            OnVideoRightClick = (x, y) => DispatcherQueue.TryEnqueue(() => Main.ShowContextMenu(ScreenToPage(x, y))),
+            OnVideoMiddleClick = () => DispatcherQueue.TryEnqueue(() => Vm.Keypress("MBTN_MID")),
+            IsCursorHidden = () => Main.CursorHidden,
+        });
+        Closed += (_, _) => { _ncHook?.Dispose(); _ncHook = null; };
+        _nonClient.PointerPressed += (_, e) => { if (e.RegionKind == NonClientRegionKind.Caption) _ncPress = e.Point; };
+        _nonClient.PointerReleased += (_, e) =>
+        {
+            // A press + release without movement on the video is a click (the system drag never started).
+            if (e.RegionKind != NonClientRegionKind.Caption || _ncPress is not { } p) return;
+            _ncPress = null;
+            if (Math.Abs(e.Point.X - p.X) <= 3 && Math.Abs(e.Point.Y - p.Y) <= 3 && IsVideoArea((int)e.Point.X, (int)e.Point.Y)) Main.OnVideoClick();
+        };
+        Main.SizeChanged += (_, _) => RequestRegionUpdate();
 
         Vm.PropertyChanged += OnVmChanged;
         Vm.FileLoaded += () => _fitOnNextVideoSize = _services.Settings.ResizeWindowToVideo;
@@ -111,17 +130,76 @@ public sealed partial class MainWindow : Window
 
     // ---- custom title bar -----------------------------------------------------------------
 
+    private Windows.Foundation.Point? _ncPress;
+
+    /// <summary>Coalesced region refresh, run after the pending layout pass.</summary>
+    public void RequestRegionUpdate()
+    {
+        if (_regionUpdateQueued) return;
+        _regionUpdateQueued = true;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => { _regionUpdateQueued = false; UpdateNonClientRegions(); });
+    }
+
     /// <summary>
-    /// Marks our maximize button as the system maximize button so Windows 11 shows the Snap Layouts
-    /// flyout on hover; the click is intercepted by CaptionButtonHook. Cleared in full screen and
-    /// mini mode, where the XAML Click handler takes over.
+    /// Windowed mode: the title strip and the whole video area are the caption (Windows drags the
+    /// window with the Aero Snap preview), minus the HUD controls while they are visible; the maximize
+    /// button is the system maximize button (Snap Layouts on hover). Full screen and the mini player
+    /// clear everything so XAML gets the pointer directly.
     /// </summary>
     private void UpdateNonClientRegions()
     {
-        bool active = !IsFullScreen && !_compact && TitleOverlay.Visibility == Visibility.Visible
-                      && CaptionButtons.Visibility == Visibility.Visible && MaximizeButton.ActualWidth > 0;
-        if (active) _nonClient.SetRegionRects(NonClientRegionKind.Maximize, [ElementRect(MaximizeButton)]);
+        if (IsFullScreen || _compact || !Main.IsLoaded)
+        {
+            _nonClient.ClearAllRegionRects();
+            return;
+        }
+        var caption = new List<RectInt32>();
+        if (TitleOverlay.Visibility == Visibility.Visible && DragRegion.ActualWidth > 0) caption.Add(ElementRect(DragRegion));
+
+        var holes = new List<RectInt32>();
+        if (TitleOverlay.Visibility == Visibility.Visible && CaptionButtons.Visibility == Visibility.Visible) holes.Add(ElementRect(CaptionButtons));
+        foreach (var el in Main.InteractiveOverlays()) holes.Add(ElementRect(el));
+        var video = ElementRect(Main);
+        var pieces = new List<RectInt32> { video };
+        foreach (var hole in holes)
+            pieces = pieces.SelectMany(r => Subtract(r, hole)).ToList();
+        caption.AddRange(pieces.Where(r => r.Width > 0 && r.Height > 0));
+        _nonClient.SetRegionRects(NonClientRegionKind.Caption, caption.ToArray());
+
+        bool max = TitleOverlay.Visibility == Visibility.Visible && CaptionButtons.Visibility == Visibility.Visible && MaximizeButton.ActualWidth > 0;
+        if (max) _nonClient.SetRegionRects(NonClientRegionKind.Maximize, [ElementRect(MaximizeButton)]);
         else _nonClient.ClearRegionRects(NonClientRegionKind.Maximize);
+    }
+
+    /// <summary>a minus b, as up to four rectangles.</summary>
+    private static IEnumerable<RectInt32> Subtract(RectInt32 a, RectInt32 b)
+    {
+        int ax2 = a.X + a.Width, ay2 = a.Y + a.Height, bx2 = b.X + b.Width, by2 = b.Y + b.Height;
+        if (b.X >= ax2 || bx2 <= a.X || b.Y >= ay2 || by2 <= a.Y) { yield return a; yield break; }
+        int ix1 = Math.Max(a.X, b.X), iy1 = Math.Max(a.Y, b.Y), ix2 = Math.Min(ax2, bx2), iy2 = Math.Min(ay2, by2);
+        if (iy1 > a.Y) yield return new RectInt32(a.X, a.Y, a.Width, iy1 - a.Y);                 // above
+        if (iy2 < ay2) yield return new RectInt32(a.X, iy2, a.Width, ay2 - iy2);                 // below
+        if (ix1 > a.X) yield return new RectInt32(a.X, iy1, ix1 - a.X, iy2 - iy1);               // left
+        if (ix2 < ax2) yield return new RectInt32(ix2, iy1, ax2 - ix2, iy2 - iy1);               // right
+    }
+
+    /// <summary>Screen point inside the window but outside the title strip.</summary>
+    private bool IsVideoArea(int x, int y)
+    {
+        if (TitleOverlay.Visibility != Visibility.Visible || DragRegion.ActualWidth <= 0) return true;
+        var title = ElementRect(TitleOverlay);
+        var pos = AppWindow.Position;
+        int cx = x - pos.X, cy = y - pos.Y;   // ElementRect is relative to the window's client origin ≈ window origin (no caption)
+        return !(cx >= title.X && cx < title.X + title.Width && cy >= title.Y && cy < title.Y + title.Height);
+    }
+
+    /// <summary>Screen pixels → page (XAML) coordinates.</summary>
+    private unsafe Windows.Foundation.Point ScreenToPage(int x, int y)
+    {
+        var pt = new System.Drawing.Point(x, y);
+        Windows.Win32.PInvoke.ScreenToClient((Windows.Win32.Foundation.HWND)Hwnd, ref pt);
+        double scale = Content.XamlRoot?.RasterizationScale ?? Scale;
+        return new Windows.Foundation.Point(pt.X / scale, pt.Y / scale);
     }
 
     private RectInt32 ElementRect(FrameworkElement e)
@@ -315,52 +393,6 @@ public sealed partial class MainWindow : Window
 
     public bool IsCompact => _compact;
 
-    // ---- drag-to-move helpers (the page moves the window itself; these add the title-bar niceties) ----
-
-    /// <summary>Restore a maximized window so the grab point keeps its relative position (Windows does the same).</summary>
-    public void RestoreForDrag(System.Drawing.Point cursor)
-    {
-        var maxPos = AppWindow.Position;
-        var maxSize = AppWindow.Size;
-        double fx = Math.Clamp((cursor.X - maxPos.X) / (double)Math.Max(1, maxSize.Width), 0, 1);
-        double fy = Math.Clamp((cursor.Y - maxPos.Y) / (double)Math.Max(1, maxSize.Height), 0, 1);
-        _presenter.Restore();
-        var size = AppWindow.Size;
-        AppWindow.Move(new PointInt32(cursor.X - (int)(fx * size.Width), cursor.Y - (int)(fy * size.Height)));
-    }
-
-    /// <summary>Aero Snap for our own drag: release at the top edge maximizes, at a side edge fills that half.</summary>
-    public void SnapAfterDrag(System.Drawing.Point cursor)
-    {
-        if (_compact || IsFullScreen || Vm.MusicMode) return;
-        var area = DisplayArea.GetFromPoint(new PointInt32(cursor.X, cursor.Y), DisplayAreaFallback.Nearest).WorkArea;
-        const int edge = 2;
-        bool left = cursor.X <= area.X + edge;
-        bool right = cursor.X >= area.X + area.Width - 1 - edge;
-        bool top = cursor.Y <= area.Y + edge;
-        if (top && !left && !right) { _presenter.Maximize(); return; }
-        if (!left && !right) return;
-
-        // Fill the half of the work area; extend by the frame's invisible borders so the visible edge is flush.
-        var (l, t, r, b) = InvisibleBorders();
-        int half = area.Width / 2;
-        var rect = left
-            ? new RectInt32(area.X - l, area.Y - t, half + l + r, area.Height + t + b)
-            : new RectInt32(area.X + area.Width - half - l, area.Y - t, half + l + r, area.Height + t + b);
-        AppWindow.MoveAndResize(rect);
-    }
-
-    /// <summary>Invisible resize-border insets (window rect minus the DWM visible frame).</summary>
-    private unsafe (int l, int t, int r, int b) InvisibleBorders()
-    {
-        Windows.Win32.Foundation.RECT win, frame;
-        var hwnd = (Windows.Win32.Foundation.HWND)Hwnd;
-        if (!Windows.Win32.PInvoke.GetWindowRect(hwnd, &win)) return (0, 0, 0, 0);
-        if (Windows.Win32.PInvoke.DwmGetWindowAttribute(hwnd, Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, &frame, (uint)sizeof(Windows.Win32.Foundation.RECT)).Failed)
-            return (0, 0, 0, 0);
-        return (frame.left - win.left, frame.top - win.top, win.right - frame.right, win.bottom - frame.bottom);
-    }
-
     private double Scale => Windows.Win32.PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)Hwnd) / 96.0;
 
     /// <summary>Resize the window so the client area matches the video aspect (IINA does this on open).</summary>
@@ -414,6 +446,7 @@ public sealed partial class MainWindow : Window
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
         if (args.DidPresenterChange) SyncMaximizeGlyph();
+        if (args.DidSizeChange || args.DidPresenterChange) RequestRegionUpdate();
         if (!args.DidPositionChange) return;
         // Re-evaluate HDR when the window lands on another monitor.
         var info = Interop.DisplayInfo.Query(Hwnd);
@@ -440,6 +473,7 @@ public sealed partial class MainWindow : Window
         if (_compact) return;
         MainPage.Fade(TitleOverlay, visible ? 1 : 0);
         TitleOverlay.IsHitTestVisible = true; // keep the drag region usable even when faded
+        RequestRegionUpdate();
     }
 
     public void BringToFront()
