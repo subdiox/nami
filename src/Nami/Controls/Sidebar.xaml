@@ -71,7 +71,8 @@
                 <!-- Hide the pane from the pane itself (same as the OSC / sidebar shortcut) -->
                 <Button Style="{StaticResource OscButton}" HorizontalAlignment="Left" VerticalAlignment="Center" Click="Close_Click"
                         ToolTipService.ToolTip="Hide the sidebar" AutomationProperties.Name="Hide the sidebar">
-                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE76C;" />
+                    <!-- sidebar.right: window outline with the right pane filled (IINA's sidebar toggle) -->
+                    <PathIcon Width="16" Height="16" Data="M2,3 H14 A1.5,1.5 0 0 1 15.5,4.5 V11.5 A1.5,1.5 0 0 1 14,13 H2 A1.5,1.5 0 0 1 0.5,11.5 V4.5 A1.5,1.5 0 0 1 2,3 Z M2,4 A0.5,0.5 0 0 0 1.5,4.5 V11.5 A0.5,0.5 0 0 0 2,12 H14 A0.5,0.5 0 0 0 14.5,11.5 V4.5 A0.5,0.5 0 0 0 14,4 Z M10,4 H14 A0.5,0.5 0 0 1 14.5,4.5 V11.5 A0.5,0.5 0 0 1 14,12 H10 Z" />
                 </Button>
                 <SelectorBar x:Name="Tabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
                     <SelectorBarItem x:Name="TabVideo" Text="{l:Tr Text='Video'}" Tag="video" />

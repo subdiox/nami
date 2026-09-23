@@ -88,6 +88,21 @@ public sealed partial class Sidebar : UserControl
 
     private void Close_Click(object sender, RoutedEventArgs e) => Vm.CloseSidebar();
 
+    /// <summary>
+    /// Lay out every pane once while the sidebar is off screen. Realizing the templates of a pane
+    /// (lists, sliders, combo boxes) costs a visible delay the first time it is shown; done here at
+    /// startup instead of on the first click.
+    /// </summary>
+    public void Prewarm()
+    {
+        foreach (var panel in new[] { VideoPanel, AudioPanel, SubPanel, PlaylistPanel, ChaptersPanel, HistoryPanel })
+        {
+            panel.Visibility = Visibility.Visible;
+            UpdateLayout();
+        }
+        UpdatePanels();
+    }
+
     private void Tabs_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         if (sender.SelectedItem is null) return;

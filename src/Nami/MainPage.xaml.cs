@@ -241,6 +241,8 @@ public sealed partial class MainPage : Page
         Vm.Error += msg => Osd.Show(new OsdMessage(OsdMessage.IconInfo, L.T("Error"), msg, Seconds: 4));
         UpdateEmptyState();
         RestartHideTimer();
+        // After the first frames are out: realize the sidebar so its first open is immediate.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, PrewarmSidebar);
     }
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
@@ -407,6 +409,22 @@ public sealed partial class MainPage : Page
     }
 
     // ---- sidebar ------------------------------------------------------------------------
+
+    /// <summary>Realize the sidebar's panes off screen so the first open (CC button, Ctrl+Shift+S) is immediate.</summary>
+    private void PrewarmSidebar()
+    {
+        if (Vm.Sidebar != SidebarKind.None || Sidebar.Visibility == Visibility.Visible) return;
+        Sidebar.Opacity = 0;
+        Sidebar.IsHitTestVisible = false;
+        Sidebar.Visibility = Visibility.Visible;   // still translated off screen (SidebarTransform.X = width)
+        try { Sidebar.Prewarm(); }
+        finally
+        {
+            if (Vm.Sidebar == SidebarKind.None) Sidebar.Visibility = Visibility.Collapsed;
+            Sidebar.IsHitTestVisible = true;
+            Sidebar.Opacity = 1;
+        }
+    }
 
     private void SetSidebar(SidebarKind kind)
     {
