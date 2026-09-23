@@ -44,6 +44,10 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty] public partial long Chapter { get; set; } = -1;
     [ObservableProperty] public partial double AudioDelay { get; set; }
     [ObservableProperty] public partial double SubDelay { get; set; }
+    [ObservableProperty] public partial double SecondarySubDelay { get; set; }
+    [ObservableProperty] public partial bool SubVisible { get; set; } = true;
+    [ObservableProperty] public partial bool SecondarySubVisible { get; set; } = true;
+    [ObservableProperty] public partial long SecondarySubPos { get; set; } = 100;
     [ObservableProperty] public partial double SubScale { get; set; } = 1;
     [ObservableProperty] public partial long SubPos { get; set; } = 100;
     [ObservableProperty] public partial string Aspect { get; set; } = "-1";
@@ -81,6 +85,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     public ObservableCollection<TrackInfo> VideoTracks { get; } = [];
     public ObservableCollection<TrackInfo> AudioTracks { get; } = [];
     public ObservableCollection<TrackInfo> SubTracks { get; } = [];
+    /// <summary>IINA's subtitle selectors: a "&lt;None&gt;" row plus every subtitle track, checked per selector (sid / secondary-sid).</summary>
+    public ObservableCollection<TrackInfo> PrimarySubChoices { get; } = [];
+    public ObservableCollection<TrackInfo> SecondarySubChoices { get; } = [];
     public ObservableCollection<PlaylistItem> Playlist { get; } = [];
     public ObservableCollection<ChapterInfo> Chapters { get; } = [];
 
@@ -276,7 +283,8 @@ public sealed partial class PlayerViewModel : ObservableObject
         ("path", MpvFormat.String), ("fullscreen", MpvFormat.Flag), ("ontop", MpvFormat.Flag),
         ("video-out-params", MpvFormat.Node), ("chapter", MpvFormat.Int64),
         ("audio-delay", MpvFormat.Double), ("sub-delay", MpvFormat.Double), ("sub-scale", MpvFormat.Double),
-        ("sub-pos", MpvFormat.Int64), ("video-aspect-override", MpvFormat.String), ("video-rotate", MpvFormat.Int64),
+        ("sub-pos", MpvFormat.Int64), ("secondary-sub-delay", MpvFormat.Double), ("secondary-sub-pos", MpvFormat.Int64),
+        ("sub-visibility", MpvFormat.Flag), ("secondary-sub-visibility", MpvFormat.Flag), ("video-aspect-override", MpvFormat.String), ("video-rotate", MpvFormat.Int64),
         ("deinterlace", MpvFormat.Flag), ("brightness", MpvFormat.Int64), ("contrast", MpvFormat.Int64),
         ("saturation", MpvFormat.Int64), ("gamma", MpvFormat.Int64), ("hue", MpvFormat.Int64),
         ("vid", MpvFormat.String), ("aid", MpvFormat.String), ("sid", MpvFormat.String),
@@ -345,6 +353,10 @@ public sealed partial class PlayerViewModel : ObservableObject
             case "sub-delay": SubDelay = value as double? ?? 0; break;
             case "sub-scale": SubScale = value as double? ?? 1; break;
             case "sub-pos": SubPos = value as long? ?? 100; break;
+            case "secondary-sub-delay": SecondarySubDelay = value as double? ?? 0; break;
+            case "secondary-sub-pos": SecondarySubPos = value as long? ?? 100; break;
+            case "sub-visibility": SubVisible = value is not false; break;
+            case "secondary-sub-visibility": SecondarySubVisible = value is not false; break;
             case "video-aspect-override": Aspect = value as string ?? "-1"; break;
             case "video-rotate": Rotate = value as long? ?? 0; break;
             case "deinterlace": Deinterlace = value is true; break;
@@ -355,8 +367,8 @@ public sealed partial class PlayerViewModel : ObservableObject
             case "hue": Hue = value as long? ?? 0; break;
             case "vid": Vid = value as string ?? "auto"; break;
             case "aid": Aid = value as string ?? "auto"; break;
-            case "sid": Sid = value as string ?? "auto"; break;
-            case "secondary-sid": SecondarySid = value as string ?? "no"; break;
+            case "sid": Sid = value as string ?? "auto"; RebuildSubChoices(); break;
+            case "secondary-sid": SecondarySid = value as string ?? "no"; RebuildSubChoices(); break;
             case "hwdec-current": HwdecCurrent = value as string ?? ""; break;
             case "playlist-pos": PlaylistPos = value as long? ?? -1; break;
             case "playlist-count": PlaylistCount = value as long? ?? 0; break;
@@ -446,7 +458,21 @@ public sealed partial class PlayerViewModel : ObservableObject
         Replace(VideoTracks, video);
         Replace(AudioTracks, audio);
         Replace(SubTracks, sub);
+        RebuildSubChoices();
         IsAudioOnly = audio.Count > 0 && video.All(t => t.AlbumArt);
+    }
+
+    private void RebuildSubChoices()
+    {
+        static List<TrackInfo> Build(IEnumerable<TrackInfo> tracks, string current)
+        {
+            bool any = long.TryParse(current, out long id);
+            var list = new List<TrackInfo> { TrackInfo.NoneOf("sub", !any) };
+            foreach (var t in tracks) list.Add(t with { Selected = any && t.Id == id });
+            return list;
+        }
+        Replace(PrimarySubChoices, Build(SubTracks, Sid));
+        Replace(SecondarySubChoices, Build(SubTracks, SecondarySid));
     }
 
     private void UpdatePlaylist(List<object?>? list)
@@ -552,6 +578,15 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void SetSubDelay(double s) => Run(p => p.SetProperty("sub-delay", s));
     public void SetSubScale(double s) => Run(p => p.SetProperty("sub-scale", s));
     public void SetSubPos(long v) => Run(p => p.SetProperty("sub-pos", v));
+    public void SetSecondarySubDelay(double s) => Run(p => p.SetProperty("secondary-sub-delay", s));
+    public void SetSecondarySubPos(long v) => Run(p => p.SetProperty("secondary-sub-pos", v));
+    public void SetSubVisible(bool on, bool secondary = false) => Run(p => p.SetProperty(secondary ? "secondary-sub-visibility" : "sub-visibility", on));
+    /// <summary>Pick a row of <see cref="PrimarySubChoices"/> / <see cref="SecondarySubChoices"/> (the None row turns the selector off).</summary>
+    public void ChooseSub(TrackInfo t, bool secondary)
+    {
+        string type = secondary ? "secondary-sid" : "sid";
+        if (t.None) SetTrackOff(type); else SetTrack(type, t.Id);
+    }
     public void SetAspect(string v) => Run(p => p.SetProperty("video-aspect-override", v));
     public void SetRotate(long deg) => Run(p => p.SetProperty("video-rotate", deg));
     public void SetDeinterlace(bool on) => Run(p => p.SetProperty("deinterlace", on));

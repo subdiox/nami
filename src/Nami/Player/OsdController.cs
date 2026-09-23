@@ -22,7 +22,10 @@ public sealed class OsdController : IDisposable
     private double _volume = -1;
     private bool _muted;
     private double _speed = 1;
-    private string _sid = "", _aid = "", _vid = "";
+    private string _sid = "", _aid = "", _vid = "", _secondarySid = "";
+    private double _secondarySubDelay;
+    private long _secondarySubPos = 100;
+    private bool _subVisible = true, _secondarySubVisible = true;
     private double _subDelay, _audioDelay, _subScale = 1;
     private long _subPos = 100, _rotate;
     private string _aspect = "no", _crop = "";
@@ -59,8 +62,10 @@ public sealed class OsdController : IDisposable
     {
         // Snapshot everything so the initial property burst is not reported as user changes.
         _paused = _vm.Paused; _volume = _vm.Volume; _muted = _vm.Muted; _speed = _vm.Speed;
-        _sid = _vm.Sid; _aid = _vm.Aid; _vid = _vm.Vid;
+        _sid = _vm.Sid; _aid = _vm.Aid; _vid = _vm.Vid; _secondarySid = _vm.SecondarySid;
         _subDelay = _vm.SubDelay; _audioDelay = _vm.AudioDelay; _subScale = _vm.SubScale; _subPos = _vm.SubPos;
+        _secondarySubDelay = _vm.SecondarySubDelay; _secondarySubPos = _vm.SecondarySubPos;
+        _subVisible = _vm.SubVisible; _secondarySubVisible = _vm.SecondarySubVisible;
         _rotate = _vm.Rotate; _aspect = _vm.Aspect; _crop = _vm.Crop; _deinterlace = _vm.Deinterlace;
         _shuffle = _vm.Shuffle; _loopFile = _vm.LoopFile; _loopPlaylist = _vm.LoopPlaylist;
         _brightness = _vm.Brightness; _contrast = _vm.Contrast; _saturation = _vm.Saturation; _gamma = _vm.Gamma; _hue = _vm.Hue;
@@ -146,6 +151,21 @@ public sealed class OsdController : IDisposable
 
             case nameof(PlayerViewModel.Sid):
                 if (_vm.Sid != _sid) { _sid = _vm.Sid; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, Line(L.T("Subtitle"), TrackName(_vm.SubTracks, _sid)))); }
+                break;
+            case nameof(PlayerViewModel.SecondarySid):
+                if (_vm.SecondarySid != _secondarySid) { _secondarySid = _vm.SecondarySid; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, Line(L.T("Secondary subtitle"), TrackName(_vm.SubTracks, _secondarySid)))); }
+                break;
+            case nameof(PlayerViewModel.SubVisible):
+                if (_vm.SubVisible != _subVisible) { _subVisible = _vm.SubVisible; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.T(_subVisible ? "Subtitles visible" : "Subtitles hidden"))); }
+                break;
+            case nameof(PlayerViewModel.SecondarySubVisible):
+                if (_vm.SecondarySubVisible != _secondarySubVisible) { _secondarySubVisible = _vm.SecondarySubVisible; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.T(_secondarySubVisible ? "Secondary subtitles visible" : "Secondary subtitles hidden"))); }
+                break;
+            case nameof(PlayerViewModel.SecondarySubDelay):
+                if (Math.Abs(_vm.SecondarySubDelay - _secondarySubDelay) > 0.0005) { _secondarySubDelay = _vm.SecondarySubDelay; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, Delay(L.T("Secondary subtitle delay"), _secondarySubDelay))); }
+                break;
+            case nameof(PlayerViewModel.SecondarySubPos):
+                if (_vm.SecondarySubPos != _secondarySubPos) { _secondarySubPos = _vm.SecondarySubPos; if (Armed) Show(new OsdMessage(OsdMessage.IconSubtitle, L.F("Secondary subtitle position: {0}", _secondarySubPos))); }
                 break;
             case nameof(PlayerViewModel.Aid):
                 if (_vm.Aid != _aid) { _aid = _vm.Aid; if (Armed) Show(new OsdMessage(OsdMessage.IconAudio, Line(L.T("Audio"), TrackName(_vm.AudioTracks, _aid)))); }

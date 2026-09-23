@@ -178,18 +178,29 @@
 
                     <!-- ===================== Subtitles ===================== -->
                     <StackPanel x:Name="SubPanel" Visibility="Collapsed">
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitles'}" />
+                        <!-- IINA: "Primary" / "Secondary" selectors, each with its own visibility switch and a <None> row -->
+                        <Grid Margin="0,0,0,2">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Primary subtitles'}" />
+                            <ToggleSwitch x:Name="SubVisibleSwitch" HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="0" OnContent="" OffContent="" Margin="0,0,-12,0"
+                                          Toggled="SubVisibleSwitch_Toggled" AutomationProperties.Name="Show subtitles" />
+                        </Grid>
                         <ListView x:Name="SubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SubTrackList_ItemClick" />
-                        <HyperlinkButton Content="{l:Tr Text='Subtitles off'}" Padding="0" Click="SubOff_Click" />
-                        <HyperlinkButton Content="{l:Tr Text='Add subtitle file…'}" Padding="0" Click="AddSub_Click" />
+
+                        <Grid Margin="0,0,0,2">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Secondary subtitles'}" />
+                            <ToggleSwitch x:Name="SecondarySubVisibleSwitch" HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="0" OnContent="" OffContent="" Margin="0,0,-12,0"
+                                          Toggled="SecondarySubVisibleSwitch_Toggled" AutomationProperties.Name="Show secondary subtitles" />
+                        </Grid>
+                        <ListView x:Name="SecondarySubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SecondarySubTrackList_ItemClick" />
+
+                        <HyperlinkButton Content="{l:Tr Text='Add subtitle file…'}" Padding="0" Margin="0,8,0,0" Click="AddSub_Click" />
                         <HyperlinkButton Content="{l:Tr Text='Search online subtitles…'}" Padding="0" Click="SearchOnlineSub_Click" AutomationProperties.Name="Search online subtitles" />
                         <HyperlinkButton Content="{l:Tr Text='Subtitle appearance…'}" Padding="0" Click="SubStyle_Click" />
 
-                        <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Secondary subtitles'}" />
-                        <ListView x:Name="SecondarySubTrackList" Style="{StaticResource SidebarListView}" ItemTemplate="{StaticResource TrackTemplate}" ItemClick="SecondarySubTrackList_ItemClick" />
-                        <HyperlinkButton Content="{l:Tr Text='Secondary subtitles off'}" Padding="0" Click="SecondarySubOff_Click" />
+                        <!-- Delay and position apply to the selector chosen here (IINA's Primary / Secondary segmented control) -->
+                        <RadioButtons x:Name="SubTargetButtons" MaxColumns="2" Margin="0,16,0,0" SelectedIndex="0" SelectionChanged="SubTargetButtons_SelectionChanged" />
 
-                        <Grid Margin="0,16,0,6">
+                        <Grid Margin="0,12,0,6">
                             <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle delay'}" Margin="0" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                                 <TextBlock x:Name="SubDelayLabel" Style="{StaticResource SidebarLabel}" Text="0.0 s" />
@@ -199,16 +210,17 @@
                         <Slider x:Name="SubDelaySlider" Minimum="-10" Maximum="10" StepFrequency="0.1" IsThumbToolTipEnabled="False" ValueChanged="SubDelaySlider_ValueChanged" />
 
                         <Grid Margin="0,16,0,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle position'}" Margin="0" />
+                            <TextBlock x:Name="SubPosLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100" />
+                        </Grid>
+                        <Slider x:Name="SubPosSlider" Minimum="0" Maximum="150" StepFrequency="1" Value="100" IsThumbToolTipEnabled="False" ValueChanged="SubPosSlider_ValueChanged" />
+
+                        <Grid Margin="0,16,0,6">
                             <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle size'}" Margin="0" />
                             <TextBlock x:Name="SubScaleLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100%" />
                         </Grid>
                         <Slider x:Name="SubScaleSlider" Minimum="0.3" Maximum="3" StepFrequency="0.05" Value="1" IsThumbToolTipEnabled="False" ValueChanged="SubScaleSlider_ValueChanged" />
 
-                        <Grid Margin="0,16,0,6">
-                            <TextBlock Style="{StaticResource SectionHeader}" Text="{l:Tr Text='Subtitle position'}" Margin="0" />
-                            <TextBlock x:Name="SubPosLabel" Style="{StaticResource SidebarLabel}" HorizontalAlignment="Right" Text="100" />
-                        </Grid>
-                        <Slider x:Name="SubPosSlider" Minimum="0" Maximum="150" StepFrequency="1" Value="100" IsThumbToolTipEnabled="False" ValueChanged="SubPosSlider_ValueChanged" />
                     </StackPanel>
 
                     <!-- ===================== Playlist ===================== -->

@@ -663,6 +663,14 @@ public sealed partial class MainPage : Page
             var f = await Controls.Sidebar.PickFilesAsync(Window, [".srt", ".ass", ".ssa", ".sub", ".vtt", ".sup"], multiple: false);
             if (f.Count > 0) Vm.AddSubtitle(f[0]);
         }));
+        // IINA's Subtitles menu: a "Subtitle" and a "Secondary subtitle" selector, each with a <None> row.
+        if (Vm.SubTracks.Count > 0)
+        {
+            menu.Items.Add(SubMenu(L.T("Subtitle"), Vm.PrimarySubChoices, secondary: false));
+            menu.Items.Add(SubMenu(L.T("Secondary subtitle"), Vm.SecondarySubChoices, secondary: true));
+            menu.Items.Add(Toggle(L.T("Show subtitles"), Vm.SubVisible, () => Vm.SetSubVisible(!Vm.SubVisible), Vm.KeyFor("cycle sub-visibility")));
+            menu.Items.Add(Toggle(L.T("Show secondary subtitles"), Vm.SecondarySubVisible, () => Vm.SetSubVisible(!Vm.SecondarySubVisible, secondary: true), Vm.KeyFor("cycle secondary-sub-visibility")));
+        }
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(Item(L.T("Video, audio & subtitles"), () => Vm.ToggleSidebar(SidebarKind.Settings), "Ctrl+Shift+S"));
         menu.Items.Add(Item(L.T("Playlist"), () => Vm.ToggleSidebar(SidebarKind.Playlist), "Ctrl+Shift+P"));
@@ -834,6 +842,17 @@ public sealed partial class MainPage : Page
 
     // Click handlers instead of ICommand: a managed ICommand cannot be marshaled to WinRT under NativeAOT
     // (CCW creation fails), which crashed the context menu in published builds.
+    private MenuFlyoutSubItem SubMenu(string text, IEnumerable<TrackInfo> choices, bool secondary)
+    {
+        var sub = new MenuFlyoutSubItem { Text = text };
+        foreach (var t in choices)
+        {
+            var choice = t;
+            sub.Items.Add(Toggle(t.Display, t.Selected, () => Vm.ChooseSub(choice, secondary)));
+        }
+        return sub;
+    }
+
     private static MenuFlyoutItem Item(string text, Action action, string? accelerator = null)
     {
         var item = new MenuFlyoutItem { Text = text };

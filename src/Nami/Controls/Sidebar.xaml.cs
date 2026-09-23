@@ -33,6 +33,7 @@ public sealed partial class Sidebar : UserControl
         CropButtons.ItemsSource = new List<object> { L.T("None"), "16:9", "4:3", "1:1", "2.35:1" };
         RotateButtons.ItemsSource = new List<object> { "0°", "90°", "180°", "270°" };
         HdrCombo.ItemsSource = new List<object> { L.T("Auto (follow the display)"), L.T("Tone-map to SDR"), L.T("HDR passthrough") };
+        SubTargetButtons.ItemsSource = new List<object> { L.T("Primary"), L.T("Secondary") };
     }
 
     /// <summary>Attach the sidebar to its window's player (called once by MainPage).</summary>
@@ -41,8 +42,8 @@ public sealed partial class Sidebar : UserControl
         Vm = vm;
         VideoTrackList.ItemsSource = Vm.VideoTracks;
         AudioTrackList.ItemsSource = Vm.AudioTracks;
-        SubTrackList.ItemsSource = Vm.SubTracks;
-        SecondarySubTrackList.ItemsSource = Vm.SubTracks;
+        SubTrackList.ItemsSource = Vm.PrimarySubChoices;
+        SecondarySubTrackList.ItemsSource = Vm.SecondarySubChoices;
         PlaylistList.ItemsSource = Vm.Playlist;
         ChapterList.ItemsSource = Vm.Chapters;
         HistoryList.ItemsSource = Vm.History.Entries;
@@ -157,17 +158,27 @@ public sealed partial class Sidebar : UserControl
                     AudioDelayLabel.Text = $"{Vm.AudioDelay:+0.00;-0.00;0.00} s";
                     break;
                 case nameof(PlayerViewModel.SubDelay):
-                    SubDelaySlider.Value = Math.Clamp(Vm.SubDelay, -10, 10);
-                    SubDelayLabel.Text = $"{Vm.SubDelay:+0.0;-0.0;0.0} s";
+                case nameof(PlayerViewModel.SecondarySubDelay):
+                {
+                    double d = SecondaryTarget ? Vm.SecondarySubDelay : Vm.SubDelay;
+                    SubDelaySlider.Value = Math.Clamp(d, -10, 10);
+                    SubDelayLabel.Text = $"{d:+0.0;-0.0;0.0} s";
                     break;
+                }
+                case nameof(PlayerViewModel.SubVisible): SubVisibleSwitch.IsOn = Vm.SubVisible; break;
+                case nameof(PlayerViewModel.SecondarySubVisible): SecondarySubVisibleSwitch.IsOn = Vm.SecondarySubVisible; break;
                 case nameof(PlayerViewModel.SubScale):
                     SubScaleSlider.Value = Vm.SubScale;
                     SubScaleLabel.Text = $"{Vm.SubScale * 100:0}%";
                     break;
                 case nameof(PlayerViewModel.SubPos):
-                    SubPosSlider.Value = Vm.SubPos;
-                    SubPosLabel.Text = Vm.SubPos.ToString();
+                case nameof(PlayerViewModel.SecondarySubPos):
+                {
+                    long pos = SecondaryTarget ? Vm.SecondarySubPos : Vm.SubPos;
+                    SubPosSlider.Value = pos;
+                    SubPosLabel.Text = pos.ToString();
                     break;
+                }
                 case nameof(PlayerViewModel.HwdecCurrent):
                 case nameof(PlayerViewModel.FilePath):
                     RefreshHdrInfo();
@@ -199,6 +210,7 @@ public sealed partial class Sidebar : UserControl
                      nameof(PlayerViewModel.Saturation), nameof(PlayerViewModel.Gamma), nameof(PlayerViewModel.Hue),
                      nameof(PlayerViewModel.Volume), nameof(PlayerViewModel.AudioDelay), nameof(PlayerViewModel.SubDelay),
                      nameof(PlayerViewModel.SubScale), nameof(PlayerViewModel.SubPos),
+                     nameof(PlayerViewModel.SubVisible), nameof(PlayerViewModel.SecondarySubVisible),
                  })
             OnVmChanged(this, new PropertyChangedEventArgs(name));
         OnListsChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
@@ -394,18 +406,35 @@ public sealed partial class Sidebar : UserControl
 
     // ---- subtitles -------------------------------------------------------------------
 
+    /// <summary>Delay / position sliders edit the secondary selector (IINA's Primary / Secondary switch).</summary>
+    private bool SecondaryTarget => SubTargetButtons.SelectedIndex == 1;
+
     private void SubTrackList_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is TrackInfo t) Vm.SetTrack("sid", t.Id);
+        if (e.ClickedItem is TrackInfo t) Vm.ChooseSub(t, secondary: false);
     }
 
     private void SecondarySubTrackList_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is TrackInfo t) Vm.SetTrack("secondary-sid", t.Id);
+        if (e.ClickedItem is TrackInfo t) Vm.ChooseSub(t, secondary: true);
     }
 
-    private void SubOff_Click(object sender, RoutedEventArgs e) => Vm.SetTrackOff("sid");
-    private void SecondarySubOff_Click(object sender, RoutedEventArgs e) => Vm.SetTrackOff("secondary-sid");
+    private void SubVisibleSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_syncing && SubVisibleSwitch.IsOn != Vm.SubVisible) Vm.SetSubVisible(SubVisibleSwitch.IsOn);
+    }
+
+    private void SecondarySubVisibleSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_syncing && SecondarySubVisibleSwitch.IsOn != Vm.SecondarySubVisible) Vm.SetSubVisible(SecondarySubVisibleSwitch.IsOn, secondary: true);
+    }
+
+    private void SubTargetButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (Vm is null) return;
+        OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.SubDelay)));
+        OnVmChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.SubPos)));
+    }
 
     private async void AddSub_Click(object sender, RoutedEventArgs e)
     {
@@ -427,10 +456,13 @@ public sealed partial class Sidebar : UserControl
     private void SubDelaySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (_syncing) return;
-        Vm.SetSubDelay(Math.Round(e.NewValue, 2));
+        if (SecondaryTarget) Vm.SetSecondarySubDelay(Math.Round(e.NewValue, 2)); else Vm.SetSubDelay(Math.Round(e.NewValue, 2));
     }
 
-    private void ResetSubDelay_Click(object sender, RoutedEventArgs e) => Vm.SetSubDelay(0);
+    private void ResetSubDelay_Click(object sender, RoutedEventArgs e)
+    {
+        if (SecondaryTarget) Vm.SetSecondarySubDelay(0); else Vm.SetSubDelay(0);
+    }
 
     private void SubScaleSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
@@ -441,7 +473,7 @@ public sealed partial class Sidebar : UserControl
     private void SubPosSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (_syncing) return;
-        Vm.SetSubPos((long)Math.Round(e.NewValue));
+        if (SecondaryTarget) Vm.SetSecondarySubPos((long)Math.Round(e.NewValue)); else Vm.SetSubPos((long)Math.Round(e.NewValue));
     }
 
     // ---- playlist --------------------------------------------------------------------

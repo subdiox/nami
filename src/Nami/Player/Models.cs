@@ -1,12 +1,16 @@
 using Nami.Services;
 namespace Nami.Player;
 
-public sealed record TrackInfo(long Id, string Type, string? Title, string? Lang, bool Selected, bool External, string? Codec, bool Default, bool AlbumArt = false)
+public sealed record TrackInfo(long Id, string Type, string? Title, string? Lang, bool Selected, bool External, string? Codec, bool Default, bool AlbumArt = false, bool None = false)
 {
+    /// <summary>The "&lt;None&gt;" row of a track list (IINA), i.e. the track selector set to "no".</summary>
+    public static TrackInfo NoneOf(string type, bool selected) => new(0, type, null, null, selected, false, null, false, None: true);
+
     public string Display
     {
         get
         {
+            if (None) return L.T("<None>");
             var parts = new List<string>();
             if (!string.IsNullOrEmpty(Title)) parts.Add(Title);
             if (!string.IsNullOrEmpty(Lang)) parts.Add(Lang);
@@ -16,7 +20,7 @@ public sealed record TrackInfo(long Id, string Type, string? Title, string? Lang
         }
     }
 
-    public string Subtitle => $"#{Id}" + (string.IsNullOrEmpty(Codec) ? "" : $" · {Codec}");
+    public string Subtitle => None ? "" : $"#{Id}" + (string.IsNullOrEmpty(Codec) ? "" : $" · {Codec}");
 }
 
 public sealed record PlaylistItem(int Index, long Id, string Filename, string? Title, bool Current, bool Playing)
