@@ -68,6 +68,11 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Padding="12,44,12,8">
+                <!-- Hide the pane from the pane itself (same as the OSC / sidebar shortcut) -->
+                <Button Style="{StaticResource OscButton}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="Close_Click"
+                        ToolTipService.ToolTip="Hide the sidebar" AutomationProperties.Name="Hide the sidebar">
+                    <FontIcon Style="{StaticResource OscIcon}" Glyph="&#xE89A;" />
+                </Button>
                 <SelectorBar x:Name="Tabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
                     <SelectorBarItem x:Name="TabVideo" Text="{l:Tr Text='Video'}" Tag="video" />
                     <SelectorBarItem x:Name="TabAudio" Text="{l:Tr Text='Audio'}" Tag="audio" />

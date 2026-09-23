@@ -108,6 +108,7 @@ internal static class Translations
         ["HDR output"] = "HDR 出力",
         ["HDR passthrough"] = "HDR パススルー",
         ["HDR10 passthrough"] = "HDR10 パススルー",
+        ["Hide the sidebar"] = "サイドバーを隠す",
         ["History"] = "履歴",
         ["https://…  (media file, stream, or a YouTube-style page)"] = "https://…  (動画ファイル、配信、YouTube などのページ)",
         ["Hue"] = "色調",

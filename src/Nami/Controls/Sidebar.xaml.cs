@@ -86,6 +86,8 @@ public sealed partial class Sidebar : UserControl
         UpdatePanels();
     }
 
+    private void Close_Click(object sender, RoutedEventArgs e) => Vm.CloseSidebar();
+
     private void Tabs_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         if (sender.SelectedItem is null) return;
