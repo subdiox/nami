@@ -76,10 +76,11 @@ public sealed partial class Sidebar : UserControl
         if (_kind == kind) return;
         _kind = kind;
         bool settings = kind == SidebarKind.Settings;
-        foreach (var item in new[] { TabVideo, TabAudio, TabSub })
-            item.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var item in new[] { TabPlaylist, TabChapters, TabHistory })
-            item.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
+        // Rebuild the strip instead of collapsing items: SelectorBar keeps the width it measured
+        // with collapsed items, which leaves the strip mis-sized (seen after the startup prewarm).
+        Tabs.Items.Clear();
+        foreach (var item in settings ? new[] { TabVideo, TabAudio, TabSub } : new[] { TabPlaylist, TabChapters, TabHistory })
+            Tabs.Items.Add(item);
         Tabs.SelectedItem = settings
             ? new[] { TabVideo, TabAudio, TabSub }[Math.Clamp(Vm.SettingsTab, 0, 2)]
             : new[] { TabPlaylist, TabChapters, TabHistory }[Math.Clamp(Vm.PlaylistTab, 0, 2)];

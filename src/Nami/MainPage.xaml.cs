@@ -424,6 +424,7 @@ public sealed partial class MainPage : Page
             Sidebar.IsHitTestVisible = true;
             Sidebar.Opacity = 1;
         }
+        FocusVideo();   // realizing the panes must not leave focus inside the (hidden) sidebar
     }
 
     private void SetSidebar(SidebarKind kind)
@@ -761,7 +762,7 @@ public sealed partial class MainPage : Page
         if (e.Handled) return;
         // Let text boxes and the sidebar handle their own keys.
         var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
-        if (focused is TextBox or NumberBox or AutoSuggestBox || IsInside(focused, Sidebar)) return;
+        if (focused is TextBox or NumberBox or AutoSuggestBox || (Vm.Sidebar != SidebarKind.None && IsInside(focused, Sidebar))) return;
 
         var mods = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
         bool ctrl = (mods & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
