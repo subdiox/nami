@@ -335,11 +335,13 @@ public sealed partial class MainWindow : Window
             var outer = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).OuterBounds;
             AppWindow.MoveAndResize(outer);
             Interop.WindowInterop.SetDwmFrame(Hwnd, false);
+            Interop.TaskbarInterop.MarkFullscreen(Hwnd, true);
         }
         else
         {
             _fullscreen = false;
             if (_eraseHook is not null) _eraseHook.FillParent = false;
+            Interop.TaskbarInterop.MarkFullscreen(Hwnd, false);
             Interop.WindowInterop.SetDwmFrame(Hwnd, true);
             _presenter.SetBorderAndTitleBar(true, false);
             _presenter.IsResizable = _fullscreenWasResizable;
