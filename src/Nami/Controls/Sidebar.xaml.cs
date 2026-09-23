@@ -76,14 +76,10 @@ public sealed partial class Sidebar : UserControl
         if (_kind == kind) return;
         _kind = kind;
         bool settings = kind == SidebarKind.Settings;
-        // Rebuild the strip instead of collapsing items: SelectorBar keeps the width it measured
-        // with collapsed items, which leaves the strip mis-sized (seen after the startup prewarm).
-        Tabs.Items.Clear();
-        foreach (var item in settings ? new[] { TabVideo, TabAudio, TabSub } : new[] { TabPlaylist, TabChapters, TabHistory })
-            Tabs.Items.Add(item);
-        Tabs.SelectedItem = settings
-            ? new[] { TabVideo, TabAudio, TabSub }[Math.Clamp(Vm.SettingsTab, 0, 2)]
-            : new[] { TabPlaylist, TabChapters, TabHistory }[Math.Clamp(Vm.PlaylistTab, 0, 2)];
+        SettingsTabs.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
+        ListTabs.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
+        if (settings) SettingsTabs.SelectedItem = new[] { TabVideo, TabAudio, TabSub }[Math.Clamp(Vm.SettingsTab, 0, 2)];
+        else ListTabs.SelectedItem = new[] { TabPlaylist, TabChapters, TabHistory }[Math.Clamp(Vm.PlaylistTab, 0, 2)];
         UpdatePanels();
     }
 
@@ -101,12 +97,15 @@ public sealed partial class Sidebar : UserControl
             panel.Visibility = Visibility.Visible;
             UpdateLayout();
         }
+        ListTabs.Visibility = Visibility.Visible;
+        UpdateLayout();
+        ListTabs.Visibility = Visibility.Collapsed;
         UpdatePanels();
     }
 
     private void Tabs_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (sender.SelectedItem is null) return;
+        if (sender.SelectedItem is null || sender.Visibility != Visibility.Visible) return;
         if (_kind == SidebarKind.Settings) Vm.SettingsTab = Array.IndexOf(new[] { TabVideo, TabAudio, TabSub }, sender.SelectedItem);
         else if (_kind == SidebarKind.Playlist) Vm.PlaylistTab = Array.IndexOf(new[] { TabPlaylist, TabChapters, TabHistory }, sender.SelectedItem);
         UpdatePanels();
@@ -114,7 +113,8 @@ public sealed partial class Sidebar : UserControl
 
     private void UpdatePanels()
     {
-        string tag = (Tabs.SelectedItem?.Tag as string) ?? "";
+        var tabs = _kind == SidebarKind.Settings ? SettingsTabs : ListTabs;
+        string tag = (tabs.SelectedItem?.Tag as string) ?? "";
         VideoPanel.Visibility = tag == "video" ? Visibility.Visible : Visibility.Collapsed;
         AudioPanel.Visibility = tag == "audio" ? Visibility.Visible : Visibility.Collapsed;
         SubPanel.Visibility = tag == "sub" ? Visibility.Visible : Visibility.Collapsed;

@@ -74,10 +74,13 @@
                     <!-- sidebar.right: window outline with the right pane filled (IINA's sidebar toggle) -->
                     <PathIcon Width="16" Height="16" Data="M2,3 H14 A1.5,1.5 0 0 1 15.5,4.5 V11.5 A1.5,1.5 0 0 1 14,13 H2 A1.5,1.5 0 0 1 0.5,11.5 V4.5 A1.5,1.5 0 0 1 2,3 Z M2,4 A0.5,0.5 0 0 0 1.5,4.5 V11.5 A0.5,0.5 0 0 0 2,12 H14 A0.5,0.5 0 0 0 14.5,11.5 V4.5 A0.5,0.5 0 0 0 14,4 Z M10,4 H14 A0.5,0.5 0 0 1 14.5,4.5 V11.5 A0.5,0.5 0 0 1 14,12 H10 Z" />
                 </Button>
-                <SelectorBar x:Name="Tabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
+                <!-- One fully populated strip per mode (rebuilding a single strip made its items appear late) -->
+                <SelectorBar x:Name="SettingsTabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
                     <SelectorBarItem x:Name="TabVideo" Text="{l:Tr Text='Video'}" Tag="video" />
                     <SelectorBarItem x:Name="TabAudio" Text="{l:Tr Text='Audio'}" Tag="audio" />
                     <SelectorBarItem x:Name="TabSub" Text="{l:Tr Text='Subtitles'}" Tag="sub" />
+                </SelectorBar>
+                <SelectorBar x:Name="ListTabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center" Visibility="Collapsed">
                     <SelectorBarItem x:Name="TabPlaylist" Text="{l:Tr Text='Playlist'}" Tag="playlist" />
                     <SelectorBarItem x:Name="TabChapters" Text="{l:Tr Text='Chapters'}" Tag="chapters" />
                     <SelectorBarItem x:Name="TabHistory" Text="{l:Tr Text='History'}" Tag="history" />
