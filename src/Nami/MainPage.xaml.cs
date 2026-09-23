@@ -410,22 +410,33 @@ public sealed partial class MainPage : Page
 
     // ---- sidebar ------------------------------------------------------------------------
 
-    /// <summary>Realize the sidebar's panes off screen so the first open (CC button, Ctrl+Shift+S) is immediate.</summary>
+    /// <summary>
+    /// Realize the sidebar's panes so the first open (CC button, Ctrl+Shift+S) is immediate: the
+    /// sidebar is shown invisibly (opacity 0) with every pane visible for a few frames, then parked
+    /// off screen. It stays Visible from then on; closed means parked and not hit-testable.
+    /// </summary>
     private void PrewarmSidebar()
     {
         if (Vm.Sidebar != SidebarKind.None || Sidebar.Visibility == Visibility.Visible) return;
         Sidebar.Opacity = 0;
         Sidebar.IsHitTestVisible = false;
-        Sidebar.Visibility = Visibility.Visible;   // still translated off screen (SidebarTransform.X = width)
-        try { Sidebar.Prewarm(); }
-        finally
+        SidebarTransform.X = 0;
+        Sidebar.Visibility = Visibility.Visible;
+        Sidebar.PrewarmBegin();
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(150);
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) =>
         {
-            if (Vm.Sidebar == SidebarKind.None) Sidebar.Visibility = Visibility.Collapsed;
-            Sidebar.IsHitTestVisible = true;
+            Sidebar.PrewarmEnd();
+            if (Vm.Sidebar == SidebarKind.None) SidebarTransform.X = Sidebar.Width;   // park
             Sidebar.Opacity = 1;
-        }
-        FocusVideo();   // realizing the panes must not leave focus inside the (hidden) sidebar
+            FocusVideo();   // realizing the panes must not leave focus inside the (hidden) sidebar
+        };
+        timer.Start();
     }
+
+    private bool SidebarClosed => Sidebar.Visibility == Visibility.Collapsed || !Sidebar.IsHitTestVisible;
 
     private void SetSidebar(SidebarKind kind)
     {
@@ -437,16 +448,17 @@ public sealed partial class MainPage : Page
             Storyboard.SetTargetProperty(anim, "X");
             var sb = new Storyboard();
             sb.Children.Add(anim);
-            sb.Completed += (_, _) => { if (Vm.Sidebar == SidebarKind.None) Sidebar.Visibility = Visibility.Collapsed; Window?.RequestRegionUpdate(); };
+            sb.Completed += (_, _) => { if (Vm.Sidebar == SidebarKind.None) Sidebar.IsHitTestVisible = false; Window?.RequestRegionUpdate(); };
             sb.Begin();
             Focus(FocusState.Programmatic);
             return;
         }
 
         Sidebar.Show(kind);
-        bool wasCollapsed = Sidebar.Visibility == Visibility.Collapsed;
+        bool wasClosed = SidebarClosed;
         Sidebar.Visibility = Visibility.Visible;
-        if (wasCollapsed)
+        Sidebar.IsHitTestVisible = true;
+        if (wasClosed)
         {
             var anim = new DoubleAnimation { From = Sidebar.Width, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(220)), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
             Storyboard.SetTarget(anim, SidebarTransform);

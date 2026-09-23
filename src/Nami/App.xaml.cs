@@ -125,6 +125,20 @@ public partial class App : Application
                 window.DispatcherQueue.TryEnqueue(() => _ = window.ShowPreferencesAsync(section));
                 continue;
             }
+            if (a.StartsWith("--sidebar=", StringComparison.Ordinal))
+            {
+                // --sidebar=settings@2000: open a sidebar N ms after start (used for UI checks).
+                string body = a[10..];
+                int at = body.IndexOf('@');
+                var kind = (at < 0 ? body : body[..at]) == "playlist" ? Player.SidebarKind.Playlist : Player.SidebarKind.Settings;
+                int delay = at < 0 ? 0 : int.Parse(body[(at + 1)..]);
+                var timer = window.DispatcherQueue.CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, delay));
+                timer.IsRepeating = false;
+                timer.Tick += (_, _) => { window.Vm.SettingsTab = 2; window.Vm.ToggleSidebar(kind); };
+                timer.Start();
+                continue;
+            }
             if (a.StartsWith("--mpv-", StringComparison.Ordinal))
             {
                 // --mpv-hwdec=no  →  mpv option hwdec=no (only effective for cores created afterwards)

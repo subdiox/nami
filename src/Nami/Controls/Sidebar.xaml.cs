@@ -86,20 +86,21 @@ public sealed partial class Sidebar : UserControl
     private void Close_Click(object sender, RoutedEventArgs e) => Vm.CloseSidebar();
 
     /// <summary>
-    /// Lay out every pane once while the sidebar is off screen. Realizing the templates of a pane
-    /// (lists, sliders, combo boxes) costs a visible delay the first time it is shown; done here at
-    /// startup instead of on the first click.
+    /// Startup warm-up: show every pane at once for one ordinary layout pass (the host keeps the
+    /// sidebar invisible meanwhile), then <see cref="PrewarmEnd"/> restores the normal state. A
+    /// synchronous UpdateLayout() is deliberately not used: SelectorBar is a virtualizing ItemsView
+    /// and a forced early layout leaves it with a single realized item for good.
     /// </summary>
-    public void Prewarm()
+    public void PrewarmBegin()
     {
         foreach (var panel in new[] { VideoPanel, AudioPanel, SubPanel, PlaylistPanel, ChaptersPanel, HistoryPanel })
-        {
             panel.Visibility = Visibility.Visible;
-            UpdateLayout();
-        }
         ListTabs.Visibility = Visibility.Visible;
-        UpdateLayout();
-        ListTabs.Visibility = Visibility.Collapsed;
+    }
+
+    public void PrewarmEnd()
+    {
+        ListTabs.Visibility = _kind == SidebarKind.Playlist ? Visibility.Visible : Visibility.Collapsed;
         UpdatePanels();
     }
 
