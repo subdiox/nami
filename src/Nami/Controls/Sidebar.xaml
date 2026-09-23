@@ -13,6 +13,56 @@
     Width="360">
 
     <UserControl.Resources>
+        <!-- Tab strip item: looks like a SelectorBarItem, but is a plain RadioButton. SelectorBar is a
+             virtualizing ItemsView and keeps only its first item when its first layout happens while
+             the sidebar is hidden or before the window's first real frame. -->
+        <Style x:Key="SidebarTab" TargetType="RadioButton">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="12,8,12,10" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource OverlaySubtleTextBrush}" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid x:Name="Root" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Text.Foreground" Value="{StaticResource OverlayTextBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Text.Foreground" Value="{StaticResource OverlayTextBrush}" />
+                                            <Setter Target="Text.Opacity" Value="0.7" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="CheckStates">
+                                    <VisualState x:Name="Unchecked" />
+                                    <VisualState x:Name="Checked">
+                                        <VisualState.Setters>
+                                            <Setter Target="Text.Foreground" Value="{StaticResource OverlayTextBrush}" />
+                                            <Setter Target="Indicator.Opacity" Value="1" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Indeterminate" />
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <TextBlock x:Name="Text" Text="{TemplateBinding Content}" FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="Indicator" Width="16" Height="3" CornerRadius="1.5" Background="{StaticResource AccentBrush}" Opacity="0"
+                                    HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-6" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <DataTemplate x:Key="TrackTemplate" x:DataType="player:TrackInfo">
             <Grid ColumnSpacing="8" Padding="0,6">
                 <Grid.ColumnDefinitions>
@@ -74,17 +124,17 @@
                     <!-- sidebar.right: window outline with the right pane filled (IINA's sidebar toggle) -->
                     <PathIcon Width="16" Height="16" Data="M2,3 H14 A1.5,1.5 0 0 1 15.5,4.5 V11.5 A1.5,1.5 0 0 1 14,13 H2 A1.5,1.5 0 0 1 0.5,11.5 V4.5 A1.5,1.5 0 0 1 2,3 Z M2,4 A0.5,0.5 0 0 0 1.5,4.5 V11.5 A0.5,0.5 0 0 0 2,12 H14 A0.5,0.5 0 0 0 14.5,11.5 V4.5 A0.5,0.5 0 0 0 14,4 Z M10,4 H14 A0.5,0.5 0 0 1 14.5,4.5 V11.5 A0.5,0.5 0 0 1 14,12 H10 Z" />
                 </Button>
-                <!-- One fully populated strip per mode (rebuilding a single strip made its items appear late) -->
-                <SelectorBar x:Name="SettingsTabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center">
-                    <SelectorBarItem x:Name="TabVideo" Text="{l:Tr Text='Video'}" Tag="video" />
-                    <SelectorBarItem x:Name="TabAudio" Text="{l:Tr Text='Audio'}" Tag="audio" />
-                    <SelectorBarItem x:Name="TabSub" Text="{l:Tr Text='Subtitles'}" Tag="sub" />
-                </SelectorBar>
-                <SelectorBar x:Name="ListTabs" AutomationProperties.Name="Sidebar tabs" SelectionChanged="Tabs_SelectionChanged" HorizontalAlignment="Center" Visibility="Collapsed">
-                    <SelectorBarItem x:Name="TabPlaylist" Text="{l:Tr Text='Playlist'}" Tag="playlist" />
-                    <SelectorBarItem x:Name="TabChapters" Text="{l:Tr Text='Chapters'}" Tag="chapters" />
-                    <SelectorBarItem x:Name="TabHistory" Text="{l:Tr Text='History'}" Tag="history" />
-                </SelectorBar>
+                <!-- One strip per mode -->
+                <StackPanel x:Name="SettingsTabs" Orientation="Horizontal" HorizontalAlignment="Center" AutomationProperties.Name="Sidebar tabs">
+                    <RadioButton x:Name="TabVideo" Style="{StaticResource SidebarTab}" GroupName="SettingsTabs" Content="{l:Tr Text='Video'}" Tag="video" Checked="Tab_Checked" />
+                    <RadioButton x:Name="TabAudio" Style="{StaticResource SidebarTab}" GroupName="SettingsTabs" Content="{l:Tr Text='Audio'}" Tag="audio" Checked="Tab_Checked" />
+                    <RadioButton x:Name="TabSub" Style="{StaticResource SidebarTab}" GroupName="SettingsTabs" Content="{l:Tr Text='Subtitles'}" Tag="sub" Checked="Tab_Checked" />
+                </StackPanel>
+                <StackPanel x:Name="ListTabs" Orientation="Horizontal" HorizontalAlignment="Center" AutomationProperties.Name="Sidebar tabs" Visibility="Collapsed">
+                    <RadioButton x:Name="TabPlaylist" Style="{StaticResource SidebarTab}" GroupName="ListTabs" Content="{l:Tr Text='Playlist'}" Tag="playlist" Checked="Tab_Checked" />
+                    <RadioButton x:Name="TabChapters" Style="{StaticResource SidebarTab}" GroupName="ListTabs" Content="{l:Tr Text='Chapters'}" Tag="chapters" Checked="Tab_Checked" />
+                    <RadioButton x:Name="TabHistory" Style="{StaticResource SidebarTab}" GroupName="ListTabs" Content="{l:Tr Text='History'}" Tag="history" Checked="Tab_Checked" />
+                </StackPanel>
             </Grid>
 
             <ScrollViewer Grid.Row="1" Padding="16,0,16,24" VerticalScrollBarVisibility="Auto">

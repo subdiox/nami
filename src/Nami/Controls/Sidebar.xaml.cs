@@ -78,9 +78,10 @@ public sealed partial class Sidebar : UserControl
         bool settings = kind == SidebarKind.Settings;
         SettingsTabs.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
         ListTabs.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
-        if (settings) SettingsTabs.SelectedItem = new[] { TabVideo, TabAudio, TabSub }[Math.Clamp(Vm.SettingsTab, 0, 2)];
-        else ListTabs.SelectedItem = new[] { TabPlaylist, TabChapters, TabHistory }[Math.Clamp(Vm.PlaylistTab, 0, 2)];
-        UpdatePanels();
+        var target = settings
+            ? new[] { TabVideo, TabAudio, TabSub }[Math.Clamp(Vm.SettingsTab, 0, 2)]
+            : new[] { TabPlaylist, TabChapters, TabHistory }[Math.Clamp(Vm.PlaylistTab, 0, 2)];
+        if (target.IsChecked == true) UpdatePanels(); else target.IsChecked = true;   // Checked → UpdatePanels
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Vm.CloseSidebar();
@@ -104,18 +105,22 @@ public sealed partial class Sidebar : UserControl
         UpdatePanels();
     }
 
-    private void Tabs_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    private void Tab_Checked(object sender, RoutedEventArgs e)
     {
-        if (sender.SelectedItem is null || sender.Visibility != Visibility.Visible) return;
-        if (_kind == SidebarKind.Settings) Vm.SettingsTab = Array.IndexOf(new[] { TabVideo, TabAudio, TabSub }, sender.SelectedItem);
-        else if (_kind == SidebarKind.Playlist) Vm.PlaylistTab = Array.IndexOf(new[] { TabPlaylist, TabChapters, TabHistory }, sender.SelectedItem);
+        if (Vm is null || sender is not RadioButton tab) return;
+        int si = Array.IndexOf(new[] { TabVideo, TabAudio, TabSub }, tab);
+        int li = Array.IndexOf(new[] { TabPlaylist, TabChapters, TabHistory }, tab);
+        if (si >= 0 && _kind == SidebarKind.Settings) Vm.SettingsTab = si;
+        else if (li >= 0 && _kind == SidebarKind.Playlist) Vm.PlaylistTab = li;
         UpdatePanels();
     }
 
+    private RadioButton? CheckedTab => new[] { TabVideo, TabAudio, TabSub, TabPlaylist, TabChapters, TabHistory }
+        .FirstOrDefault(t => t.IsChecked == true && (_kind == SidebarKind.Settings ? t.GroupName == "SettingsTabs" : t.GroupName == "ListTabs"));
+
     private void UpdatePanels()
     {
-        var tabs = _kind == SidebarKind.Settings ? SettingsTabs : ListTabs;
-        string tag = (tabs.SelectedItem?.Tag as string) ?? "";
+        string tag = (CheckedTab?.Tag as string) ?? "";
         VideoPanel.Visibility = tag == "video" ? Visibility.Visible : Visibility.Collapsed;
         AudioPanel.Visibility = tag == "audio" ? Visibility.Visible : Visibility.Collapsed;
         SubPanel.Visibility = tag == "sub" ? Visibility.Visible : Visibility.Collapsed;
