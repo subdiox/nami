@@ -70,7 +70,7 @@ public sealed partial class MainWindow : Window
             OnVideoRightClick = (x, y) => DispatcherQueue.TryEnqueue(() => Main.ShowContextMenu(ScreenToPage(x, y))),
             OnVideoMiddleClick = () => DispatcherQueue.TryEnqueue(() => Vm.Keypress("MBTN_MID")),
             IsCursorHidden = () => Main.CursorHidden,
-            IsFullScreen = () => _fullscreen,
+            ClampToMonitor = () => _clampToMonitor,
             OnFilesDropped = files => DispatcherQueue.TryEnqueue(() => Main.OpenDroppedFiles(files)),
             OnSizeMove = live =>
             {
@@ -304,49 +304,25 @@ public sealed partial class MainWindow : Window
 
     // ---- fullscreen / compact -----------------------------------------------------------
 
-    private bool _fullscreen;
-    private RectInt32 _fullscreenRestore;
-    private bool _fullscreenWasMaximized;
-    private bool _fullscreenWasResizable;
-
-    public bool IsFullScreen => _fullscreen;
+    public bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+    private bool _clampToMonitor;   // see NonClientHook.Callbacks.ClampToMonitor
     public bool IsMaximized => _presenter.State == OverlappedPresenterState.Maximized;
 
-    /// <summary>
-    /// Full screen is done by hand on the overlapped presenter: no border, window bounds = the
-    /// monitor. The FullScreen presenter is not used because on a non-primary monitor it shrinks the
-    /// window back to a default-sized rectangle right after sizing it to the monitor (Windows App
-    /// SDK 2.5, observed on a 3440x1440 display left of the primary).
-    /// </summary>
     private void ApplyFullscreen(bool on)
     {
-        if (on == _fullscreen) return;
+        if (on == IsFullScreen) return;
         if (on)
         {
             if (_compact) ToggleCompactMode();
-            _fullscreen = true;
-            _fullscreenWasMaximized = _presenter.State == OverlappedPresenterState.Maximized;
-            if (_fullscreenWasMaximized) _presenter.Restore();
-            _fullscreenRestore = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
-            _fullscreenWasResizable = _presenter.IsResizable;
-            _presenter.SetBorderAndTitleBar(false, false);
-            _presenter.IsResizable = false;
-            if (_eraseHook is not null) _eraseHook.FillParent = true;
-            var outer = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).OuterBounds;
-            AppWindow.MoveAndResize(outer);
-            Interop.WindowInterop.SetDwmFrame(Hwnd, false);
-            Interop.TaskbarInterop.MarkFullscreen(Hwnd, true);
+            _clampToMonitor = true;
+            AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+            if (_eraseHook is not null) _eraseHook.FillParent = true;   // no 1 px line on the top edge
         }
         else
         {
-            _fullscreen = false;
+            _clampToMonitor = false;
             if (_eraseHook is not null) _eraseHook.FillParent = false;
-            Interop.TaskbarInterop.MarkFullscreen(Hwnd, false);
-            Interop.WindowInterop.SetDwmFrame(Hwnd, true);
-            _presenter.SetBorderAndTitleBar(true, false);
-            _presenter.IsResizable = _fullscreenWasResizable;
-            AppWindow.MoveAndResize(_fullscreenRestore);
-            if (_fullscreenWasMaximized) _presenter.Maximize();
+            AppWindow.SetPresenter(_presenter);
         }
         // Caption buttons stay in full screen too (they fade with the HUD); the middle one exits full screen.
         SyncMaximizeGlyph();

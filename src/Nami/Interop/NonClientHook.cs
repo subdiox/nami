@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Gdi;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Nami.Interop;
 
@@ -25,8 +27,13 @@ internal sealed unsafe class NonClientHook : IDisposable
         public required Action<int, int> OnVideoRightClick { get; init; }
         public required Action OnVideoMiddleClick { get; init; }
         public required Func<bool> IsCursorHidden { get; init; }
-        /// <summary>Full screen: the client area is the whole window (no frame at all).</summary>
-        public required Func<bool> IsFullScreen { get; init; }
+        /// <summary>
+        /// While true, every window move / resize is rewritten to the bounds of the monitor the
+        /// proposed rectangle lands on. Set around the full-screen presenter: on a non-primary monitor
+        /// it sizes the window to the monitor and then, inside the same SetPresenter call, back to a
+        /// default-sized rectangle (Windows App SDK 2.5, seen on a 3440x1440 display left of the primary).
+        /// </summary>
+        public required Func<bool> ClampToMonitor { get; init; }
         /// <summary>WM_ENTERSIZEMOVE (true) / WM_EXITSIZEMOVE (false).</summary>
         public required Action<bool> OnSizeMove { get; init; }
         /// <summary>Files dropped from Explorer onto the window (the caption area has no XAML drop target).</summary>
@@ -104,10 +111,31 @@ internal sealed unsafe class NonClientHook : IDisposable
                 return (LRESULT)0;
             }
 
-            case PInvoke.WM_NCCALCSIZE when wParam != 0 && cb.IsFullScreen():
-                // The overlapped presenter keeps WS_DLGFRAME even without border and title bar;
-                // claim the frame for the client so the video reaches the screen edges.
-                return (LRESULT)0;
+            case PInvoke.WM_WINDOWPOSCHANGING when cb.ClampToMonitor():
+            {
+                var wp = (WINDOWPOS*)(nint)lParam.Value;
+                const SET_WINDOW_POS_FLAGS keep = SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE;
+                if ((wp->flags & keep) == keep) break;
+                RECT proposed;
+                if ((wp->flags & SET_WINDOW_POS_FLAGS.SWP_NOMOVE) != 0 || (wp->flags & SET_WINDOW_POS_FLAGS.SWP_NOSIZE) != 0)
+                {
+                    PInvoke.GetWindowRect(hwnd, &proposed);
+                    if ((wp->flags & SET_WINDOW_POS_FLAGS.SWP_NOMOVE) == 0) { proposed.right = wp->x + (proposed.right - proposed.left); proposed.bottom = wp->y + (proposed.bottom - proposed.top); proposed.left = wp->x; proposed.top = wp->y; }
+                    if ((wp->flags & SET_WINDOW_POS_FLAGS.SWP_NOSIZE) == 0) { proposed.right = proposed.left + wp->cx; proposed.bottom = proposed.top + wp->cy; }
+                }
+                else proposed = new RECT { left = wp->x, top = wp->y, right = wp->x + wp->cx, bottom = wp->y + wp->cy };
+                var monitor = PInvoke.MonitorFromRect(&proposed, MONITOR_FROM_FLAGS.MONITOR_DEFAULTTONEAREST);
+                var info = new MONITORINFO { cbSize = (uint)sizeof(MONITORINFO) };
+                if (monitor != default && PInvoke.GetMonitorInfo(monitor, &info))
+                {
+                    var m = info.rcMonitor;
+                    if (wp->x != m.left || wp->y != m.top || wp->cx != m.right - m.left || wp->cy != m.bottom - m.top)
+                        App.Log($"fullscreen: clamped {wp->x},{wp->y} {wp->cx}x{wp->cy} to the monitor {m.left},{m.top} {m.right - m.left}x{m.bottom - m.top}");
+                    wp->x = m.left; wp->y = m.top; wp->cx = m.right - m.left; wp->cy = m.bottom - m.top;
+                    wp->flags &= ~keep;
+                }
+                break;
+            }
             case PInvoke.WM_ENTERSIZEMOVE:
                 cb.OnSizeMove(true);
                 break;
